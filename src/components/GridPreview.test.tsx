@@ -581,5 +581,50 @@ describe('GridPreview', () => {
       expect(placedItem).toHaveAttribute('data-grid-x', '5');
       expect(placedItem).toHaveAttribute('data-grid-y', '5');
     });
+
+    it('should set dynamic aspect ratio for square cells (regression for non-square grid bug)', () => {
+      // A 6x3 grid should have aspect-ratio of 6/3 = 2 to ensure square cells
+      const { container, rerender } = render(
+        <GridPreview
+          gridX={6}
+          gridY={3}
+          placedItems={[]}
+          selectedItemId={null}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+        />
+      );
+
+      const gridPreview = container.querySelector('.grid-preview');
+      expect(gridPreview).toHaveStyle({ aspectRatio: '6 / 3' });
+
+      // Verify it updates when dimensions change
+      rerender(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={[]}
+          selectedItemId={null}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+        />
+      );
+
+      expect(gridPreview).toHaveStyle({ aspectRatio: '4 / 4' });
+
+      // Test a tall grid
+      rerender(
+        <GridPreview
+          gridX={2}
+          gridY={5}
+          placedItems={[]}
+          selectedItemId={null}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+        />
+      );
+
+      expect(gridPreview).toHaveStyle({ aspectRatio: '2 / 5' });
+    });
   });
 });

@@ -69,7 +69,7 @@ export function GridPreview({
   };
 
   return (
-    <div className="grid-preview">
+    <div className="grid-preview" style={{ aspectRatio: `${gridX} / ${gridY}` }}>
       <div
         ref={gridRef}
         className="grid-container"
