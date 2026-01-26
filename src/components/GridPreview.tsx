@@ -38,7 +38,8 @@ export function GridPreview({
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
+    // Allow both copy (from library) and move (relocating placed items)
+    e.dataTransfer.dropEffect = e.dataTransfer.effectAllowed === 'move' ? 'move' : 'copy';
   };
 
   const handleDrop = (e: React.DragEvent) => {
