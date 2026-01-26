@@ -3,11 +3,13 @@ import { getItemById } from '../data/libraryItems';
 
 interface PlacedItemOverlayProps {
   item: PlacedItemWithValidity;
+  gridX: number;
+  gridY: number;
   isSelected: boolean;
   onSelect: (instanceId: string) => void;
 }
 
-export function PlacedItemOverlay({ item, isSelected, onSelect }: PlacedItemOverlayProps) {
+export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect }: PlacedItemOverlayProps) {
   const libraryItem = getItemById(item.itemId);
   const color = item.isValid ? (libraryItem?.color || '#646cff') : '#ef4444';
 
@@ -30,8 +32,10 @@ export function PlacedItemOverlay({ item, isSelected, onSelect }: PlacedItemOver
     <div
       className={`placed-item ${isSelected ? 'selected' : ''} ${!item.isValid ? 'invalid' : ''}`}
       style={{
-        gridColumn: `${item.x + 1} / span ${item.width}`,
-        gridRow: `${item.y + 1} / span ${item.height}`,
+        left: `${(item.x / gridX) * 100}%`,
+        top: `${(item.y / gridY) * 100}%`,
+        width: `${(item.width / gridX) * 100}%`,
+        height: `${(item.height / gridY) * 100}%`,
         backgroundColor: `${color}66`,
         borderColor: color,
       }}

@@ -303,7 +303,7 @@
 
 /* Placed Item Styles */
 .placed-item {
-  position: relative;
+  position: absolute;
   border: 2px solid;
   border-radius: 4px;
   display: flex;
@@ -312,6 +312,7 @@
   cursor: grab;
   transition: box-shadow 0.2s;
   z-index: 1;
+  box-sizing: border-box;
 }
 
 .placed-item:active {

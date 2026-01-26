@@ -86,6 +86,8 @@ export function GridPreview({
           <PlacedItemOverlay
             key={item.instanceId}
             item={item}
+            gridX={gridX}
+            gridY={gridY}
             isSelected={item.instanceId === selectedItemId}
             onSelect={onSelectItem}
           />

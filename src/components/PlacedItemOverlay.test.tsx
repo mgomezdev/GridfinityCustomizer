@@ -1,0 +1,603 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { PlacedItemOverlay } from './PlacedItemOverlay';
+import type { PlacedItemWithValidity } from '../types/gridfinity';
+import * as libraryItemsModule from '../data/libraryItems';
+
+// Mock the libraryItems module
+vi.mock('../data/libraryItems', () => ({
+  getItemById: vi.fn(),
+}));
+
+describe('PlacedItemOverlay', () => {
+  const mockGetItemById = libraryItemsModule.getItemById as ReturnType<typeof vi.fn>;
+  const mockOnSelect = vi.fn();
+
+  const createMockItem = (overrides?: Partial<PlacedItemWithValidity>): PlacedItemWithValidity => ({
+    instanceId: 'test-item-1',
+    itemId: 'bin-1x1',
+    x: 0,
+    y: 0,
+    width: 1,
+    height: 1,
+    isRotated: false,
+    isValid: true,
+    ...overrides,
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetItemById.mockReturnValue({
+      id: 'bin-1x1',
+      name: '1x1 Bin',
+      widthUnits: 1,
+      heightUnits: 1,
+      color: '#646cff',
+      category: 'bin',
+    });
+  });
+
+  describe('Percentage-based Positioning', () => {
+    it('should calculate left position as percentage of gridX', () => {
+      const item = createMockItem({ x: 1, width: 1 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      expect(element).toHaveStyle({ left: '25%' }); // 1/4 = 25%
+    });
+
+    it('should calculate top position as percentage of gridY', () => {
+      const item = createMockItem({ y: 2, height: 1 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      expect(element).toHaveStyle({ top: '50%' }); // 2/4 = 50%
+    });
+
+    it('should calculate width as percentage of gridX', () => {
+      const item = createMockItem({ width: 2 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      expect(element).toHaveStyle({ width: '50%' }); // 2/4 = 50%
+    });
+
+    it('should calculate height as percentage of gridY', () => {
+      const item = createMockItem({ height: 3 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      expect(element).toHaveStyle({ height: '75%' }); // 3/4 = 75%
+    });
+
+    it('should position item at (0, 0) as 0%', () => {
+      const item = createMockItem({ x: 0, y: 0 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      expect(element).toHaveStyle({ left: '0%', top: '0%' });
+    });
+
+    it('should handle non-square grids correctly', () => {
+      const item = createMockItem({ x: 2, y: 1, width: 1, height: 1 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={5}
+          gridY={3}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      expect(element).toHaveStyle({
+        left: '40%',    // 2/5 = 40%
+        top: '33.33333333333333%',     // 1/3 = 33.33%
+        width: '20%',   // 1/5 = 20%
+        height: '33.33333333333333%',  // 1/3 = 33.33%
+      });
+    });
+
+    it('should handle large bins spanning multiple units', () => {
+      const item = createMockItem({ x: 1, y: 1, width: 3, height: 2 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={5}
+          gridY={5}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      expect(element).toHaveStyle({
+        left: '20%',   // 1/5 = 20%
+        top: '20%',    // 1/5 = 20%
+        width: '60%',  // 3/5 = 60%
+        height: '40%', // 2/5 = 40%
+      });
+    });
+
+    it('should position at maximum valid position correctly', () => {
+      const item = createMockItem({ x: 3, y: 3, width: 1, height: 1 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      expect(element).toHaveStyle({
+        left: '75%',
+        top: '75%',
+        width: '25%',
+        height: '25%',
+      });
+    });
+  });
+
+  describe('Valid/Invalid Styling', () => {
+    it('should apply valid item color when isValid is true', () => {
+      const item = createMockItem({ isValid: true });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      expect(element).toHaveStyle({
+        backgroundColor: '#646cff66',
+        borderColor: '#646cff',
+      });
+      expect(element).not.toHaveClass('invalid');
+    });
+
+    it('should apply invalid styling when isValid is false', () => {
+      const item = createMockItem({ isValid: false });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      expect(element).toHaveStyle({
+        backgroundColor: '#ef444466',
+        borderColor: '#ef4444',
+      });
+      expect(element).toHaveClass('invalid');
+    });
+
+    it('should use library item color for valid items', () => {
+      mockGetItemById.mockReturnValue({
+        id: 'custom-item',
+        name: 'Custom',
+        widthUnits: 1,
+        heightUnits: 1,
+        color: '#22c55e',
+        category: 'divider',
+      });
+
+      const item = createMockItem({ isValid: true });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      expect(element).toHaveStyle({
+        backgroundColor: '#22c55e66',
+        borderColor: '#22c55e',
+      });
+    });
+
+    it('should use default color if library item not found', () => {
+      mockGetItemById.mockReturnValue(undefined);
+
+      const item = createMockItem({ isValid: true });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      expect(element).toHaveStyle({
+        backgroundColor: '#646cff66',
+        borderColor: '#646cff',
+      });
+    });
+  });
+
+  describe('Selection State', () => {
+    it('should apply selected class when isSelected is true', () => {
+      const item = createMockItem();
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      expect(element).toHaveClass('selected');
+    });
+
+    it('should not apply selected class when isSelected is false', () => {
+      const item = createMockItem();
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      expect(element).not.toHaveClass('selected');
+    });
+  });
+
+  describe('Click Handling', () => {
+    it('should call onSelect with instanceId when clicked', () => {
+      const item = createMockItem({ instanceId: 'test-item-123' });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      fireEvent.click(element!);
+
+      expect(mockOnSelect).toHaveBeenCalledWith('test-item-123');
+      expect(mockOnSelect).toHaveBeenCalledTimes(1);
+    });
+
+    it('should stop event propagation on click', () => {
+      const item = createMockItem();
+      const parentClickHandler = vi.fn();
+      const { container } = render(
+        <div onClick={parentClickHandler}>
+          <PlacedItemOverlay
+            item={item}
+            gridX={4}
+            gridY={4}
+            isSelected={false}
+            onSelect={mockOnSelect}
+          />
+        </div>
+      );
+
+      const element = container.querySelector('.placed-item');
+      fireEvent.click(element!);
+
+      expect(mockOnSelect).toHaveBeenCalled();
+      expect(parentClickHandler).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Drag and Drop', () => {
+    it('should be draggable', () => {
+      const item = createMockItem();
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      expect(element).toHaveAttribute('draggable', 'true');
+    });
+
+    it('should set correct drag data on drag start', () => {
+      const item = createMockItem({ instanceId: 'drag-item-1', itemId: 'bin-2x2' });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      const dataTransfer = {
+        setData: vi.fn(),
+        effectAllowed: '',
+      };
+
+      fireEvent.dragStart(element!, { dataTransfer });
+
+      expect(dataTransfer.setData).toHaveBeenCalledWith(
+        'application/json',
+        JSON.stringify({
+          type: 'placed',
+          itemId: 'bin-2x2',
+          instanceId: 'drag-item-1',
+        })
+      );
+      expect(dataTransfer.effectAllowed).toBe('move');
+    });
+  });
+
+  describe('Label Display', () => {
+    it('should display item name from library', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      expect(screen.getByText('1x1 Bin')).toBeInTheDocument();
+    });
+
+    it('should handle missing library item gracefully', () => {
+      mockGetItemById.mockReturnValue(undefined);
+      const item = createMockItem();
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const label = container.querySelector('.placed-item-label');
+      expect(label).toBeInTheDocument();
+      expect(label?.textContent).toBe('');
+    });
+
+    it('should display custom item name', () => {
+      mockGetItemById.mockReturnValue({
+        id: 'organizer-2x3',
+        name: '2x3 Organizer',
+        widthUnits: 2,
+        heightUnits: 3,
+        color: '#f59e0b',
+        category: 'organizer',
+      });
+
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      expect(screen.getByText('2x3 Organizer')).toBeInTheDocument();
+    });
+  });
+
+  describe('Edge Cases', () => {
+    it('should handle zero grid dimensions', () => {
+      const item = createMockItem({ x: 0, y: 0, width: 1, height: 1 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={0}
+          gridY={0}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      // Division by zero results in Infinity
+      expect(element).toBeInTheDocument();
+    });
+
+    it('should handle very small items', () => {
+      const item = createMockItem({ x: 0, y: 0, width: 1, height: 1 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={10}
+          gridY={10}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      expect(element).toHaveStyle({
+        width: '10%',
+        height: '10%',
+      });
+    });
+
+    it('should handle both selected and invalid states', () => {
+      const item = createMockItem({ isValid: false });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      expect(element).toHaveClass('selected');
+      expect(element).toHaveClass('invalid');
+    });
+
+    it('should render with rotated item dimensions', () => {
+      const item = createMockItem({
+        x: 1,
+        y: 1,
+        width: 2,
+        height: 1,
+        isRotated: true,
+      });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      expect(element).toHaveStyle({
+        width: '50%',  // 2/4
+        height: '25%', // 1/4
+      });
+    });
+  });
+
+  describe('Regression Tests', () => {
+    it('should have placed-item class for CSS absolute positioning', () => {
+      const item = createMockItem({ x: 0, y: 0, width: 1, height: 1 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      // The .placed-item class applies position: absolute in CSS
+      const element = container.querySelector('.placed-item');
+      expect(element).toBeInTheDocument();
+      expect(element).toHaveClass('placed-item');
+    });
+
+    it('should handle percentage precision with repeating decimals (1/3 grid)', () => {
+      const item = createMockItem({ x: 1, y: 1, width: 1, height: 1 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={3}
+          gridY={3}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      // 1/3 = 33.33333...%
+      expect(element).toHaveStyle({
+        left: '33.33333333333333%',
+        top: '33.33333333333333%',
+        width: '33.33333333333333%',
+        height: '33.33333333333333%',
+      });
+    });
+
+    it('should handle large grid (100x100) calculations correctly', () => {
+      const item = createMockItem({ x: 50, y: 75, width: 2, height: 3 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={100}
+          gridY={100}
+          isSelected={false}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      expect(element).toHaveStyle({
+        left: '50%',
+        top: '75%',
+        width: '2%',
+        height: '3%',
+      });
+    });
+  });
+});
