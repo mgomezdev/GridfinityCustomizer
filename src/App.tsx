@@ -4,6 +4,7 @@ import { calculateGrid, mmToInches, inchesToMm } from './utils/conversions';
 import { useGridItems } from './hooks/useGridItems';
 import { useSpacerCalculation } from './hooks/useSpacerCalculation';
 import { useBillOfMaterials } from './hooks/useBillOfMaterials';
+import { useLibraryData } from './hooks/useLibraryData';
 import { DimensionInput } from './components/DimensionInput';
 import { GridPreview } from './components/GridPreview';
 import { GridSummary } from './components/GridSummary';
@@ -22,6 +23,8 @@ function App() {
     horizontal: 'none',
     vertical: 'none',
   });
+
+  const { items: libraryItems, isLoading: isLibraryLoading, error: libraryError } = useLibraryData();
 
   const handleUnitChange = (newUnit: UnitSystem) => {
     if (newUnit === unitSystem) return;
@@ -59,7 +62,7 @@ function App() {
     handleDrop,
   } = useGridItems(gridResult.gridX, gridResult.gridY);
 
-  const bomItems = useBillOfMaterials(placedItems);
+  const bomItems = useBillOfMaterials(placedItems, libraryItems);
 
   const handleRotateSelected = () => {
     if (selectedItemId) {
@@ -148,7 +151,11 @@ function App() {
 
       <main className="app-main">
         <section className="sidebar">
-          <ItemLibrary />
+          <ItemLibrary
+            items={libraryItems}
+            isLoading={isLibraryLoading}
+            error={libraryError}
+          />
 
           {selectedItemId && (
             <ItemControls

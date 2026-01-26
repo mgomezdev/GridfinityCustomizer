@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
-import type { PlacedItem, BOMItem } from '../types/gridfinity';
-import { getItemById } from '../data/libraryItems';
+import type { PlacedItem, BOMItem, LibraryItem } from '../types/gridfinity';
 
-export function useBillOfMaterials(placedItems: PlacedItem[]): BOMItem[] {
+export function useBillOfMaterials(placedItems: PlacedItem[], libraryItems: LibraryItem[]): BOMItem[] {
   return useMemo(() => {
     // Group placed items by itemId and count quantities
     const itemCounts = new Map<string, number>();
@@ -16,7 +15,7 @@ export function useBillOfMaterials(placedItems: PlacedItem[]): BOMItem[] {
     const bomItems: BOMItem[] = [];
 
     itemCounts.forEach((quantity, itemId) => {
-      const libraryItem = getItemById(itemId);
+      const libraryItem = libraryItems.find(item => item.id === itemId);
       if (libraryItem) {
         bomItems.push({
           itemId: libraryItem.id,
@@ -39,5 +38,5 @@ export function useBillOfMaterials(placedItems: PlacedItem[]): BOMItem[] {
       }
       return a.name.localeCompare(b.name);
     });
-  }, [placedItems]);
+  }, [placedItems, libraryItems]);
 }
