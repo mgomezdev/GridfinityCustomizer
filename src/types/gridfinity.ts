@@ -15,3 +15,32 @@ export interface GridResult {
   gapWidth: number;
   gapDepth: number;
 }
+
+export interface LibraryItem {
+  id: string;
+  name: string;
+  widthUnits: number;
+  heightUnits: number;
+  color: string;
+  category: 'bin' | 'divider' | 'organizer';
+}
+
+export interface PlacedItem {
+  instanceId: string;
+  itemId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  isRotated: boolean;
+}
+
+export interface PlacedItemWithValidity extends PlacedItem {
+  isValid: boolean;
+}
+
+export interface DragData {
+  type: 'library' | 'placed';
+  itemId: string;
+  instanceId?: string;
+}

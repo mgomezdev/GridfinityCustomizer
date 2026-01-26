@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import type { UnitSystem, ImperialFormat } from './types/gridfinity';
 import { calculateGrid, mmToInches, inchesToMm } from './utils/conversions';
+import { useGridItems } from './hooks/useGridItems';
 import { DimensionInput } from './components/DimensionInput';
 import { UnitToggle } from './components/UnitToggle';
 import { GridPreview } from './components/GridPreview';
 import { GridInfo } from './components/GridInfo';
+import { ItemLibrary } from './components/ItemLibrary';
+import { ItemControls } from './components/ItemControls';
 import './App.css';
 
 function App() {
@@ -28,6 +31,27 @@ function App() {
   };
 
   const gridResult = calculateGrid(width, depth, unitSystem);
+
+  const {
+    placedItems,
+    selectedItemId,
+    rotateItem,
+    deleteItem,
+    selectItem,
+    handleDrop,
+  } = useGridItems(gridResult.gridX, gridResult.gridY);
+
+  const handleRotateSelected = () => {
+    if (selectedItemId) {
+      rotateItem(selectedItemId);
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedItemId) {
+      deleteItem(selectedItemId);
+    }
+  };
 
   return (
     <div className="app">
@@ -72,10 +96,26 @@ function App() {
             unit={unitSystem}
             imperialFormat={imperialFormat}
           />
+
+          <ItemLibrary />
+
+          {selectedItemId && (
+            <ItemControls
+              onRotate={handleRotateSelected}
+              onDelete={handleDeleteSelected}
+            />
+          )}
         </section>
 
         <section className="preview">
-          <GridPreview gridX={gridResult.gridX} gridY={gridResult.gridY} />
+          <GridPreview
+            gridX={gridResult.gridX}
+            gridY={gridResult.gridY}
+            placedItems={placedItems}
+            selectedItemId={selectedItemId}
+            onDrop={handleDrop}
+            onSelectItem={selectItem}
+          />
         </section>
       </main>
     </div>
