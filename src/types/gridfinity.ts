@@ -7,6 +7,23 @@ export interface Dimensions {
   unit: UnitSystem;
 }
 
+export type SpacerMode = 'none' | 'one-sided' | 'symmetrical';
+
+export interface GridSpacerConfig {
+  horizontal: SpacerMode;
+  vertical: SpacerMode;
+}
+
+export interface ComputedSpacer {
+  id: string;
+  position: 'left' | 'right' | 'top' | 'bottom';
+  size: number;
+  renderX: number;
+  renderY: number;
+  renderWidth: number;
+  renderHeight: number;
+}
+
 export interface GridResult {
   gridX: number;
   gridY: number;
@@ -14,6 +31,7 @@ export interface GridResult {
   actualDepth: number;
   gapWidth: number;
   gapDepth: number;
+  spacers?: ComputedSpacer[];
 }
 
 export interface LibraryItem {
@@ -43,4 +61,14 @@ export interface DragData {
   type: 'library' | 'placed';
   itemId: string;
   instanceId?: string;
+}
+
+export interface BOMItem {
+  itemId: string;
+  name: string;
+  widthUnits: number;
+  heightUnits: number;
+  color: string;
+  category: 'bin' | 'divider' | 'organizer';
+  quantity: number;
 }
