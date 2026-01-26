@@ -1,0 +1,5 @@
+- Add spacers to fill the gaps.  allow one sided or symmetrical
+- Pull bins from flat file (json or md, can't decide)
+- Allow for an image of the bin as the icon in the Library pane
+- Allow collapsing of the Library categories
+- Add Search for library item (specifics TBD)
