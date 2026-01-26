@@ -13,9 +13,16 @@ interface ItemLibraryProps {
 }
 
 export function ItemLibrary({ items, isLoading, error }: ItemLibraryProps) {
-  const bins = items.filter(item => item.category === 'bin');
-  const dividers = items.filter(item => item.category === 'divider');
-  const organizers = items.filter(item => item.category === 'organizer');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filter items by search query
+  const filteredItems = items.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const bins = filteredItems.filter(item => item.category === 'bin');
+  const dividers = filteredItems.filter(item => item.category === 'divider');
+  const organizers = filteredItems.filter(item => item.category === 'organizer');
 
   // Load collapsed state from localStorage, default all to expanded (false = expanded)
   const [collapsedCategories, setCollapsedCategories] = useState<Set<CategoryKey>>(() => {
@@ -56,6 +63,8 @@ export function ItemLibrary({ items, isLoading, error }: ItemLibraryProps) {
     title: string,
     categoryItems: LibraryItem[]
   ) => {
+    if (categoryItems.length === 0) return null;
+
     const isCollapsed = collapsedCategories.has(key);
 
     return (
@@ -75,7 +84,7 @@ export function ItemLibrary({ items, isLoading, error }: ItemLibraryProps) {
           <span className={`category-chevron ${isCollapsed ? 'collapsed' : 'expanded'}`}>
             ▶
           </span>
-          {title}
+          {title} ({categoryItems.length})
         </h4>
         <div className={`category-items ${isCollapsed ? 'collapsed' : 'expanded'}`}>
           {categoryItems.map(item => (
@@ -109,10 +118,37 @@ export function ItemLibrary({ items, isLoading, error }: ItemLibraryProps) {
     );
   }
 
+  const hasResults = bins.length > 0 || dividers.length > 0 || organizers.length > 0;
+
   return (
     <div className="item-library">
       <h3 className="item-library-title">Item Library</h3>
       <p className="item-library-hint">Drag items onto the grid</p>
+
+      <div className="library-search">
+        <input
+          type="text"
+          className="library-search-input"
+          placeholder="Search items..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        {searchQuery && (
+          <button
+            className="library-search-clear"
+            onClick={() => setSearchQuery('')}
+            aria-label="Clear search"
+          >
+            ×
+          </button>
+        )}
+      </div>
+
+      {!hasResults && searchQuery && (
+        <div className="library-no-results">
+          <p>No items found matching "{searchQuery}"</p>
+        </div>
+      )}
 
       {renderCategory('bins', 'Bins', bins)}
       {renderCategory('dividers', 'Dividers', dividers)}

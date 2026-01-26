@@ -19,9 +19,9 @@ describe('ItemLibrary', () => {
   it('should render all categories', () => {
     render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
-    expect(screen.getByText('Bins')).toBeInTheDocument();
-    expect(screen.getByText('Dividers')).toBeInTheDocument();
-    expect(screen.getByText('Organizers')).toBeInTheDocument();
+    expect(screen.getByText(/Bins/)).toBeInTheDocument();
+    expect(screen.getByText(/Dividers/)).toBeInTheDocument();
+    expect(screen.getByText(/Organizers/)).toBeInTheDocument();
   });
 
   it('should have all categories expanded by default', () => {
@@ -47,7 +47,7 @@ describe('ItemLibrary', () => {
   it('should collapse category when clicked', () => {
     render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
-    const binsTitle = screen.getByText('Bins');
+    const binsTitle = screen.getByText(/Bins/);
     fireEvent.click(binsTitle);
 
     const binsItems = binsTitle.nextElementSibling;
@@ -58,7 +58,7 @@ describe('ItemLibrary', () => {
   it('should expand category when clicked again', () => {
     render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
-    const binsTitle = screen.getByText('Bins');
+    const binsTitle = screen.getByText(/Bins/);
 
     // Collapse
     fireEvent.click(binsTitle);
@@ -74,7 +74,7 @@ describe('ItemLibrary', () => {
   it('should rotate chevron when category is collapsed', () => {
     render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
-    const binsTitle = screen.getByText('Bins');
+    const binsTitle = screen.getByText(/Bins/);
     const chevron = binsTitle.querySelector('.category-chevron');
 
     expect(chevron).toHaveClass('expanded');
@@ -88,7 +88,7 @@ describe('ItemLibrary', () => {
   it('should handle keyboard interaction (Enter key)', () => {
     render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
-    const binsTitle = screen.getByText('Bins');
+    const binsTitle = screen.getByText(/Bins/);
     fireEvent.keyDown(binsTitle, { key: 'Enter' });
 
     const binsItems = binsTitle.nextElementSibling;
@@ -98,7 +98,7 @@ describe('ItemLibrary', () => {
   it('should handle keyboard interaction (Space key)', () => {
     render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
-    const binsTitle = screen.getByText('Bins');
+    const binsTitle = screen.getByText(/Bins/);
     fireEvent.keyDown(binsTitle, { key: ' ' });
 
     const binsItems = binsTitle.nextElementSibling;
@@ -108,8 +108,8 @@ describe('ItemLibrary', () => {
   it('should collapse categories independently', () => {
     render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
-    const binsTitle = screen.getByText('Bins');
-    const dividersTitle = screen.getByText('Dividers');
+    const binsTitle = screen.getByText(/Bins/);
+    const dividersTitle = screen.getByText(/Dividers/);
 
     fireEvent.click(binsTitle);
 
@@ -123,7 +123,7 @@ describe('ItemLibrary', () => {
   it('should save collapsed state to localStorage', () => {
     render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
-    const binsTitle = screen.getByText('Bins');
+    const binsTitle = screen.getByText(/Bins/);
     fireEvent.click(binsTitle);
 
     const stored = localStorage.getItem('gridfinity-collapsed-categories');
@@ -137,7 +137,7 @@ describe('ItemLibrary', () => {
 
     render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
-    const dividersTitle = screen.getByText('Dividers');
+    const dividersTitle = screen.getByText(/Dividers/);
     const dividersItems = dividersTitle.nextElementSibling;
 
     expect(dividersItems).toHaveClass('collapsed');
@@ -154,7 +154,7 @@ describe('ItemLibrary', () => {
 
     render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
-    const binsTitle = screen.getByText('Bins');
+    const binsTitle = screen.getByText(/Bins/);
     fireEvent.click(binsTitle);
 
     // Should still work despite localStorage error
@@ -170,7 +170,7 @@ describe('ItemLibrary', () => {
   it('should have correct accessibility attributes', () => {
     render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
-    const binsTitle = screen.getByText('Bins');
+    const binsTitle = screen.getByText(/Bins/);
 
     expect(binsTitle).toHaveAttribute('role', 'button');
     expect(binsTitle).toHaveAttribute('tabIndex', '0');
@@ -179,8 +179,8 @@ describe('ItemLibrary', () => {
   it('should maintain state across multiple toggles', () => {
     render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
-    const binsTitle = screen.getByText('Bins');
-    const dividersTitle = screen.getByText('Dividers');
+    const binsTitle = screen.getByText(/Bins/);
+    const dividersTitle = screen.getByText(/Dividers/);
 
     // Collapse bins
     fireEvent.click(binsTitle);
@@ -200,5 +200,73 @@ describe('ItemLibrary', () => {
     const parsed = JSON.parse(stored!);
     expect(parsed).toContain('dividers');
     expect(parsed).not.toContain('bins');
+  });
+
+  it('should render search input', () => {
+    render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
+    const searchInput = screen.getByPlaceholderText('Search items...');
+    expect(searchInput).toBeInTheDocument();
+  });
+
+  it('should filter items by search query', () => {
+    render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
+    const searchInput = screen.getByPlaceholderText('Search items...');
+
+    fireEvent.change(searchInput, { target: { value: '2x2' } });
+
+    expect(screen.getByText('2x2 Bin')).toBeInTheDocument();
+    expect(screen.queryByText('1x1 Bin')).not.toBeInTheDocument();
+  });
+
+  it('should show clear button when search has text', () => {
+    render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
+    const searchInput = screen.getByPlaceholderText('Search items...');
+
+    expect(screen.queryByLabelText('Clear search')).not.toBeInTheDocument();
+
+    fireEvent.change(searchInput, { target: { value: 'bin' } });
+
+    expect(screen.getByLabelText('Clear search')).toBeInTheDocument();
+  });
+
+  it('should clear search when clear button clicked', () => {
+    render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
+    const searchInput = screen.getByPlaceholderText('Search items...') as HTMLInputElement;
+
+    fireEvent.change(searchInput, { target: { value: 'test' } });
+    expect(searchInput.value).toBe('test');
+
+    const clearButton = screen.getByLabelText('Clear search');
+    fireEvent.click(clearButton);
+
+    expect(searchInput.value).toBe('');
+  });
+
+  it('should show no results message when search has no matches', () => {
+    render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
+    const searchInput = screen.getByPlaceholderText('Search items...');
+
+    fireEvent.change(searchInput, { target: { value: 'nonexistent' } });
+
+    expect(screen.getByText(/No items found matching "nonexistent"/)).toBeInTheDocument();
+  });
+
+  it('should hide empty categories when filtering', () => {
+    render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
+    const searchInput = screen.getByPlaceholderText('Search items...');
+
+    // Search for divider only
+    fireEvent.change(searchInput, { target: { value: 'Divider' } });
+
+    expect(screen.getByText(/Dividers/)).toBeInTheDocument();
+    expect(screen.queryByText(/Bins/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Organizers/)).not.toBeInTheDocument();
+  });
+
+  it('should show item count in category headers', () => {
+    render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
+
+    expect(screen.getByText(/Bins \(2\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Dividers \(1\)/)).toBeInTheDocument();
   });
 });
