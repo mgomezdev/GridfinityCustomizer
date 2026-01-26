@@ -3,9 +3,8 @@ import type { UnitSystem, ImperialFormat } from './types/gridfinity';
 import { calculateGrid, mmToInches, inchesToMm } from './utils/conversions';
 import { useGridItems } from './hooks/useGridItems';
 import { DimensionInput } from './components/DimensionInput';
-import { UnitToggle } from './components/UnitToggle';
 import { GridPreview } from './components/GridPreview';
-import { GridInfo } from './components/GridInfo';
+import { GridSummary } from './components/GridSummary';
 import { ItemLibrary } from './components/ItemLibrary';
 import { ItemControls } from './components/ItemControls';
 import './App.css';
@@ -60,43 +59,69 @@ function App() {
         <p className="subtitle">Design your modular storage layout</p>
       </header>
 
-      <main className="app-main">
-        <section className="controls">
-          <UnitToggle
-            unit={unitSystem}
-            imperialFormat={imperialFormat}
-            onUnitChange={handleUnitChange}
-            onImperialFormatChange={setImperialFormat}
-          />
+      <section className="grid-controls">
+        <div className="unit-toggle-compact">
+          <button
+            className={unitSystem === 'metric' ? 'active' : ''}
+            onClick={() => handleUnitChange('metric')}
+          >
+            mm
+          </button>
+          <button
+            className={unitSystem === 'imperial' ? 'active' : ''}
+            onClick={() => handleUnitChange('imperial')}
+          >
+            in
+          </button>
+        </div>
 
-          <div className="dimension-inputs">
-            <DimensionInput
-              label="Width"
-              value={width}
-              onChange={setWidth}
-              unit={unitSystem}
-              imperialFormat={imperialFormat}
-            />
-            <DimensionInput
-              label="Depth"
-              value={depth}
-              onChange={setDepth}
-              unit={unitSystem}
-              imperialFormat={imperialFormat}
-            />
+        {unitSystem === 'imperial' && (
+          <div className="format-toggle-compact">
+            <button
+              className={imperialFormat === 'decimal' ? 'active' : ''}
+              onClick={() => setImperialFormat('decimal')}
+            >
+              .00
+            </button>
+            <button
+              className={imperialFormat === 'fractional' ? 'active' : ''}
+              onClick={() => setImperialFormat('fractional')}
+            >
+              ½
+            </button>
           </div>
+        )}
 
-          <GridInfo
-            gridX={gridResult.gridX}
-            gridY={gridResult.gridY}
-            actualWidth={gridResult.actualWidth}
-            actualDepth={gridResult.actualDepth}
-            gapWidth={gridResult.gapWidth}
-            gapDepth={gridResult.gapDepth}
+        <div className="dimension-inputs-row">
+          <DimensionInput
+            label="W"
+            value={width}
+            onChange={setWidth}
             unit={unitSystem}
             imperialFormat={imperialFormat}
           />
+          <span className="dimension-separator">x</span>
+          <DimensionInput
+            label="D"
+            value={depth}
+            onChange={setDepth}
+            unit={unitSystem}
+            imperialFormat={imperialFormat}
+          />
+        </div>
 
+        <GridSummary
+          gridX={gridResult.gridX}
+          gridY={gridResult.gridY}
+          gapWidth={gridResult.gapWidth}
+          gapDepth={gridResult.gapDepth}
+          unit={unitSystem}
+          imperialFormat={imperialFormat}
+        />
+      </section>
+
+      <main className="app-main">
+        <section className="sidebar">
           <ItemLibrary />
 
           {selectedItemId && (
