@@ -1,11 +1,20 @@
 import { describe, it, expect } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useBillOfMaterials } from './useBillOfMaterials';
-import type { PlacedItem } from '../types/gridfinity';
+import type { PlacedItem, LibraryItem } from '../types/gridfinity';
+
+const mockLibraryItems: LibraryItem[] = [
+  { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', category: 'bin' },
+  { id: 'bin-1x2', name: '1x2 Bin', widthUnits: 1, heightUnits: 2, color: '#646cff', category: 'bin' },
+  { id: 'bin-2x1', name: '2x1 Bin', widthUnits: 2, heightUnits: 1, color: '#646cff', category: 'bin' },
+  { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#646cff', category: 'bin' },
+  { id: 'divider-1x1', name: '1x1 Divider', widthUnits: 1, heightUnits: 1, color: '#22c55e', category: 'divider' },
+  { id: 'organizer-1x3', name: '1x3 Organizer', widthUnits: 1, heightUnits: 3, color: '#f59e0b', category: 'organizer' },
+];
 
 describe('useBillOfMaterials', () => {
   it('should return empty array when no items are placed', () => {
-    const { result } = renderHook(() => useBillOfMaterials([]));
+    const { result } = renderHook(() => useBillOfMaterials([], mockLibraryItems));
     expect(result.current).toEqual([]);
   });
 
@@ -22,7 +31,7 @@ describe('useBillOfMaterials', () => {
       },
     ];
 
-    const { result } = renderHook(() => useBillOfMaterials(placedItems));
+    const { result } = renderHook(() => useBillOfMaterials(placedItems, mockLibraryItems));
 
     expect(result.current).toHaveLength(1);
     expect(result.current[0]).toMatchObject({
@@ -66,7 +75,7 @@ describe('useBillOfMaterials', () => {
       },
     ];
 
-    const { result } = renderHook(() => useBillOfMaterials(placedItems));
+    const { result } = renderHook(() => useBillOfMaterials(placedItems, mockLibraryItems));
 
     expect(result.current).toHaveLength(1);
     expect(result.current[0].quantity).toBe(3);
@@ -95,7 +104,7 @@ describe('useBillOfMaterials', () => {
       },
     ];
 
-    const { result } = renderHook(() => useBillOfMaterials(placedItems));
+    const { result } = renderHook(() => useBillOfMaterials(placedItems, mockLibraryItems));
 
     expect(result.current).toHaveLength(1);
     expect(result.current[0].quantity).toBe(2);
@@ -142,7 +151,7 @@ describe('useBillOfMaterials', () => {
       },
     ];
 
-    const { result } = renderHook(() => useBillOfMaterials(placedItems));
+    const { result } = renderHook(() => useBillOfMaterials(placedItems, mockLibraryItems));
 
     expect(result.current).toHaveLength(3);
 
@@ -187,7 +196,7 @@ describe('useBillOfMaterials', () => {
       },
     ];
 
-    const { result } = renderHook(() => useBillOfMaterials(placedItems));
+    const { result } = renderHook(() => useBillOfMaterials(placedItems, mockLibraryItems));
 
     expect(result.current).toHaveLength(3);
     expect(result.current[0].category).toBe('bin');
@@ -226,7 +235,7 @@ describe('useBillOfMaterials', () => {
       },
     ];
 
-    const { result } = renderHook(() => useBillOfMaterials(placedItems));
+    const { result } = renderHook(() => useBillOfMaterials(placedItems, mockLibraryItems));
 
     expect(result.current).toHaveLength(3);
     expect(result.current[0].name).toBe('1x1 Bin');
@@ -256,7 +265,7 @@ describe('useBillOfMaterials', () => {
       },
     ];
 
-    const { result } = renderHook(() => useBillOfMaterials(placedItems));
+    const { result } = renderHook(() => useBillOfMaterials(placedItems, mockLibraryItems));
 
     // Should only include the valid item
     expect(result.current).toHaveLength(1);
@@ -277,7 +286,7 @@ describe('useBillOfMaterials', () => {
     ];
 
     const { result, rerender } = renderHook(
-      ({ items }) => useBillOfMaterials(items),
+      ({ items }) => useBillOfMaterials(items, mockLibraryItems),
       { initialProps: { items: initialItems } }
     );
 

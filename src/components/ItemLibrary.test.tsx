@@ -1,6 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ItemLibrary } from './ItemLibrary';
+import type { LibraryItem } from '../types/gridfinity';
+
+const mockLibraryItems: LibraryItem[] = [
+  { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', category: 'bin' },
+  { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#646cff', category: 'bin' },
+  { id: 'divider-1x1', name: '1x1 Divider', widthUnits: 1, heightUnits: 1, color: '#22c55e', category: 'divider' },
+  { id: 'organizer-1x3', name: '1x3 Organizer', widthUnits: 1, heightUnits: 3, color: '#f59e0b', category: 'organizer' },
+];
 
 describe('ItemLibrary', () => {
   beforeEach(() => {
@@ -9,7 +17,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should render all categories', () => {
-    render(<ItemLibrary />);
+    render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
     expect(screen.getByText('Bins')).toBeInTheDocument();
     expect(screen.getByText('Dividers')).toBeInTheDocument();
@@ -17,7 +25,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should have all categories expanded by default', () => {
-    render(<ItemLibrary />);
+    render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
     const categoryItems = document.querySelectorAll('.category-items');
     categoryItems.forEach(items => {
@@ -27,7 +35,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should have all chevrons pointing down (expanded) by default', () => {
-    render(<ItemLibrary />);
+    render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
     const chevrons = document.querySelectorAll('.category-chevron');
     chevrons.forEach(chevron => {
@@ -37,7 +45,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should collapse category when clicked', () => {
-    render(<ItemLibrary />);
+    render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
     const binsTitle = screen.getByText('Bins');
     fireEvent.click(binsTitle);
@@ -48,7 +56,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should expand category when clicked again', () => {
-    render(<ItemLibrary />);
+    render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
     const binsTitle = screen.getByText('Bins');
 
@@ -64,7 +72,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should rotate chevron when category is collapsed', () => {
-    render(<ItemLibrary />);
+    render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
     const binsTitle = screen.getByText('Bins');
     const chevron = binsTitle.querySelector('.category-chevron');
@@ -78,7 +86,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should handle keyboard interaction (Enter key)', () => {
-    render(<ItemLibrary />);
+    render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
     const binsTitle = screen.getByText('Bins');
     fireEvent.keyDown(binsTitle, { key: 'Enter' });
@@ -88,7 +96,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should handle keyboard interaction (Space key)', () => {
-    render(<ItemLibrary />);
+    render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
     const binsTitle = screen.getByText('Bins');
     fireEvent.keyDown(binsTitle, { key: ' ' });
@@ -98,7 +106,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should collapse categories independently', () => {
-    render(<ItemLibrary />);
+    render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
     const binsTitle = screen.getByText('Bins');
     const dividersTitle = screen.getByText('Dividers');
@@ -113,7 +121,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should save collapsed state to localStorage', () => {
-    render(<ItemLibrary />);
+    render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
     const binsTitle = screen.getByText('Bins');
     fireEvent.click(binsTitle);
@@ -127,7 +135,7 @@ describe('ItemLibrary', () => {
     // Pre-populate localStorage
     localStorage.setItem('gridfinity-collapsed-categories', JSON.stringify(['dividers']));
 
-    render(<ItemLibrary />);
+    render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
     const dividersTitle = screen.getByText('Dividers');
     const dividersItems = dividersTitle.nextElementSibling;
@@ -144,7 +152,7 @@ describe('ItemLibrary', () => {
       throw new Error('Storage error');
     });
 
-    render(<ItemLibrary />);
+    render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
     const binsTitle = screen.getByText('Bins');
     fireEvent.click(binsTitle);
@@ -160,7 +168,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should have correct accessibility attributes', () => {
-    render(<ItemLibrary />);
+    render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
     const binsTitle = screen.getByText('Bins');
 
@@ -169,7 +177,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should maintain state across multiple toggles', () => {
-    render(<ItemLibrary />);
+    render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} />);
 
     const binsTitle = screen.getByText('Bins');
     const dividersTitle = screen.getByText('Dividers');

@@ -1,15 +1,21 @@
 import { useState, useEffect } from 'react';
-import { getItemsByCategory } from '../data/libraryItems';
+import type { LibraryItem } from '../types/gridfinity';
 import { LibraryItemCard } from './LibraryItemCard';
 
 const STORAGE_KEY = 'gridfinity-collapsed-categories';
 
 type CategoryKey = 'bins' | 'dividers' | 'organizers';
 
-export function ItemLibrary() {
-  const bins = getItemsByCategory('bin');
-  const dividers = getItemsByCategory('divider');
-  const organizers = getItemsByCategory('organizer');
+interface ItemLibraryProps {
+  items: LibraryItem[];
+  isLoading: boolean;
+  error: Error | null;
+}
+
+export function ItemLibrary({ items, isLoading, error }: ItemLibraryProps) {
+  const bins = items.filter(item => item.category === 'bin');
+  const dividers = items.filter(item => item.category === 'divider');
+  const organizers = items.filter(item => item.category === 'organizer');
 
   // Load collapsed state from localStorage, default all to expanded (false = expanded)
   const [collapsedCategories, setCollapsedCategories] = useState<Set<CategoryKey>>(() => {
@@ -48,7 +54,7 @@ export function ItemLibrary() {
   const renderCategory = (
     key: CategoryKey,
     title: string,
-    items: ReturnType<typeof getItemsByCategory>
+    categoryItems: LibraryItem[]
   ) => {
     const isCollapsed = collapsedCategories.has(key);
 
@@ -72,13 +78,36 @@ export function ItemLibrary() {
           {title}
         </h4>
         <div className={`category-items ${isCollapsed ? 'collapsed' : 'expanded'}`}>
-          {items.map(item => (
+          {categoryItems.map(item => (
             <LibraryItemCard key={item.id} item={item} />
           ))}
         </div>
       </div>
     );
   };
+
+  if (error) {
+    return (
+      <div className="item-library">
+        <h3 className="item-library-title">Item Library</h3>
+        <div className="library-error">
+          <p>Failed to load library</p>
+          <p className="error-message">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="item-library">
+        <h3 className="item-library-title">Item Library</h3>
+        <div className="library-loading">
+          <p>Loading library...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="item-library">
