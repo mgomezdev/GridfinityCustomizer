@@ -1,12 +1,16 @@
 import { useState } from 'react';
-import type { UnitSystem, ImperialFormat } from './types/gridfinity';
+import type { UnitSystem, ImperialFormat, GridSpacerConfig } from './types/gridfinity';
 import { calculateGrid, mmToInches, inchesToMm } from './utils/conversions';
 import { useGridItems } from './hooks/useGridItems';
+import { useSpacerCalculation } from './hooks/useSpacerCalculation';
+import { useBillOfMaterials } from './hooks/useBillOfMaterials';
 import { DimensionInput } from './components/DimensionInput';
 import { GridPreview } from './components/GridPreview';
 import { GridSummary } from './components/GridSummary';
 import { ItemLibrary } from './components/ItemLibrary';
 import { ItemControls } from './components/ItemControls';
+import { SpacerControls } from './components/SpacerControls';
+import { BillOfMaterials } from './components/BillOfMaterials';
 import './App.css';
 
 function App() {
@@ -14,6 +18,10 @@ function App() {
   const [depth, setDepth] = useState(168);
   const [unitSystem, setUnitSystem] = useState<UnitSystem>('metric');
   const [imperialFormat, setImperialFormat] = useState<ImperialFormat>('decimal');
+  const [spacerConfig, setSpacerConfig] = useState<GridSpacerConfig>({
+    horizontal: 'none',
+    vertical: 'none',
+  });
 
   const handleUnitChange = (newUnit: UnitSystem) => {
     if (newUnit === unitSystem) return;
@@ -31,6 +39,17 @@ function App() {
 
   const gridResult = calculateGrid(width, depth, unitSystem);
 
+  const drawerWidth = unitSystem === 'metric' ? width : inchesToMm(width);
+  const drawerDepth = unitSystem === 'metric' ? depth : inchesToMm(depth);
+
+  const spacers = useSpacerCalculation(
+    unitSystem === 'metric' ? gridResult.gapWidth : inchesToMm(gridResult.gapWidth),
+    unitSystem === 'metric' ? gridResult.gapDepth : inchesToMm(gridResult.gapDepth),
+    spacerConfig,
+    drawerWidth,
+    drawerDepth
+  );
+
   const {
     placedItems,
     selectedItemId,
@@ -39,6 +58,8 @@ function App() {
     selectItem,
     handleDrop,
   } = useGridItems(gridResult.gridX, gridResult.gridY);
+
+  const bomItems = useBillOfMaterials(placedItems);
 
   const handleRotateSelected = () => {
     if (selectedItemId) {
@@ -110,6 +131,11 @@ function App() {
           />
         </div>
 
+        <SpacerControls
+          config={spacerConfig}
+          onConfigChange={setSpacerConfig}
+        />
+
         <GridSummary
           gridX={gridResult.gridX}
           gridY={gridResult.gridY}
@@ -138,9 +164,14 @@ function App() {
             gridY={gridResult.gridY}
             placedItems={placedItems}
             selectedItemId={selectedItemId}
+            spacers={spacers}
             onDrop={handleDrop}
             onSelectItem={selectItem}
           />
+        </section>
+
+        <section className="bom-sidebar">
+          <BillOfMaterials items={bomItems} />
         </section>
       </main>
     </div>

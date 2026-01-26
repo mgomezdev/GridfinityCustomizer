@@ -31,3 +31,36 @@ npm test
 # Build for production
 npm run build
 ```
+
+## Branching Strategy (Gitflow)
+
+| Branch | Purpose |
+|--------|---------|
+| `main` | Production-ready releases |
+| `develop` | Integration branch for features |
+| `feature/*` | New features (branch from `develop`) |
+| `release/*` | Release preparation (branch from `develop`) |
+| `hotfix/*` | Urgent production fixes (branch from `main`) |
+
+### Workflow
+
+```bash
+# Start a new feature
+git checkout develop
+git checkout -b feature/my-feature
+
+# Finish feature (merge to develop)
+git checkout develop
+git merge feature/my-feature
+
+# Create release
+git checkout develop
+git checkout -b release/1.0.0
+
+# Finish release (merge to main and develop)
+git checkout main
+git merge release/1.0.0
+git tag -a v1.0.0 -m "Release 1.0.0"
+git checkout develop
+git merge release/1.0.0
+```
