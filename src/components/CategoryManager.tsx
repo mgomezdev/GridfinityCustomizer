@@ -82,17 +82,25 @@ export function CategoryManager({
   const handleDelete = (id: string) => {
     const itemsUsing = getItemsUsingCategory(id);
 
-    if (itemsUsing.length > 0) {
+    // Check if any items would have no categories left after deletion
+    const itemsWithOnlyThisCategory = itemsUsing.filter(item => item.categories.length === 1);
+
+    if (itemsWithOnlyThisCategory.length > 0) {
       setError(
-        `Cannot delete category. ${itemsUsing.length} items are using it: ${itemsUsing
+        `Cannot delete category. ${itemsWithOnlyThisCategory.length} items would have no categories: ${itemsWithOnlyThisCategory
           .slice(0, 5)
           .map(i => i.name)
-          .join(', ')}${itemsUsing.length > 5 ? ', ...' : ''}`
+          .join(', ')}${itemsWithOnlyThisCategory.length > 5 ? ', ...' : ''}`
       );
       return;
     }
 
-    if (window.confirm(`Are you sure you want to delete the category "${categories.find(c => c.id === id)?.name}"?`)) {
+    const categoryName = categories.find(c => c.id === id)?.name;
+    const warningMessage = itemsUsing.length > 0
+      ? `Are you sure you want to delete the category "${categoryName}"?\n\nThis category will be removed from ${itemsUsing.length} item(s), but they will remain in other categories.`
+      : `Are you sure you want to delete the category "${categoryName}"?`;
+
+    if (window.confirm(warningMessage)) {
       try {
         onDeleteCategory(id);
         setError(null);

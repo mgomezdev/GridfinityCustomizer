@@ -47,7 +47,7 @@ export interface LibraryItem {
   widthUnits: number;
   heightUnits: number;
   color: string;
-  category: string;
+  categories: string[];
 }
 
 export interface PlacedItem {
@@ -76,6 +76,6 @@ export interface BOMItem {
   widthUnits: number;
   heightUnits: number;
   color: string;
-  category: string;
+  categories: string[];
   quantity: number;
 }

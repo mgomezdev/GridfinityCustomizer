@@ -50,8 +50,8 @@ export function useLibraryData(): UseLibraryDataResult {
 
         // Basic validation of items
         for (const item of data.items) {
-          if (!item.id || !item.name || !item.category) {
-            throw new Error(`Invalid item: missing required fields`);
+          if (!item.id || !item.name || !item.categories || item.categories.length === 0) {
+            throw new Error(`Invalid item: missing required fields or empty categories`);
           }
         }
 
@@ -67,8 +67,8 @@ export function useLibraryData(): UseLibraryDataResult {
               // Validate custom items
               if (Array.isArray(customItems)) {
                 for (const item of customItems) {
-                  if (!item.id || !item.name || !item.category) {
-                    throw new Error('Invalid custom item: missing required fields');
+                  if (!item.id || !item.name || !item.categories || item.categories.length === 0) {
+                    throw new Error('Invalid custom item: missing required fields or empty categories');
                   }
                 }
                 setItems(customItems);
@@ -107,7 +107,7 @@ export function useLibraryData(): UseLibraryDataResult {
   }, [items]);
 
   const getItemsByCategory = useCallback((category: string): LibraryItem[] => {
-    return items.filter(item => item.category === category);
+    return items.filter(item => item.categories.includes(category));
   }, [items]);
 
   const saveToLocalStorage = (newItems: LibraryItem[]) => {
@@ -120,9 +120,12 @@ export function useLibraryData(): UseLibraryDataResult {
 
   const addItem = (item: LibraryItem) => {
     // Validate required fields
-    if (!item.id || !item.name || !item.category) {
-      throw new Error('Item must have id, name, and category');
+    if (!item.id || !item.name || !item.categories || item.categories.length === 0) {
+      throw new Error('Item must have id, name, and at least one category');
     }
+
+    // Normalize categories (remove duplicates)
+    item.categories = [...new Set(item.categories)];
 
     // Check for duplicate ID
     if (items.find(existing => existing.id === item.id)) {
@@ -151,9 +154,12 @@ export function useLibraryData(): UseLibraryDataResult {
     const updatedItem = { ...items[itemIndex], ...updates };
 
     // Validate required fields still exist
-    if (!updatedItem.id || !updatedItem.name || !updatedItem.category) {
-      throw new Error('Updated item must have id, name, and category');
+    if (!updatedItem.id || !updatedItem.name || !updatedItem.categories || updatedItem.categories.length === 0) {
+      throw new Error('Updated item must have id, name, and at least one category');
     }
+
+    // Normalize categories (remove duplicates)
+    updatedItem.categories = [...new Set(updatedItem.categories)];
 
     const newItems = [...items];
     newItems[itemIndex] = updatedItem;
@@ -183,11 +189,12 @@ export function useLibraryData(): UseLibraryDataResult {
   };
 
   const updateItemCategories = useCallback((oldCategoryId: string, newCategoryId: string) => {
-    const updatedItems = items.map(item =>
-      item.category === oldCategoryId
-        ? { ...item, category: newCategoryId }
-        : item
-    );
+    const updatedItems = items.map(item => ({
+      ...item,
+      categories: item.categories
+        .filter(id => id !== oldCategoryId)
+        .concat(item.categories.includes(oldCategoryId) ? [newCategoryId] : [])
+    }));
     setItems(updatedItems);
     saveToLocalStorage(updatedItems);
   }, [items]);

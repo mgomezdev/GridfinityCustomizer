@@ -23,20 +23,14 @@ export function useBillOfMaterials(placedItems: PlacedItem[], libraryItems: Libr
           widthUnits: libraryItem.widthUnits,
           heightUnits: libraryItem.heightUnits,
           color: libraryItem.color,
-          category: libraryItem.category,
+          categories: libraryItem.categories,
           quantity,
         });
       }
     });
 
-    // Sort by category, then by name for consistent display
-    return bomItems.sort((a, b) => {
-      if (a.category !== b.category) {
-        // Category order: bin, divider, organizer
-        const categoryOrder = { bin: 0, divider: 1, organizer: 2 };
-        return categoryOrder[a.category] - categoryOrder[b.category];
-      }
-      return a.name.localeCompare(b.name);
-    });
+    // Sort by name only
+    // TODO: Remove category-based sorting entirely - tracked in separate issue
+    return bomItems.sort((a, b) => a.name.localeCompare(b.name));
   }, [placedItems, libraryItems]);
 }

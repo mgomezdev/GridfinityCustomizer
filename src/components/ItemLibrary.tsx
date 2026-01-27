@@ -51,7 +51,7 @@ export function ItemLibrary({
   // Group items by category dynamically
   const itemsByCategory = categories.map(category => ({
     category,
-    items: filteredItems.filter(item => item.category === category.id),
+    items: filteredItems.filter(item => item.categories.includes(category.id)),
   }));
 
   // Sort categories by order

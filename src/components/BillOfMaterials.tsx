@@ -7,10 +7,11 @@ interface BillOfMaterialsProps {
 export function BillOfMaterials({ items }: BillOfMaterialsProps) {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Group items by category
-  const bins = items.filter(item => item.category === 'bin');
-  const dividers = items.filter(item => item.category === 'divider');
-  const organizers = items.filter(item => item.category === 'organizer');
+  // Group items by category (first category only for display)
+  // TODO: Remove category grouping - tracked in separate issue
+  const bins = items.filter(item => item.categories.includes('bin'));
+  const dividers = items.filter(item => item.categories.includes('divider'));
+  const organizers = items.filter(item => item.categories.includes('organizer'));
 
   const renderCategory = (title: string, categoryItems: BOMItem[]) => {
     if (categoryItems.length === 0) return null;

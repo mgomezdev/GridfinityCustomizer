@@ -48,6 +48,21 @@ function App() {
     updateItemCategories,
   } = useLibraryData();
 
+  const handleDeleteCategory = (categoryId: string) => {
+    // First, remove the category from all items that use it
+    libraryItems.forEach(item => {
+      if (item.categories.includes(categoryId)) {
+        const updatedCategories = item.categories.filter(id => id !== categoryId);
+        if (updatedCategories.length > 0) {
+          updateItem(item.id, { categories: updatedCategories });
+        }
+      }
+    });
+
+    // Then delete the category itself
+    deleteCategory(categoryId);
+  };
+
   const handleExportLibrary = () => {
     const libraryData = {
       version: '1.0.0',
@@ -203,7 +218,7 @@ function App() {
             onExportLibrary={handleExportLibrary}
             onAddCategory={addCategory}
             onUpdateCategory={updateCategory}
-            onDeleteCategory={deleteCategory}
+            onDeleteCategory={handleDeleteCategory}
             onResetCategories={resetCategories}
             onUpdateItemCategories={updateItemCategories}
             getCategoryById={getCategoryById}
