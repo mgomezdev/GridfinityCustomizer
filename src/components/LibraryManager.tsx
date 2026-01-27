@@ -1,34 +1,50 @@
 import { useState } from 'react';
-import type { LibraryItem } from '../types/gridfinity';
+import type { LibraryItem, Category } from '../types/gridfinity';
+import { CategoryManager } from './CategoryManager';
 
 interface LibraryManagerProps {
   items: LibraryItem[];
+  categories: Category[];
   onClose: () => void;
   onAddItem: (item: LibraryItem) => void;
   onUpdateItem: (id: string, updates: Partial<LibraryItem>) => void;
   onDeleteItem: (id: string) => void;
   onResetToDefaults: () => void;
+  onAddCategory: (category: Category) => void;
+  onUpdateCategory: (id: string, updates: Partial<Category>) => void;
+  onDeleteCategory: (id: string) => void;
+  onResetCategories: () => void;
+  onUpdateItemCategories: (oldCategoryId: string, newCategoryId: string) => void;
+  getCategoryById: (id: string) => Category | undefined;
 }
 
 type FormMode = 'add' | 'edit' | null;
 
 export function LibraryManager({
   items,
+  categories,
   onClose,
   onAddItem,
   onUpdateItem,
   onDeleteItem,
   onResetToDefaults,
+  onAddCategory,
+  onUpdateCategory,
+  onDeleteCategory,
+  onResetCategories,
+  onUpdateItemCategories,
+  getCategoryById,
 }: LibraryManagerProps) {
   const [formMode, setFormMode] = useState<FormMode>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [formData, setFormData] = useState<Partial<LibraryItem>>({
     id: '',
     name: '',
     widthUnits: 1,
     heightUnits: 1,
     color: '#646cff',
-    category: 'bin',
+    category: categories[0]?.id || 'bin',
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -41,9 +57,24 @@ export function LibraryManager({
       widthUnits: 1,
       heightUnits: 1,
       color: '#646cff',
-      category: 'bin',
+      category: categories[0]?.id || 'bin',
     });
     setError(null);
+  };
+
+  const handleCategoryUpdate = (id: string, updates: Partial<Category>) => {
+    const oldCategory = getCategoryById(id);
+
+    // If name changed, cascade to all items
+    if (oldCategory && updates.id && updates.id !== oldCategory.id) {
+      onUpdateItemCategories(oldCategory.id, updates.id);
+    }
+
+    onUpdateCategory(id, updates);
+  };
+
+  const getItemsUsingCategory = (categoryId: string): LibraryItem[] => {
+    return items.filter(item => item.category === categoryId);
   };
 
   const handleStartEdit = (item: LibraryItem) => {
@@ -112,11 +143,14 @@ export function LibraryManager({
           </div>
         )}
 
-        {formMode === null ? (
+        {formMode === null && !showCategoryManager ? (
           <>
             <div className="library-manager-actions">
               <button className="add-item-button" onClick={handleStartAdd}>
                 + Add New Item
+              </button>
+              <button className="manage-categories-button" onClick={() => setShowCategoryManager(true)}>
+                Manage Categories
               </button>
               <button className="reset-button" onClick={handleReset}>
                 Reset to Defaults
@@ -219,12 +253,14 @@ export function LibraryManager({
               <select
                 id="item-category"
                 value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value as LibraryItem['category'] })}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 required
               >
-                <option value="bin">Bin</option>
-                <option value="divider">Divider</option>
-                <option value="organizer">Organizer</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -257,6 +293,18 @@ export function LibraryManager({
               </button>
             </div>
           </form>
+        )}
+
+        {showCategoryManager && (
+          <CategoryManager
+            categories={categories}
+            onClose={() => setShowCategoryManager(false)}
+            onAddCategory={onAddCategory}
+            onUpdateCategory={handleCategoryUpdate}
+            onDeleteCategory={onDeleteCategory}
+            onResetToDefaults={onResetCategories}
+            getItemsUsingCategory={getItemsUsingCategory}
+          />
         )}
       </div>
     </div>

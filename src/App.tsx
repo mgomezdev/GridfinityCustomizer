@@ -5,6 +5,7 @@ import { useGridItems } from './hooks/useGridItems';
 import { useSpacerCalculation } from './hooks/useSpacerCalculation';
 import { useBillOfMaterials } from './hooks/useBillOfMaterials';
 import { useLibraryData } from './hooks/useLibraryData';
+import { useCategoryData } from './hooks/useCategoryData';
 import { DimensionInput } from './components/DimensionInput';
 import { GridPreview } from './components/GridPreview';
 import { GridSummary } from './components/GridSummary';
@@ -25,6 +26,17 @@ function App() {
   });
 
   const {
+    categories,
+    isLoading: isCategoriesLoading,
+    error: categoriesError,
+    getCategoryById,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+    resetToDefaults: resetCategories,
+  } = useCategoryData();
+
+  const {
     items: libraryItems,
     isLoading: isLibraryLoading,
     error: libraryError,
@@ -33,6 +45,7 @@ function App() {
     updateItem,
     deleteItem: deleteLibraryItem,
     resetToDefaults,
+    updateItemCategories,
   } = useLibraryData();
 
   const handleExportLibrary = () => {
@@ -180,13 +193,20 @@ function App() {
         <section className="sidebar">
           <ItemLibrary
             items={libraryItems}
-            isLoading={isLibraryLoading}
-            error={libraryError}
+            categories={categories}
+            isLoading={isLibraryLoading || isCategoriesLoading}
+            error={libraryError || categoriesError}
             onAddItem={addItem}
             onUpdateItem={updateItem}
             onDeleteItem={deleteLibraryItem}
             onResetToDefaults={resetToDefaults}
             onExportLibrary={handleExportLibrary}
+            onAddCategory={addCategory}
+            onUpdateCategory={updateCategory}
+            onDeleteCategory={deleteCategory}
+            onResetCategories={resetCategories}
+            onUpdateItemCategories={updateItemCategories}
+            getCategoryById={getCategoryById}
           />
 
           {selectedItemId && (
