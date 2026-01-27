@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { GridPreview } from './GridPreview';
-import type { PlacedItemWithValidity } from '../types/gridfinity';
+import type { PlacedItemWithValidity, LibraryItem } from '../types/gridfinity';
 
 // Mock the PlacedItemOverlay component
 vi.mock('./PlacedItemOverlay', () => ({
@@ -22,6 +22,14 @@ vi.mock('./PlacedItemOverlay', () => ({
 }));
 
 describe('GridPreview', () => {
+  const mockGetItemById = (id: string): LibraryItem | undefined => {
+    const items: Record<string, LibraryItem> = {
+      'bin-1x1': { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', category: 'bin' },
+      'bin-2x2': { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#646cff', category: 'bin' },
+    };
+    return items[id];
+  };
+
   const mockOnDrop = vi.fn();
   const mockOnSelectItem = vi.fn();
   let originalGetBoundingClientRect: typeof Element.prototype.getBoundingClientRect;
@@ -57,6 +65,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -72,6 +81,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -87,6 +97,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -102,6 +113,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -119,6 +131,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -135,6 +148,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -151,6 +165,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -167,6 +182,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -183,6 +199,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -201,6 +218,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -222,6 +240,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -238,6 +257,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -260,6 +280,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -281,6 +302,7 @@ describe('GridPreview', () => {
           selectedItemId="item-1"
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -319,6 +341,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -346,6 +369,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -370,6 +394,7 @@ describe('GridPreview', () => {
           selectedItemId="some-item"
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -389,6 +414,7 @@ describe('GridPreview', () => {
           selectedItemId="item-1"
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -409,6 +435,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -426,6 +453,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -442,6 +470,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -456,6 +485,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -473,6 +503,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -490,6 +521,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -508,6 +540,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -532,6 +565,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -556,6 +590,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -573,6 +608,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -592,6 +628,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -607,6 +644,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -621,6 +659,7 @@ describe('GridPreview', () => {
           selectedItemId={null}
           onDrop={mockOnDrop}
           onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
         />
       );
 

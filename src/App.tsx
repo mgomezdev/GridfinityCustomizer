@@ -4,6 +4,8 @@ import { calculateGrid, mmToInches, inchesToMm } from './utils/conversions';
 import { useGridItems } from './hooks/useGridItems';
 import { useSpacerCalculation } from './hooks/useSpacerCalculation';
 import { useBillOfMaterials } from './hooks/useBillOfMaterials';
+import { useLibraryData } from './hooks/useLibraryData';
+import { useCategoryData } from './hooks/useCategoryData';
 import { DimensionInput } from './components/DimensionInput';
 import { GridPreview } from './components/GridPreview';
 import { GridSummary } from './components/GridSummary';
@@ -22,6 +24,47 @@ function App() {
     horizontal: 'none',
     vertical: 'none',
   });
+
+  const {
+    categories,
+    isLoading: isCategoriesLoading,
+    error: categoriesError,
+    getCategoryById,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+    resetToDefaults: resetCategories,
+  } = useCategoryData();
+
+  const {
+    items: libraryItems,
+    isLoading: isLibraryLoading,
+    error: libraryError,
+    getItemById,
+    addItem,
+    updateItem,
+    deleteItem: deleteLibraryItem,
+    resetToDefaults,
+    updateItemCategories,
+  } = useLibraryData();
+
+  const handleExportLibrary = () => {
+    const libraryData = {
+      version: '1.0.0',
+      items: libraryItems,
+    };
+
+    const jsonString = JSON.stringify(libraryData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `gridfinity-library-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   const handleUnitChange = (newUnit: UnitSystem) => {
     if (newUnit === unitSystem) return;
@@ -57,9 +100,9 @@ function App() {
     deleteItem,
     selectItem,
     handleDrop,
-  } = useGridItems(gridResult.gridX, gridResult.gridY);
+  } = useGridItems(gridResult.gridX, gridResult.gridY, getItemById);
 
-  const bomItems = useBillOfMaterials(placedItems);
+  const bomItems = useBillOfMaterials(placedItems, libraryItems);
 
   const handleRotateSelected = () => {
     if (selectedItemId) {
@@ -148,7 +191,23 @@ function App() {
 
       <main className="app-main">
         <section className="sidebar">
-          <ItemLibrary />
+          <ItemLibrary
+            items={libraryItems}
+            categories={categories}
+            isLoading={isLibraryLoading || isCategoriesLoading}
+            error={libraryError || categoriesError}
+            onAddItem={addItem}
+            onUpdateItem={updateItem}
+            onDeleteItem={deleteLibraryItem}
+            onResetToDefaults={resetToDefaults}
+            onExportLibrary={handleExportLibrary}
+            onAddCategory={addCategory}
+            onUpdateCategory={updateCategory}
+            onDeleteCategory={deleteCategory}
+            onResetCategories={resetCategories}
+            onUpdateItemCategories={updateItemCategories}
+            getCategoryById={getCategoryById}
+          />
 
           {selectedItemId && (
             <ItemControls
@@ -167,6 +226,7 @@ function App() {
             spacers={spacers}
             onDrop={handleDrop}
             onSelectItem={selectItem}
+            getItemById={getItemById}
           />
         </section>
 

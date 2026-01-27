@@ -1,6 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import type { PlacedItem, PlacedItemWithValidity, DragData } from '../types/gridfinity';
-import { getItemById } from '../data/libraryItems';
+import type { PlacedItem, PlacedItemWithValidity, DragData, LibraryItem } from '../types/gridfinity';
 
 function hasCollision(
   items: PlacedItem[],
@@ -41,7 +40,11 @@ function generateInstanceId(): string {
   return `item-${++instanceCounter}-${Date.now()}`;
 }
 
-export function useGridItems(gridX: number, gridY: number) {
+export function useGridItems(
+  gridX: number,
+  gridY: number,
+  getItemById: (id: string) => LibraryItem | undefined
+) {
   const [placedItems, setPlacedItems] = useState<PlacedItem[]>([]);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
@@ -69,7 +72,7 @@ export function useGridItems(gridX: number, gridY: number) {
 
     setPlacedItems(prev => [...prev, newItem]);
     setSelectedItemId(newItem.instanceId);
-  }, []);
+  }, [getItemById]);
 
   const moveItem = useCallback((instanceId: string, newX: number, newY: number) => {
     setPlacedItems(prev => prev.map(item =>

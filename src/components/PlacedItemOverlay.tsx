@@ -1,5 +1,4 @@
-import type { PlacedItemWithValidity, DragData } from '../types/gridfinity';
-import { getItemById } from '../data/libraryItems';
+import type { PlacedItemWithValidity, DragData, LibraryItem } from '../types/gridfinity';
 
 interface PlacedItemOverlayProps {
   item: PlacedItemWithValidity;
@@ -7,9 +6,10 @@ interface PlacedItemOverlayProps {
   gridY: number;
   isSelected: boolean;
   onSelect: (instanceId: string) => void;
+  getItemById: (id: string) => LibraryItem | undefined;
 }
 
-export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect }: PlacedItemOverlayProps) {
+export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, getItemById }: PlacedItemOverlayProps) {
   const libraryItem = getItemById(item.itemId);
   const color = item.isValid ? (libraryItem?.color || '#646cff') : '#ef4444';
 
