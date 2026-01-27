@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import type { PlacedItemWithValidity, DragData, ComputedSpacer } from '../types/gridfinity';
+import type { PlacedItemWithValidity, DragData, ComputedSpacer, LibraryItem } from '../types/gridfinity';
 import { PlacedItemOverlay } from './PlacedItemOverlay';
 import { SpacerOverlay } from './SpacerOverlay';
 
@@ -11,6 +11,7 @@ interface GridPreviewProps {
   spacers?: ComputedSpacer[];
   onDrop: (dragData: DragData, x: number, y: number) => void;
   onSelectItem: (instanceId: string | null) => void;
+  getItemById: (id: string) => LibraryItem | undefined;
 }
 
 export function GridPreview({
@@ -21,6 +22,7 @@ export function GridPreview({
   spacers = [],
   onDrop,
   onSelectItem,
+  getItemById,
 }: GridPreviewProps) {
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -130,6 +132,7 @@ export function GridPreview({
               gridY={gridY}
               isSelected={item.instanceId === selectedItemId}
               onSelect={onSelectItem}
+              getItemById={getItemById}
             />
           ))}
         </div>

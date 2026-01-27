@@ -1,45 +1,35 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useGridItems } from './useGridItems';
 import type { LibraryItem } from '../types/gridfinity';
-import * as libraryItemsModule from '../data/libraryItems';
-
-// Mock the libraryItems module
-vi.mock('../data/libraryItems', () => ({
-  getItemById: vi.fn(),
-}));
 
 describe('useGridItems', () => {
-  const mockGetItemById = libraryItemsModule.getItemById as ReturnType<typeof vi.fn>;
+  // Mock library items
+  const mockLibraryItems: Record<string, LibraryItem> = {
+    'bin-1x1': { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', category: 'bin' },
+    'bin-2x2': { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#646cff', category: 'bin' },
+    'bin-1x2': { id: 'bin-1x2', name: '1x2 Bin', widthUnits: 1, heightUnits: 2, color: '#646cff', category: 'bin' },
+  };
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    // Default mock implementation
-    mockGetItemById.mockImplementation((id: string) => {
-      const items: Record<string, LibraryItem> = {
-        'bin-1x1': { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', category: 'bin' },
-        'bin-2x2': { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#646cff', category: 'bin' },
-        'bin-1x2': { id: 'bin-1x2', name: '1x2 Bin', widthUnits: 1, heightUnits: 2, color: '#646cff', category: 'bin' },
-      };
-      return items[id];
-    });
-  });
+  const mockGetItemById = (id: string): LibraryItem | undefined => {
+    return mockLibraryItems[id];
+  };
 
   describe('Initial State', () => {
     it('should initialize with empty placed items', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
       expect(result.current.placedItems).toEqual([]);
     });
 
     it('should initialize with no selected item', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
       expect(result.current.selectedItemId).toBeNull();
     });
   });
 
   describe('addItem', () => {
     it('should add a valid item at the specified position', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-1x1', 0, 0);
@@ -58,7 +48,7 @@ describe('useGridItems', () => {
     });
 
     it('should generate unique instance IDs for each item', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-1x1', 0, 0);
@@ -70,7 +60,7 @@ describe('useGridItems', () => {
     });
 
     it('should select the newly added item', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-1x1', 0, 0);
@@ -80,7 +70,7 @@ describe('useGridItems', () => {
     });
 
     it('should not add an item if the itemId is invalid', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('invalid-item', 0, 0);
@@ -90,7 +80,7 @@ describe('useGridItems', () => {
     });
 
     it('should add item with correct dimensions from library', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-2x2', 0, 0);
@@ -105,7 +95,7 @@ describe('useGridItems', () => {
 
   describe('moveItem', () => {
     it('should move an item to a new position', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-1x1', 0, 0);
@@ -124,7 +114,7 @@ describe('useGridItems', () => {
     });
 
     it('should not affect other items when moving one item', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-1x1', 0, 0);
@@ -148,7 +138,7 @@ describe('useGridItems', () => {
 
   describe('rotateItem', () => {
     it('should swap width and height when rotating', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-1x2', 0, 0);
@@ -168,7 +158,7 @@ describe('useGridItems', () => {
     });
 
     it('should toggle isRotated flag', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-1x2', 0, 0);
@@ -188,7 +178,7 @@ describe('useGridItems', () => {
     });
 
     it('should restore original dimensions after double rotation', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-1x2', 0, 0);
@@ -211,7 +201,7 @@ describe('useGridItems', () => {
 
   describe('deleteItem', () => {
     it('should remove the specified item', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-1x1', 0, 0);
@@ -227,7 +217,7 @@ describe('useGridItems', () => {
     });
 
     it('should clear selection if deleted item was selected', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-1x1', 0, 0);
@@ -244,7 +234,7 @@ describe('useGridItems', () => {
     });
 
     it('should not affect other items when deleting one', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-1x1', 0, 0);
@@ -265,7 +255,7 @@ describe('useGridItems', () => {
 
   describe('selectItem', () => {
     it('should select an item by instance ID', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-1x1', 0, 0);
@@ -281,7 +271,7 @@ describe('useGridItems', () => {
     });
 
     it('should deselect when null is passed', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-1x1', 0, 0);
@@ -300,7 +290,7 @@ describe('useGridItems', () => {
 
   describe('handleDrop', () => {
     it('should add a library item when drag type is library', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.handleDrop({ type: 'library', itemId: 'bin-1x1' }, 1, 1);
@@ -315,7 +305,7 @@ describe('useGridItems', () => {
     });
 
     it('should move a placed item when drag type is placed', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-1x1', 0, 0);
@@ -337,7 +327,7 @@ describe('useGridItems', () => {
 
   describe('Collision Detection', () => {
     it('should mark overlapping items as invalid', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-2x2', 0, 0);
@@ -349,7 +339,7 @@ describe('useGridItems', () => {
     });
 
     it('should mark non-overlapping items as valid', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-1x1', 0, 0);
@@ -361,7 +351,7 @@ describe('useGridItems', () => {
     });
 
     it('should detect collision with adjacent touching items as valid', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-1x1', 0, 0);
@@ -375,7 +365,7 @@ describe('useGridItems', () => {
 
   describe('Out of Bounds Detection', () => {
     it('should mark item as invalid when positioned outside grid', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-2x2', 0, 0);
@@ -391,7 +381,7 @@ describe('useGridItems', () => {
     });
 
     it('should mark item as valid at the maximum valid position', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-2x2', 2, 2);
@@ -401,7 +391,7 @@ describe('useGridItems', () => {
     });
 
     it('should mark item as valid at position (0, 0)', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-1x1', 0, 0);
@@ -411,7 +401,7 @@ describe('useGridItems', () => {
     });
 
     it('should mark item as invalid after rotation causes out of bounds', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-1x2', 3, 2);
@@ -431,7 +421,7 @@ describe('useGridItems', () => {
   describe('Grid Dimension Changes', () => {
     it('should revalidate items when grid dimensions change', () => {
       const { result, rerender } = renderHook(
-        ({ gridX, gridY }) => useGridItems(gridX, gridY),
+        ({ gridX, gridY }) => useGridItems(gridX, gridY, mockGetItemById),
         { initialProps: { gridX: 4, gridY: 4 } }
       );
 
@@ -448,7 +438,7 @@ describe('useGridItems', () => {
 
     it('should mark all items as valid when grid expands', () => {
       const { result, rerender } = renderHook(
-        ({ gridX, gridY }) => useGridItems(gridX, gridY),
+        ({ gridX, gridY }) => useGridItems(gridX, gridY, mockGetItemById),
         { initialProps: { gridX: 3, gridY: 3 } }
       );
 
@@ -466,7 +456,7 @@ describe('useGridItems', () => {
 
   describe('Edge Cases', () => {
     it('should handle zero-dimension grid', () => {
-      const { result } = renderHook(() => useGridItems(0, 0));
+      const { result } = renderHook(() => useGridItems(0, 0, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-1x1', 0, 0);
@@ -476,7 +466,7 @@ describe('useGridItems', () => {
     });
 
     it('should handle negative coordinates', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-1x1', 0, 0);
@@ -492,7 +482,7 @@ describe('useGridItems', () => {
     });
 
     it('should handle multiple items in the same scenario', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.addItem('bin-1x1', 0, 0);
