@@ -1,10 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { renderHook, act } from '@testing-library/react';
 import { GridPreview } from './GridPreview';
 import { useGridItems } from '../hooks/useGridItems';
 import type { LibraryItem } from '../types/gridfinity';
-import * as libraryItemsModule from '../data/libraryItems';
 
 // Mock the PlacedItemOverlay to simplify testing
 vi.mock('./PlacedItemOverlay', () => ({
@@ -35,29 +34,22 @@ vi.mock('./PlacedItemOverlay', () => ({
   ),
 }));
 
-vi.mock('../data/libraryItems', () => ({
-  getItemById: vi.fn(),
-}));
-
 describe('Bin Placement Integration Tests', () => {
-  const mockGetItemById = libraryItemsModule.getItemById as ReturnType<typeof vi.fn>;
+  // Mock library items
+  const mockLibraryItems: Record<string, LibraryItem> = {
+    'bin-1x1': { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', category: 'bin' },
+    'bin-2x2': { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#646cff', category: 'bin' },
+    'bin-1x2': { id: 'bin-1x2', name: '1x2 Bin', widthUnits: 1, heightUnits: 2, color: '#646cff', category: 'bin' },
+    'bin-3x2': { id: 'bin-3x2', name: '3x2 Bin', widthUnits: 3, heightUnits: 2, color: '#646cff', category: 'bin' },
+  };
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockGetItemById.mockImplementation((id: string) => {
-      const items: Record<string, LibraryItem> = {
-        'bin-1x1': { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', category: 'bin' },
-        'bin-2x2': { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#646cff', category: 'bin' },
-        'bin-1x2': { id: 'bin-1x2', name: '1x2 Bin', widthUnits: 1, heightUnits: 2, color: '#646cff', category: 'bin' },
-        'bin-3x2': { id: 'bin-3x2', name: '3x2 Bin', widthUnits: 3, heightUnits: 2, color: '#646cff', category: 'bin' },
-      };
-      return items[id];
-    });
-  });
+  const mockGetItemById = (id: string): LibraryItem | undefined => {
+    return mockLibraryItems[id];
+  };
 
   describe('Single Bin Placement', () => {
     it('should place a bin at the origin (0, 0)', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.handleDrop({ type: 'library', itemId: 'bin-1x1' }, 0, 0);
@@ -74,7 +66,7 @@ describe('Bin Placement Integration Tests', () => {
     });
 
     it('should place a bin at the maximum valid position', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.handleDrop({ type: 'library', itemId: 'bin-1x1' }, 3, 3);
@@ -88,7 +80,7 @@ describe('Bin Placement Integration Tests', () => {
     });
 
     it('should place a 2x2 bin at the edge correctly', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.handleDrop({ type: 'library', itemId: 'bin-2x2' }, 2, 2);
@@ -104,7 +96,7 @@ describe('Bin Placement Integration Tests', () => {
     });
 
     it('should mark bin as invalid when placed out of bounds', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.handleDrop({ type: 'library', itemId: 'bin-2x2' }, 3, 3);
@@ -120,7 +112,7 @@ describe('Bin Placement Integration Tests', () => {
 
   describe('Multiple Bin Placement', () => {
     it('should place multiple non-overlapping bins', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.handleDrop({ type: 'library', itemId: 'bin-1x1' }, 0, 0);
@@ -133,7 +125,7 @@ describe('Bin Placement Integration Tests', () => {
     });
 
     it('should detect collision between overlapping bins', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.handleDrop({ type: 'library', itemId: 'bin-2x2' }, 0, 0);
@@ -145,7 +137,7 @@ describe('Bin Placement Integration Tests', () => {
     });
 
     it('should allow adjacent bins without collision', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.handleDrop({ type: 'library', itemId: 'bin-2x2' }, 0, 0);
@@ -156,7 +148,7 @@ describe('Bin Placement Integration Tests', () => {
     });
 
     it('should fill a 4x4 grid completely with 1x1 bins', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         for (let y = 0; y < 4; y++) {
@@ -171,7 +163,7 @@ describe('Bin Placement Integration Tests', () => {
     });
 
     it('should fill a 4x4 grid with four 2x2 bins', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.handleDrop({ type: 'library', itemId: 'bin-2x2' }, 0, 0);
@@ -187,7 +179,7 @@ describe('Bin Placement Integration Tests', () => {
 
   describe('Bin Movement', () => {
     it('should move a bin to a valid position', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.handleDrop({ type: 'library', itemId: 'bin-1x1' }, 0, 0);
@@ -207,7 +199,7 @@ describe('Bin Placement Integration Tests', () => {
     });
 
     it('should detect collision when moving bin into another bin', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.handleDrop({ type: 'library', itemId: 'bin-2x2' }, 0, 0);
@@ -228,7 +220,7 @@ describe('Bin Placement Integration Tests', () => {
     });
 
     it('should move bin out of bounds and mark as invalid', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.handleDrop({ type: 'library', itemId: 'bin-2x2' }, 0, 0);
@@ -246,7 +238,7 @@ describe('Bin Placement Integration Tests', () => {
 
   describe('Bin Rotation', () => {
     it('should rotate a bin and maintain valid position', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.handleDrop({ type: 'library', itemId: 'bin-1x2' }, 0, 0);
@@ -272,7 +264,7 @@ describe('Bin Placement Integration Tests', () => {
     });
 
     it('should mark bin as invalid after rotation causes out of bounds', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.handleDrop({ type: 'library', itemId: 'bin-3x2' }, 2, 2);
@@ -298,7 +290,7 @@ describe('Bin Placement Integration Tests', () => {
     });
 
     it('should detect collision after rotation', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.handleDrop({ type: 'library', itemId: 'bin-1x2' }, 0, 0);
@@ -323,7 +315,7 @@ describe('Bin Placement Integration Tests', () => {
 
   describe('Boundary Conditions', () => {
     it('should handle bins at all four corners of the grid', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.handleDrop({ type: 'library', itemId: 'bin-1x1' }, 0, 0); // Top-left
@@ -337,7 +329,7 @@ describe('Bin Placement Integration Tests', () => {
     });
 
     it('should handle large bins at each corner', () => {
-      const { result } = renderHook(() => useGridItems(6, 6));
+      const { result } = renderHook(() => useGridItems(6, 6, mockGetItemById));
 
       act(() => {
         result.current.handleDrop({ type: 'library', itemId: 'bin-2x2' }, 0, 0);
@@ -351,7 +343,7 @@ describe('Bin Placement Integration Tests', () => {
     });
 
     it('should handle a bin exactly spanning the entire grid', () => {
-      const { result } = renderHook(() => useGridItems(2, 2));
+      const { result } = renderHook(() => useGridItems(2, 2, mockGetItemById));
 
       act(() => {
         result.current.handleDrop({ type: 'library', itemId: 'bin-2x2' }, 0, 0);
@@ -370,7 +362,7 @@ describe('Bin Placement Integration Tests', () => {
   describe('Grid Dimension Changes', () => {
     it('should invalidate bins when grid shrinks', () => {
       const { result, rerender } = renderHook(
-        ({ gridX, gridY }) => useGridItems(gridX, gridY),
+        ({ gridX, gridY }) => useGridItems(gridX, gridY, mockGetItemById),
         { initialProps: { gridX: 5, gridY: 5 } }
       );
 
@@ -387,7 +379,7 @@ describe('Bin Placement Integration Tests', () => {
 
     it('should validate bins when grid expands', () => {
       const { result, rerender } = renderHook(
-        ({ gridX, gridY }) => useGridItems(gridX, gridY),
+        ({ gridX, gridY }) => useGridItems(gridX, gridY, mockGetItemById),
         { initialProps: { gridX: 3, gridY: 3 } }
       );
 
@@ -404,7 +396,7 @@ describe('Bin Placement Integration Tests', () => {
 
     it('should handle grid changing from square to rectangular', () => {
       const { result, rerender } = renderHook(
-        ({ gridX, gridY }) => useGridItems(gridX, gridY),
+        ({ gridX, gridY }) => useGridItems(gridX, gridY, mockGetItemById),
         { initialProps: { gridX: 4, gridY: 4 } }
       );
 
@@ -422,7 +414,7 @@ describe('Bin Placement Integration Tests', () => {
 
   describe('Complex Layout Scenarios', () => {
     it('should handle a checkerboard pattern', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         for (let y = 0; y < 4; y++) {
@@ -439,7 +431,7 @@ describe('Bin Placement Integration Tests', () => {
     });
 
     it('should handle mixed bin sizes in a valid layout', () => {
-      const { result } = renderHook(() => useGridItems(6, 6));
+      const { result } = renderHook(() => useGridItems(6, 6, mockGetItemById));
 
       act(() => {
         result.current.handleDrop({ type: 'library', itemId: 'bin-2x2' }, 0, 0);
@@ -453,7 +445,7 @@ describe('Bin Placement Integration Tests', () => {
     });
 
     it('should handle mixed bin sizes with collisions', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.handleDrop({ type: 'library', itemId: 'bin-2x2' }, 0, 0);
@@ -471,7 +463,7 @@ describe('Bin Placement Integration Tests', () => {
 
   describe('UI Integration with GridPreview', () => {
     it('should render bins with correct positioning styles', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.handleDrop({ type: 'library', itemId: 'bin-2x2' }, 1, 1);
@@ -498,7 +490,7 @@ describe('Bin Placement Integration Tests', () => {
     });
 
     it('should render multiple bins with correct relative positions', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.handleDrop({ type: 'library', itemId: 'bin-1x1' }, 0, 0);
@@ -527,7 +519,7 @@ describe('Bin Placement Integration Tests', () => {
     });
 
     it('should display validity state correctly in UI', () => {
-      const { result } = renderHook(() => useGridItems(4, 4));
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
         result.current.handleDrop({ type: 'library', itemId: 'bin-2x2' }, 0, 0);
@@ -556,7 +548,7 @@ describe('Bin Placement Integration Tests', () => {
 
   describe('Performance and Stress Tests', () => {
     it('should handle placing many bins efficiently', () => {
-      const { result } = renderHook(() => useGridItems(10, 10));
+      const { result } = renderHook(() => useGridItems(10, 10, mockGetItemById));
 
       act(() => {
         for (let i = 0; i < 50; i++) {
@@ -570,7 +562,7 @@ describe('Bin Placement Integration Tests', () => {
     });
 
     it('should validate all items correctly in large grid', () => {
-      const { result } = renderHook(() => useGridItems(10, 10));
+      const { result } = renderHook(() => useGridItems(10, 10, mockGetItemById));
 
       act(() => {
         for (let y = 0; y < 10; y++) {

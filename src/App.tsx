@@ -28,6 +28,7 @@ function App() {
     items: libraryItems,
     isLoading: isLibraryLoading,
     error: libraryError,
+    getItemById,
     addItem,
     updateItem,
     deleteItem: deleteLibraryItem,
@@ -68,7 +69,7 @@ function App() {
     deleteItem,
     selectItem,
     handleDrop,
-  } = useGridItems(gridResult.gridX, gridResult.gridY);
+  } = useGridItems(gridResult.gridX, gridResult.gridY, getItemById);
 
   const bomItems = useBillOfMaterials(placedItems, libraryItems);
 
@@ -186,6 +187,7 @@ function App() {
             spacers={spacers}
             onDrop={handleDrop}
             onSelectItem={selectItem}
+            getItemById={getItemById}
           />
         </section>
 

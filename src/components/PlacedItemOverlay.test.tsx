@@ -1,16 +1,17 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { PlacedItemOverlay } from './PlacedItemOverlay';
-import type { PlacedItemWithValidity } from '../types/gridfinity';
-import * as libraryItemsModule from '../data/libraryItems';
-
-// Mock the libraryItems module
-vi.mock('../data/libraryItems', () => ({
-  getItemById: vi.fn(),
-}));
+import type { PlacedItemWithValidity, LibraryItem } from '../types/gridfinity';
 
 describe('PlacedItemOverlay', () => {
-  const mockGetItemById = libraryItemsModule.getItemById as ReturnType<typeof vi.fn>;
+  const mockGetItemById = (id: string): LibraryItem | undefined => {
+    const items: Record<string, LibraryItem> = {
+      'bin-1x1': { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', category: 'bin' },
+      'bin-2x2': { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#646cff', category: 'bin' },
+    };
+    return items[id];
+  };
+
   const mockOnSelect = vi.fn();
 
   const createMockItem = (overrides?: Partial<PlacedItemWithValidity>): PlacedItemWithValidity => ({
@@ -25,18 +26,6 @@ describe('PlacedItemOverlay', () => {
     ...overrides,
   });
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockGetItemById.mockReturnValue({
-      id: 'bin-1x1',
-      name: '1x1 Bin',
-      widthUnits: 1,
-      heightUnits: 1,
-      color: '#646cff',
-      category: 'bin',
-    });
-  });
-
   describe('Percentage-based Positioning', () => {
     it('should calculate left position as percentage of gridX', () => {
       const item = createMockItem({ x: 1, width: 1 });
@@ -47,6 +36,7 @@ describe('PlacedItemOverlay', () => {
           gridY={4}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -63,6 +53,7 @@ describe('PlacedItemOverlay', () => {
           gridY={4}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -79,6 +70,7 @@ describe('PlacedItemOverlay', () => {
           gridY={4}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -95,6 +87,7 @@ describe('PlacedItemOverlay', () => {
           gridY={4}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -111,6 +104,7 @@ describe('PlacedItemOverlay', () => {
           gridY={4}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -127,6 +121,7 @@ describe('PlacedItemOverlay', () => {
           gridY={3}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -148,6 +143,7 @@ describe('PlacedItemOverlay', () => {
           gridY={5}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -169,6 +165,7 @@ describe('PlacedItemOverlay', () => {
           gridY={4}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -192,6 +189,7 @@ describe('PlacedItemOverlay', () => {
           gridY={4}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -212,6 +210,7 @@ describe('PlacedItemOverlay', () => {
           gridY={4}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -224,13 +223,13 @@ describe('PlacedItemOverlay', () => {
     });
 
     it('should use library item color for valid items', () => {
-      mockGetItemById.mockReturnValue({
+      const customGetItemById = () => ({
         id: 'custom-item',
         name: 'Custom',
         widthUnits: 1,
         heightUnits: 1,
         color: '#22c55e',
-        category: 'divider',
+        category: 'divider' as const,
       });
 
       const item = createMockItem({ isValid: true });
@@ -241,6 +240,7 @@ describe('PlacedItemOverlay', () => {
           gridY={4}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={customGetItemById}
         />
       );
 
@@ -252,7 +252,7 @@ describe('PlacedItemOverlay', () => {
     });
 
     it('should use default color if library item not found', () => {
-      mockGetItemById.mockReturnValue(undefined);
+      const emptyGetItemById = () => undefined;
 
       const item = createMockItem({ isValid: true });
       const { container } = render(
@@ -262,6 +262,7 @@ describe('PlacedItemOverlay', () => {
           gridY={4}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={emptyGetItemById}
         />
       );
 
@@ -283,6 +284,7 @@ describe('PlacedItemOverlay', () => {
           gridY={4}
           isSelected={true}
           onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -299,6 +301,7 @@ describe('PlacedItemOverlay', () => {
           gridY={4}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -317,6 +320,7 @@ describe('PlacedItemOverlay', () => {
           gridY={4}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -338,6 +342,7 @@ describe('PlacedItemOverlay', () => {
             gridY={4}
             isSelected={false}
             onSelect={mockOnSelect}
+            getItemById={mockGetItemById}
           />
         </div>
       );
@@ -360,6 +365,7 @@ describe('PlacedItemOverlay', () => {
           gridY={4}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -376,6 +382,7 @@ describe('PlacedItemOverlay', () => {
           gridY={4}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -409,6 +416,7 @@ describe('PlacedItemOverlay', () => {
           gridY={4}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -416,7 +424,7 @@ describe('PlacedItemOverlay', () => {
     });
 
     it('should handle missing library item gracefully', () => {
-      mockGetItemById.mockReturnValue(undefined);
+      const emptyGetItemById = () => undefined;
       const item = createMockItem();
       const { container } = render(
         <PlacedItemOverlay
@@ -425,6 +433,7 @@ describe('PlacedItemOverlay', () => {
           gridY={4}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={emptyGetItemById}
         />
       );
 
@@ -434,13 +443,13 @@ describe('PlacedItemOverlay', () => {
     });
 
     it('should display custom item name', () => {
-      mockGetItemById.mockReturnValue({
+      const customGetItemById = () => ({
         id: 'organizer-2x3',
         name: '2x3 Organizer',
         widthUnits: 2,
         heightUnits: 3,
         color: '#f59e0b',
-        category: 'organizer',
+        category: 'organizer' as const,
       });
 
       const item = createMockItem();
@@ -451,6 +460,7 @@ describe('PlacedItemOverlay', () => {
           gridY={4}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={customGetItemById}
         />
       );
 
@@ -468,6 +478,7 @@ describe('PlacedItemOverlay', () => {
           gridY={0}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -485,6 +496,7 @@ describe('PlacedItemOverlay', () => {
           gridY={10}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -504,6 +516,7 @@ describe('PlacedItemOverlay', () => {
           gridY={4}
           isSelected={true}
           onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -527,6 +540,7 @@ describe('PlacedItemOverlay', () => {
           gridY={4}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -548,6 +562,7 @@ describe('PlacedItemOverlay', () => {
           gridY={4}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -566,6 +581,7 @@ describe('PlacedItemOverlay', () => {
           gridY={3}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -588,6 +604,7 @@ describe('PlacedItemOverlay', () => {
           gridY={100}
           isSelected={false}
           onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
         />
       );
 
