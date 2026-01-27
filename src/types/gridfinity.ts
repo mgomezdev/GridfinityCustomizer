@@ -34,13 +34,20 @@ export interface GridResult {
   spacers?: ComputedSpacer[];
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  color?: string;
+  order?: number;
+}
+
 export interface LibraryItem {
   id: string;
   name: string;
   widthUnits: number;
   heightUnits: number;
   color: string;
-  category: 'bin' | 'divider' | 'organizer';
+  category: string;
 }
 
 export interface PlacedItem {
@@ -69,6 +76,6 @@ export interface BOMItem {
   widthUnits: number;
   heightUnits: number;
   color: string;
-  category: 'bin' | 'divider' | 'organizer';
+  category: string;
   quantity: number;
 }

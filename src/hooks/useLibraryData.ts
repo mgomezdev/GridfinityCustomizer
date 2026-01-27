@@ -11,11 +11,12 @@ interface UseLibraryDataResult {
   isLoading: boolean;
   error: Error | null;
   getItemById: (id: string) => LibraryItem | undefined;
-  getItemsByCategory: (category: LibraryItem['category']) => LibraryItem[];
+  getItemsByCategory: (category: string) => LibraryItem[];
   addItem: (item: LibraryItem) => void;
   updateItem: (id: string, updates: Partial<LibraryItem>) => void;
   deleteItem: (id: string) => void;
   resetToDefaults: () => void;
+  updateItemCategories: (oldCategoryId: string, newCategoryId: string) => void;
 }
 
 const STORAGE_KEY = 'gridfinity-library-custom';
@@ -105,7 +106,7 @@ export function useLibraryData(): UseLibraryDataResult {
     return items.find(item => item.id === id);
   }, [items]);
 
-  const getItemsByCategory = useCallback((category: LibraryItem['category']): LibraryItem[] => {
+  const getItemsByCategory = useCallback((category: string): LibraryItem[] => {
     return items.filter(item => item.category === category);
   }, [items]);
 
@@ -181,6 +182,16 @@ export function useLibraryData(): UseLibraryDataResult {
     }
   };
 
+  const updateItemCategories = useCallback((oldCategoryId: string, newCategoryId: string) => {
+    const updatedItems = items.map(item =>
+      item.category === oldCategoryId
+        ? { ...item, category: newCategoryId }
+        : item
+    );
+    setItems(updatedItems);
+    saveToLocalStorage(updatedItems);
+  }, [items]);
+
   return {
     items,
     isLoading,
@@ -191,5 +202,6 @@ export function useLibraryData(): UseLibraryDataResult {
     updateItem,
     deleteItem,
     resetToDefaults,
+    updateItemCategories,
   };
 }
