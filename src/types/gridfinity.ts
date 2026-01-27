@@ -48,6 +48,7 @@ export interface LibraryItem {
   heightUnits: number;
   color: string;
   categories: string[];
+  imageUrl?: string;
 }
 
 export interface PlacedItem {
