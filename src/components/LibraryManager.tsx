@@ -45,6 +45,7 @@ export function LibraryManager({
     heightUnits: 1,
     color: '#646cff',
     categories: categories[0]?.id ? [categories[0].id] : ['bin'],
+    imageUrl: '',
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -58,6 +59,7 @@ export function LibraryManager({
       heightUnits: 1,
       color: '#646cff',
       categories: categories[0]?.id ? [categories[0].id] : ['bin'],
+      imageUrl: '',
     });
     setError(null);
   };
@@ -180,6 +182,7 @@ export function LibraryManager({
                       <div className="item-name">{item.name}</div>
                       <div className="item-meta">
                         {item.widthUnits}×{item.heightUnits} units • {item.categories.join(', ')}
+                        {item.imageUrl && ' • Has image'}
                       </div>
                       <div className="item-id">ID: {item.id}</div>
                     </div>
@@ -300,6 +303,21 @@ export function LibraryManager({
                   pattern="^#[0-9A-Fa-f]{6}$"
                 />
               </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="item-image-url">Image URL (Optional)</label>
+              <input
+                id="item-image-url"
+                type="text"
+                value={formData.imageUrl || ''}
+                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                placeholder="e.g., /icons/bin.png or https://example.com/icon.png"
+              />
+              <small>
+                Provide a URL to display an image icon instead of the colored grid preview.
+                Supports PNG, JPG, SVG, and WebP formats. Leave empty to use the grid preview.
+              </small>
             </div>
 
             <div className="form-actions">

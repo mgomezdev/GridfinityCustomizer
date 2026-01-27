@@ -933,6 +933,37 @@
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
+/* Library Item Image Support */
+.library-item-preview-container {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.25rem;
+  position: relative;
+}
+
+.library-item-image {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.02);
+  position: absolute;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.library-item-image.visible {
+  opacity: 1;
+}
+
+.library-item-image.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .library-item-info {
   display: flex;
   flex-direction: column;
