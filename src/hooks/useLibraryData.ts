@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { LibraryItem } from '../types/gridfinity';
 
 interface LibraryData {
@@ -101,13 +101,13 @@ export function useLibraryData(): UseLibraryDataResult {
     };
   }, []);
 
-  const getItemById = (id: string): LibraryItem | undefined => {
+  const getItemById = useCallback((id: string): LibraryItem | undefined => {
     return items.find(item => item.id === id);
-  };
+  }, [items]);
 
-  const getItemsByCategory = (category: LibraryItem['category']): LibraryItem[] => {
+  const getItemsByCategory = useCallback((category: LibraryItem['category']): LibraryItem[] => {
     return items.filter(item => item.category === category);
-  };
+  }, [items]);
 
   const saveToLocalStorage = (newItems: LibraryItem[]) => {
     try {
