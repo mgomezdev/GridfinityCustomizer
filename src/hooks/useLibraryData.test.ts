@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { useLibraryData } from './useLibraryData';
 
 describe('useLibraryData', () => {
@@ -183,5 +183,310 @@ describe('useLibraryData', () => {
 
     // Should not cause errors or state updates after unmount
     await new Promise(resolve => setTimeout(resolve, 10));
+  });
+
+  describe('Write Operations', () => {
+    beforeEach(() => {
+      localStorage.clear();
+      (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+        ok: true,
+        json: async () => mockLibraryData,
+      });
+    });
+
+    it('should add a new item', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      const newItem = {
+        id: 'organizer-2x2',
+        name: '2x2 Organizer',
+        widthUnits: 2,
+        heightUnits: 2,
+        color: '#f59e0b',
+        category: 'organizer' as const,
+      };
+
+      act(() => {
+        result.current.addItem(newItem);
+      });
+
+      expect(result.current.items).toHaveLength(4);
+      expect(result.current.getItemById('organizer-2x2')).toEqual(newItem);
+    });
+
+    it('should save new item to localStorage', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      const newItem = {
+        id: 'test-item',
+        name: 'Test Item',
+        widthUnits: 1,
+        heightUnits: 1,
+        color: '#000000',
+        category: 'bin' as const,
+      };
+
+      act(() => {
+        result.current.addItem(newItem);
+      });
+
+      const stored = localStorage.getItem('gridfinity-library-custom');
+      expect(stored).toBeTruthy();
+      const parsed = JSON.parse(stored!);
+      expect(parsed).toHaveLength(4);
+      expect(parsed.find((item: LibraryItem) => item.id === 'test-item')).toEqual(newItem);
+    });
+
+    it('should throw error when adding item with duplicate id', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      const duplicateItem = {
+        id: 'bin-1x1', // Already exists
+        name: 'Duplicate Bin',
+        widthUnits: 1,
+        heightUnits: 1,
+        color: '#000000',
+        category: 'bin' as const,
+      };
+
+      expect(() => result.current.addItem(duplicateItem)).toThrow('already exists');
+    });
+
+    it('should throw error when adding item without required fields', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      const invalidItem = {
+        id: 'invalid',
+        name: '',
+        widthUnits: 1,
+        heightUnits: 1,
+        color: '#000000',
+        category: 'bin' as const,
+      };
+
+      expect(() => result.current.addItem(invalidItem)).toThrow('must have id, name, and category');
+    });
+
+    it('should update an existing item', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      act(() => {
+        result.current.updateItem('bin-1x1', { name: 'Updated 1x1 Bin' });
+      });
+
+      const updatedItem = result.current.getItemById('bin-1x1');
+      expect(updatedItem?.name).toBe('Updated 1x1 Bin');
+    });
+
+    it('should save updated item to localStorage', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      act(() => {
+        result.current.updateItem('bin-1x1', { color: '#ff0000' });
+      });
+
+      const stored = localStorage.getItem('gridfinity-library-custom');
+      const parsed = JSON.parse(stored!);
+      const updatedItem = parsed.find((item: LibraryItem) => item.id === 'bin-1x1');
+      expect(updatedItem.color).toBe('#ff0000');
+    });
+
+    it('should throw error when updating non-existent item', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(() => result.current.updateItem('non-existent', { name: 'Test' })).toThrow('not found');
+    });
+
+    it('should throw error when updating id to duplicate', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(() => result.current.updateItem('bin-1x1', { id: 'bin-2x2' })).toThrow('already exists');
+    });
+
+    it('should throw error when updating removes required fields', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(() => result.current.updateItem('bin-1x1', { name: '' })).toThrow('must have id, name, and category');
+    });
+
+    it('should delete an item', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      act(() => {
+        result.current.deleteItem('bin-1x1');
+      });
+
+      expect(result.current.items).toHaveLength(2);
+      expect(result.current.getItemById('bin-1x1')).toBeUndefined();
+    });
+
+    it('should save deletion to localStorage', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      act(() => {
+        result.current.deleteItem('bin-1x1');
+      });
+
+      const stored = localStorage.getItem('gridfinity-library-custom');
+      const parsed = JSON.parse(stored!);
+      expect(parsed).toHaveLength(2);
+      expect(parsed.find((item: LibraryItem) => item.id === 'bin-1x1')).toBeUndefined();
+    });
+
+    it('should throw error when deleting non-existent item', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(() => result.current.deleteItem('non-existent')).toThrow('not found');
+    });
+
+    it('should reset to defaults', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // Add a custom item
+      const newItem = {
+        id: 'custom-item',
+        name: 'Custom Item',
+        widthUnits: 1,
+        heightUnits: 1,
+        color: '#000000',
+        category: 'bin' as const,
+      };
+      act(() => {
+        result.current.addItem(newItem);
+      });
+      expect(result.current.items).toHaveLength(4);
+
+      // Reset to defaults
+      act(() => {
+        result.current.resetToDefaults();
+      });
+
+      expect(result.current.items).toHaveLength(3);
+      expect(result.current.getItemById('custom-item')).toBeUndefined();
+    });
+
+    it('should remove custom library from localStorage on reset', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // Add a custom item
+      act(() => {
+        result.current.addItem({
+          id: 'custom-item',
+          name: 'Custom Item',
+          widthUnits: 1,
+          heightUnits: 1,
+          color: '#000000',
+          category: 'bin' as const,
+        });
+      });
+
+      expect(localStorage.getItem('gridfinity-library-custom')).toBeTruthy();
+
+      // Reset to defaults
+      act(() => {
+        result.current.resetToDefaults();
+      });
+
+      expect(localStorage.getItem('gridfinity-library-custom')).toBeNull();
+    });
+
+    it('should load custom library from localStorage on mount', async () => {
+      const customLibrary = [
+        { id: 'custom-1', name: 'Custom Bin', widthUnits: 1, heightUnits: 1, color: '#000000', category: 'bin' },
+      ];
+      localStorage.setItem('gridfinity-library-custom', JSON.stringify(customLibrary));
+
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.items).toHaveLength(1);
+      expect(result.current.getItemById('custom-1')).toBeTruthy();
+    });
+
+    it('should fallback to defaults if custom library is invalid', async () => {
+      localStorage.setItem('gridfinity-library-custom', 'invalid json');
+
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.items).toEqual(mockLibraryData.items);
+    });
+
+    it('should fallback to defaults if custom library has invalid items', async () => {
+      const invalidLibrary = [
+        { id: 'missing-name', widthUnits: 1, heightUnits: 1, color: '#000000', category: 'bin' },
+      ];
+      localStorage.setItem('gridfinity-library-custom', JSON.stringify(invalidLibrary));
+
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.items).toEqual(mockLibraryData.items);
+    });
   });
 });

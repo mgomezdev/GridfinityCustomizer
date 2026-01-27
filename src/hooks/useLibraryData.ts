@@ -12,12 +12,19 @@ interface UseLibraryDataResult {
   error: Error | null;
   getItemById: (id: string) => LibraryItem | undefined;
   getItemsByCategory: (category: LibraryItem['category']) => LibraryItem[];
+  addItem: (item: LibraryItem) => void;
+  updateItem: (id: string, updates: Partial<LibraryItem>) => void;
+  deleteItem: (id: string) => void;
+  resetToDefaults: () => void;
 }
+
+const STORAGE_KEY = 'gridfinity-library-custom';
 
 export function useLibraryData(): UseLibraryDataResult {
   const [items, setItems] = useState<LibraryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [defaultItems, setDefaultItems] = useState<LibraryItem[]>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -27,6 +34,7 @@ export function useLibraryData(): UseLibraryDataResult {
         setIsLoading(true);
         setError(null);
 
+        // Load default library from JSON
         const response = await fetch('/library.json');
 
         if (!response.ok) {
@@ -47,7 +55,33 @@ export function useLibraryData(): UseLibraryDataResult {
         }
 
         if (isMounted) {
-          setItems(data.items);
+          setDefaultItems(data.items);
+
+          // Check for custom library in localStorage
+          try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+              const customItems: LibraryItem[] = JSON.parse(stored);
+
+              // Validate custom items
+              if (Array.isArray(customItems)) {
+                for (const item of customItems) {
+                  if (!item.id || !item.name || !item.category) {
+                    throw new Error('Invalid custom item: missing required fields');
+                  }
+                }
+                setItems(customItems);
+              } else {
+                setItems(data.items);
+              }
+            } else {
+              setItems(data.items);
+            }
+          } catch (storageError) {
+            console.warn('Failed to load custom library from localStorage, using defaults', storageError);
+            setItems(data.items);
+          }
+
           setIsLoading(false);
         }
       } catch (err) {
@@ -75,11 +109,87 @@ export function useLibraryData(): UseLibraryDataResult {
     return items.filter(item => item.category === category);
   };
 
+  const saveToLocalStorage = (newItems: LibraryItem[]) => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newItems));
+    } catch (err) {
+      console.error('Failed to save library to localStorage', err);
+    }
+  };
+
+  const addItem = (item: LibraryItem) => {
+    // Validate required fields
+    if (!item.id || !item.name || !item.category) {
+      throw new Error('Item must have id, name, and category');
+    }
+
+    // Check for duplicate ID
+    if (items.find(existing => existing.id === item.id)) {
+      throw new Error(`Item with id "${item.id}" already exists`);
+    }
+
+    const newItems = [...items, item];
+    setItems(newItems);
+    saveToLocalStorage(newItems);
+  };
+
+  const updateItem = (id: string, updates: Partial<LibraryItem>) => {
+    const itemIndex = items.findIndex(item => item.id === id);
+
+    if (itemIndex === -1) {
+      throw new Error(`Item with id "${id}" not found`);
+    }
+
+    // If updating ID, check for duplicates
+    if (updates.id && updates.id !== id) {
+      if (items.find(item => item.id === updates.id)) {
+        throw new Error(`Item with id "${updates.id}" already exists`);
+      }
+    }
+
+    const updatedItem = { ...items[itemIndex], ...updates };
+
+    // Validate required fields still exist
+    if (!updatedItem.id || !updatedItem.name || !updatedItem.category) {
+      throw new Error('Updated item must have id, name, and category');
+    }
+
+    const newItems = [...items];
+    newItems[itemIndex] = updatedItem;
+    setItems(newItems);
+    saveToLocalStorage(newItems);
+  };
+
+  const deleteItem = (id: string) => {
+    const itemExists = items.find(item => item.id === id);
+
+    if (!itemExists) {
+      throw new Error(`Item with id "${id}" not found`);
+    }
+
+    const newItems = items.filter(item => item.id !== id);
+    setItems(newItems);
+    saveToLocalStorage(newItems);
+  };
+
+  const resetToDefaults = () => {
+    setItems(defaultItems);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (err) {
+      console.error('Failed to remove custom library from localStorage', err);
+    }
+  };
+
   return {
     items,
     isLoading,
     error,
     getItemById,
     getItemsByCategory,
+    addItem,
+    updateItem,
+    deleteItem,
+    resetToDefaults,
   };
 }
