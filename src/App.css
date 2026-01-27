@@ -386,6 +386,30 @@
   border-radius: 4px;
 }
 
+.export-library-button {
+  width: 100%;
+  padding: 0.6rem;
+  margin-bottom: 0.75rem;
+  border: 2px solid #10b981;
+  border-radius: 6px;
+  background: transparent;
+  color: #10b981;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.export-library-button:hover {
+  background: #10b981;
+  color: white;
+}
+
+.export-library-button:active {
+  background: #059669;
+  border-color: #059669;
+}
+
 .manage-library-button {
   width: 100%;
   padding: 0.75rem;

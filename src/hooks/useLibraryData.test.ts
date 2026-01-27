@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useLibraryData } from './useLibraryData';
+import type { LibraryItem } from '../types/gridfinity';
 
 describe('useLibraryData', () => {
   const mockLibraryData = {

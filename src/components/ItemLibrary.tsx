@@ -15,6 +15,7 @@ interface ItemLibraryProps {
   onUpdateItem: (id: string, updates: Partial<LibraryItem>) => void;
   onDeleteItem: (id: string) => void;
   onResetToDefaults: () => void;
+  onExportLibrary: () => void;
 }
 
 export function ItemLibrary({
@@ -25,6 +26,7 @@ export function ItemLibrary({
   onUpdateItem,
   onDeleteItem,
   onResetToDefaults,
+  onExportLibrary,
 }: ItemLibraryProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showManager, setShowManager] = useState(false);
@@ -138,6 +140,14 @@ export function ItemLibrary({
     <div className="item-library">
       <h3 className="item-library-title">Item Library</h3>
       <p className="item-library-hint">Drag items onto the grid</p>
+
+      <button
+        className="export-library-button"
+        onClick={onExportLibrary}
+        title="Export library to JSON file"
+      >
+        Export Library
+      </button>
 
       <div className="library-search">
         <input

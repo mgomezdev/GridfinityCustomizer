@@ -15,6 +15,7 @@ const mockWriteOps = {
   onUpdateItem: vi.fn(),
   onDeleteItem: vi.fn(),
   onResetToDefaults: vi.fn(),
+  onExportLibrary: vi.fn(),
 };
 
 describe('ItemLibrary', () => {
@@ -277,5 +278,21 @@ describe('ItemLibrary', () => {
 
     expect(screen.getByText(/Bins \(2\)/)).toBeInTheDocument();
     expect(screen.getByText(/Dividers \(1\)/)).toBeInTheDocument();
+  });
+
+  it('should render export library button', () => {
+    render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} {...mockWriteOps} />);
+
+    const exportButton = screen.getByText('Export Library');
+    expect(exportButton).toBeInTheDocument();
+  });
+
+  it('should call onExportLibrary when export button is clicked', () => {
+    render(<ItemLibrary items={mockLibraryItems} isLoading={false} error={null} {...mockWriteOps} />);
+
+    const exportButton = screen.getByText('Export Library');
+    fireEvent.click(exportButton);
+
+    expect(mockWriteOps.onExportLibrary).toHaveBeenCalledTimes(1);
   });
 });

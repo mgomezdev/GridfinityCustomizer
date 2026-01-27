@@ -35,6 +35,24 @@ function App() {
     resetToDefaults,
   } = useLibraryData();
 
+  const handleExportLibrary = () => {
+    const libraryData = {
+      version: '1.0.0',
+      items: libraryItems,
+    };
+
+    const jsonString = JSON.stringify(libraryData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `gridfinity-library-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const handleUnitChange = (newUnit: UnitSystem) => {
     if (newUnit === unitSystem) return;
 
@@ -168,6 +186,7 @@ function App() {
             onUpdateItem={updateItem}
             onDeleteItem={deleteLibraryItem}
             onResetToDefaults={resetToDefaults}
+            onExportLibrary={handleExportLibrary}
           />
 
           {selectedItemId && (
