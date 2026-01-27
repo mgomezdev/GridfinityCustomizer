@@ -30,11 +30,20 @@ npm run preview
 # Run linter
 npm run lint
 
-# Run tests
+# Run unit tests
 npm test
 
 # Run single test file
 npm test -- path/to/test.ts
+
+# Run E2E tests
+npm run test:e2e
+
+# Run E2E tests with UI
+npm run test:e2e:ui
+
+# Run E2E tests in debug mode
+npm run test:e2e:debug
 ```
 
 ## Architecture
@@ -45,3 +54,7 @@ The application follows a standard React structure:
 - `src/hooks/` - Custom React hooks
 - `src/types/` - TypeScript type definitions
 - `src/utils/` - Utility functions for gridfinity calculations
+- `e2e/` - End-to-end tests with Playwright
+  - `e2e/tests/` - Test specifications
+  - `e2e/pages/` - Page object models
+  - `e2e/utils/` - Test utilities (drag-drop helpers, localStorage)
