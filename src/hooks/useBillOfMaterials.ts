@@ -29,8 +29,7 @@ export function useBillOfMaterials(placedItems: PlacedItem[], libraryItems: Libr
       }
     });
 
-    // Sort by name only
-    // TODO: Remove category-based sorting entirely - tracked in separate issue
+    // Sort by name, ascending
     return bomItems.sort((a, b) => a.name.localeCompare(b.name));
   }, [placedItems, libraryItems]);
 }
