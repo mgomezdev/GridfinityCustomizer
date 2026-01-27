@@ -44,7 +44,7 @@ export function LibraryManager({
     widthUnits: 1,
     heightUnits: 1,
     color: '#646cff',
-    category: categories[0]?.id || 'bin',
+    categories: categories[0]?.id ? [categories[0].id] : ['bin'],
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -57,7 +57,7 @@ export function LibraryManager({
       widthUnits: 1,
       heightUnits: 1,
       color: '#646cff',
-      category: categories[0]?.id || 'bin',
+      categories: categories[0]?.id ? [categories[0].id] : ['bin'],
     });
     setError(null);
   };
@@ -74,7 +74,16 @@ export function LibraryManager({
   };
 
   const getItemsUsingCategory = (categoryId: string): LibraryItem[] => {
-    return items.filter(item => item.category === categoryId);
+    return items.filter(item => item.categories.includes(categoryId));
+  };
+
+  const handleCategoryToggle = (categoryId: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      categories: checked
+        ? [...(prev.categories || []), categoryId]
+        : (prev.categories || []).filter(id => id !== categoryId)
+    }));
   };
 
   const handleStartEdit = (item: LibraryItem) => {
@@ -170,7 +179,7 @@ export function LibraryManager({
                     <div className="item-details">
                       <div className="item-name">{item.name}</div>
                       <div className="item-meta">
-                        {item.widthUnits}×{item.heightUnits} units • {item.category}
+                        {item.widthUnits}×{item.heightUnits} units • {item.categories.join(', ')}
                       </div>
                       <div className="item-id">ID: {item.id}</div>
                     </div>
@@ -249,19 +258,28 @@ export function LibraryManager({
             </div>
 
             <div className="form-group">
-              <label htmlFor="item-category">Category *</label>
-              <select
-                id="item-category"
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                required
-              >
+              <label>Categories * (Select at least one)</label>
+              <div className="category-checkbox-list">
                 {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
+                  <label key={cat.id} className="category-checkbox-item">
+                    <input
+                      type="checkbox"
+                      checked={formData.categories?.includes(cat.id) || false}
+                      onChange={(e) => handleCategoryToggle(cat.id, e.target.checked)}
+                    />
+                    <span
+                      className="category-color-indicator"
+                      style={{ backgroundColor: cat.color }}
+                    />
+                    <span>{cat.name}</span>
+                  </label>
                 ))}
-              </select>
+              </div>
+              {formData.categories?.length === 0 && (
+                <div className="form-validation-error">
+                  At least one category must be selected
+                </div>
+              )}
             </div>
 
             <div className="form-group">

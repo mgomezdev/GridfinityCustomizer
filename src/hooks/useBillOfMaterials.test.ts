@@ -4,12 +4,12 @@ import { useBillOfMaterials } from './useBillOfMaterials';
 import type { PlacedItem, LibraryItem } from '../types/gridfinity';
 
 const mockLibraryItems: LibraryItem[] = [
-  { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', category: 'bin' },
-  { id: 'bin-1x2', name: '1x2 Bin', widthUnits: 1, heightUnits: 2, color: '#646cff', category: 'bin' },
-  { id: 'bin-2x1', name: '2x1 Bin', widthUnits: 2, heightUnits: 1, color: '#646cff', category: 'bin' },
-  { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#646cff', category: 'bin' },
-  { id: 'divider-1x1', name: '1x1 Divider', widthUnits: 1, heightUnits: 1, color: '#22c55e', category: 'divider' },
-  { id: 'organizer-1x3', name: '1x3 Organizer', widthUnits: 1, heightUnits: 3, color: '#f59e0b', category: 'organizer' },
+  { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', categories: ['bin'] },
+  { id: 'bin-1x2', name: '1x2 Bin', widthUnits: 1, heightUnits: 2, color: '#646cff', categories: ['bin'] },
+  { id: 'bin-2x1', name: '2x1 Bin', widthUnits: 2, heightUnits: 1, color: '#646cff', categories: ['bin'] },
+  { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#646cff', categories: ['bin'] },
+  { id: 'divider-1x1', name: '1x1 Divider', widthUnits: 1, heightUnits: 1, color: '#22c55e', categories: ['divider'] },
+  { id: 'organizer-1x3', name: '1x3 Organizer', widthUnits: 1, heightUnits: 3, color: '#f59e0b', categories: ['organizer'] },
 ];
 
 describe('useBillOfMaterials', () => {
@@ -40,7 +40,7 @@ describe('useBillOfMaterials', () => {
       widthUnits: 1,
       heightUnits: 1,
       quantity: 1,
-      category: 'bin',
+      categories: ['bin'],
     });
   });
 
@@ -165,7 +165,7 @@ describe('useBillOfMaterials', () => {
     expect(divider1x1?.quantity).toBe(1);
   });
 
-  it('should sort items by category (bins, dividers, organizers)', () => {
+  it('should sort items alphabetically by name', () => {
     const placedItems: PlacedItem[] = [
       {
         instanceId: 'instance-1',
@@ -199,9 +199,10 @@ describe('useBillOfMaterials', () => {
     const { result } = renderHook(() => useBillOfMaterials(placedItems, mockLibraryItems));
 
     expect(result.current).toHaveLength(3);
-    expect(result.current[0].category).toBe('bin');
-    expect(result.current[1].category).toBe('divider');
-    expect(result.current[2].category).toBe('organizer');
+    // Sorted alphabetically: "1x1 Bin", "1x1 Divider", "1x3 Organizer"
+    expect(result.current[0].name).toBe('1x1 Bin');
+    expect(result.current[1].name).toBe('1x1 Divider');
+    expect(result.current[2].name).toBe('1x3 Organizer');
   });
 
   it('should sort items alphabetically within the same category', () => {
