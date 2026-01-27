@@ -24,7 +24,15 @@ function App() {
     vertical: 'none',
   });
 
-  const { items: libraryItems, isLoading: isLibraryLoading, error: libraryError } = useLibraryData();
+  const {
+    items: libraryItems,
+    isLoading: isLibraryLoading,
+    error: libraryError,
+    addItem,
+    updateItem,
+    deleteItem: deleteLibraryItem,
+    resetToDefaults,
+  } = useLibraryData();
 
   const handleUnitChange = (newUnit: UnitSystem) => {
     if (newUnit === unitSystem) return;
@@ -155,6 +163,10 @@ function App() {
             items={libraryItems}
             isLoading={isLibraryLoading}
             error={libraryError}
+            onAddItem={addItem}
+            onUpdateItem={updateItem}
+            onDeleteItem={deleteLibraryItem}
+            onResetToDefaults={resetToDefaults}
           />
 
           {selectedItemId && (

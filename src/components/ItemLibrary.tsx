@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { LibraryItem } from '../types/gridfinity';
 import { LibraryItemCard } from './LibraryItemCard';
+import { LibraryManager } from './LibraryManager';
 
 const STORAGE_KEY = 'gridfinity-collapsed-categories';
 
@@ -10,10 +11,23 @@ interface ItemLibraryProps {
   items: LibraryItem[];
   isLoading: boolean;
   error: Error | null;
+  onAddItem: (item: LibraryItem) => void;
+  onUpdateItem: (id: string, updates: Partial<LibraryItem>) => void;
+  onDeleteItem: (id: string) => void;
+  onResetToDefaults: () => void;
 }
 
-export function ItemLibrary({ items, isLoading, error }: ItemLibraryProps) {
+export function ItemLibrary({
+  items,
+  isLoading,
+  error,
+  onAddItem,
+  onUpdateItem,
+  onDeleteItem,
+  onResetToDefaults,
+}: ItemLibraryProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [showManager, setShowManager] = useState(false);
 
   // Filter items by search query
   const filteredItems = items.filter(item =>
@@ -144,6 +158,13 @@ export function ItemLibrary({ items, isLoading, error }: ItemLibraryProps) {
         )}
       </div>
 
+      <button
+        className="manage-library-button"
+        onClick={() => setShowManager(true)}
+      >
+        Manage Library
+      </button>
+
       {!hasResults && searchQuery && (
         <div className="library-no-results">
           <p>No items found matching "{searchQuery}"</p>
@@ -153,6 +174,17 @@ export function ItemLibrary({ items, isLoading, error }: ItemLibraryProps) {
       {renderCategory('bins', 'Bins', bins)}
       {renderCategory('dividers', 'Dividers', dividers)}
       {renderCategory('organizers', 'Organizers', organizers)}
+
+      {showManager && (
+        <LibraryManager
+          items={items}
+          onClose={() => setShowManager(false)}
+          onAddItem={onAddItem}
+          onUpdateItem={onUpdateItem}
+          onDeleteItem={onDeleteItem}
+          onResetToDefaults={onResetToDefaults}
+        />
+      )}
     </div>
   );
 }
