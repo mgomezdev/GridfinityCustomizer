@@ -8,9 +8,11 @@ Gridfinity Customizer is a web application for customizing Gridfinity modular st
 
 ## Tech Stack
 
-- **Frontend**: React + TypeScript
+- **Frontend**: React 19 + TypeScript
 - **Build Tool**: Vite
-- **3D Rendering**: TBD (to be added later)
+- **Unit Testing**: Vitest + React Testing Library
+- **E2E Testing**: Playwright
+- **Linting**: ESLint
 
 ## Commands
 
@@ -31,10 +33,10 @@ npm run preview
 npm run lint
 
 # Run unit tests
-npm test
+npm run test:run
 
-# Run single test file
-npm test -- path/to/test.ts
+# Run unit tests in watch mode
+npm test
 
 # Run E2E tests
 npm run test:e2e
@@ -48,13 +50,82 @@ npm run test:e2e:debug
 
 ## Architecture
 
-The application follows a standard React structure:
+```
+src/
+├── components/     # React components
+├── hooks/          # Custom React hooks
+├── types/          # TypeScript type definitions
+├── utils/          # Utility functions
+└── test/           # Test setup
 
-- `src/components/` - Reusable UI components
-- `src/hooks/` - Custom React hooks
-- `src/types/` - TypeScript type definitions
-- `src/utils/` - Utility functions for gridfinity calculations
-- `e2e/` - End-to-end tests with Playwright
-  - `e2e/tests/` - Test specifications
-  - `e2e/pages/` - Page object models
-  - `e2e/utils/` - Test utilities (drag-drop helpers, localStorage)
+e2e/
+├── tests/          # Playwright test specs
+├── pages/          # Page object models
+├── utils/          # Test utilities (drag-drop, localStorage)
+└── fixtures/       # Test data
+```
+
+## Coding Standards
+
+### TypeScript
+- Use strict types; avoid `any`
+- Define interfaces for component props
+- Export types from `src/types/`
+
+### React Components
+- Functional components only
+- Props interface above component: `interface FooProps { ... }`
+- Derive state when possible; avoid redundant state
+- No setState during render or in useEffect (use derived state pattern)
+
+### Naming Conventions
+- Components: `PascalCase` (e.g., `GridPreview.tsx`)
+- Hooks: `camelCase` with `use` prefix (e.g., `useGridItems.ts`)
+- Utils: `camelCase` (e.g., `conversions.ts`)
+- Tests: `*.test.ts(x)` for unit, `*.spec.ts` for E2E
+- CSS classes: `kebab-case` (e.g., `.grid-container`)
+
+### Code Style
+- Keep functions small and focused
+- Prefer early returns over nested conditionals
+- Extract magic numbers to named constants
+- No commented-out code; delete unused code
+
+### Testing
+- **Write tests first**: Create/update test cases before writing implementation code
+- Unit test hooks and utilities
+- E2E test user workflows
+- Use page objects for E2E tests
+- Mock external dependencies, not internal modules
+
+## Git Workflow
+
+```bash
+# Create feature branch
+git checkout -b feat/description
+
+# Create fix branch
+git checkout -b fix/description
+
+# Commit format
+type(scope): description
+
+# Examples:
+feat(grid): add zoom controls
+fix(library): resolve drag-drop on touch devices
+refactor(hooks): simplify state management
+```
+
+## Before Committing
+
+1. Run `npm run lint` - fix all errors
+2. Run `npm run test:run` - all unit tests pass
+3. Run `npm run test:e2e` - all E2E tests pass
+4. Keep commits focused; one logical change per commit
+
+## Key Files
+
+- `src/components/GridPreview.tsx` - Main grid rendering and drop target
+- `src/components/LibraryItemCard.tsx` - Draggable library items
+- `src/hooks/useGridItems.ts` - Placed item state management
+- `src/types/gridfinity.ts` - Core type definitions
