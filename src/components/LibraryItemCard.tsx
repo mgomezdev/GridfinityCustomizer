@@ -5,29 +5,25 @@ interface LibraryItemCardProps {
   item: LibraryItem;
 }
 
-interface ImageState {
-  url: string | undefined;
+interface ImageLoadState {
+  forUrl: string;
   loaded: boolean;
   error: boolean;
 }
 
 export function LibraryItemCard({ item }: LibraryItemCardProps) {
-  const [imageState, setImageState] = useState<ImageState>({
-    url: item.imageUrl,
+  const [loadState, setLoadState] = useState<ImageLoadState>({
+    forUrl: '',
     loaded: false,
     error: false,
   });
 
-  // Reset state if imageUrl has changed
-  if (imageState.url !== item.imageUrl) {
-    setImageState({
-      url: item.imageUrl,
-      loaded: false,
-      error: false,
-    });
-  }
+  // Derive current state - automatically "resets" when URL changes
+  const isCurrentUrl = loadState.forUrl === item.imageUrl;
+  const imageLoaded = isCurrentUrl && loadState.loaded;
+  const imageError = isCurrentUrl && loadState.error;
+  const shouldShowImage = item.imageUrl && imageLoaded && !imageError;
 
-  const shouldShowImage = item.imageUrl && imageState.loaded && !imageState.error;
   const handleDragStart = (e: React.DragEvent) => {
     const dragData: DragData = {
       type: 'library',
@@ -35,6 +31,14 @@ export function LibraryItemCard({ item }: LibraryItemCardProps) {
     };
     e.dataTransfer.setData('application/json', JSON.stringify(dragData));
     e.dataTransfer.effectAllowed = 'copy';
+  };
+
+  const handleImageLoad = () => {
+    setLoadState({ forUrl: item.imageUrl ?? '', loaded: true, error: false });
+  };
+
+  const handleImageError = () => {
+    setLoadState({ forUrl: item.imageUrl ?? '', loaded: false, error: true });
   };
 
   // Generate mini grid preview
@@ -60,14 +64,14 @@ export function LibraryItemCard({ item }: LibraryItemCardProps) {
       onDragStart={handleDragStart}
     >
       <div className="library-item-preview-container">
-        {item.imageUrl && !imageState.error && (
+        {item.imageUrl && !imageError && (
           <img
             src={item.imageUrl}
             alt={item.name}
             className={`library-item-image ${shouldShowImage ? 'visible' : 'hidden'}`}
             loading="lazy"
-            onLoad={() => setImageState(prev => ({ ...prev, loaded: true }))}
-            onError={() => setImageState(prev => ({ ...prev, error: true }))}
+            onLoad={handleImageLoad}
+            onError={handleImageError}
           />
         )}
         {!shouldShowImage && (
