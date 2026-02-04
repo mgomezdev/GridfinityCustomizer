@@ -6,8 +6,8 @@ import type { PlacedItemWithValidity, LibraryItem } from '../types/gridfinity';
 describe('PlacedItemOverlay', () => {
   const mockGetItemById = (id: string): LibraryItem | undefined => {
     const items: Record<string, LibraryItem> = {
-      'bin-1x1': { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', category: 'bin' },
-      'bin-2x2': { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#646cff', category: 'bin' },
+      'bin-1x1': { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', categories: ['bin'] },
+      'bin-2x2': { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#646cff', categories: ['bin'] },
     };
     return items[id];
   };
@@ -229,7 +229,7 @@ describe('PlacedItemOverlay', () => {
         widthUnits: 1,
         heightUnits: 1,
         color: '#22c55e',
-        category: 'divider' as const,
+        categories: ['divider'],
       });
 
       const item = createMockItem({ isValid: true });
@@ -449,7 +449,7 @@ describe('PlacedItemOverlay', () => {
         widthUnits: 2,
         heightUnits: 3,
         color: '#f59e0b',
-        category: 'organizer' as const,
+        categories: ['organizer'],
       });
 
       const item = createMockItem();
@@ -627,7 +627,7 @@ describe('PlacedItemOverlay', () => {
           widthUnits: 1,
           heightUnits: 1,
           color: '#646cff',
-          category: 'bin',
+          categories: ['bin'],
           imageUrl: 'https://example.com/image.png',
         },
         'bin-no-image': {
@@ -636,7 +636,7 @@ describe('PlacedItemOverlay', () => {
           widthUnits: 1,
           heightUnits: 1,
           color: '#646cff',
-          category: 'bin',
+          categories: ['bin'],
         },
       };
       return items[id];
@@ -847,7 +847,7 @@ describe('PlacedItemOverlay', () => {
             widthUnits: 1,
             heightUnits: 1,
             color: '#646cff',
-            category: 'bin',
+            categories: ['bin'],
             imageUrl: 'https://example.com/new-image.png',
           };
         }

@@ -24,8 +24,8 @@ vi.mock('./PlacedItemOverlay', () => ({
 describe('GridPreview', () => {
   const mockGetItemById = (id: string): LibraryItem | undefined => {
     const items: Record<string, LibraryItem> = {
-      'bin-1x1': { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', category: 'bin' },
-      'bin-2x2': { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#646cff', category: 'bin' },
+      'bin-1x1': { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', categories: ['bin'] },
+      'bin-2x2': { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#646cff', categories: ['bin'] },
     };
     return items[id];
   };
