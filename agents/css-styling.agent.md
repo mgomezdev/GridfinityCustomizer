@@ -40,6 +40,129 @@ CSS styling tasks are generally well-defined and follow established patterns (fl
 - `src/App.css`
 - `src/*.css` (component-specific stylesheets if they exist)
 
+## Scope Boundaries
+
+### In Scope
+- Writing CSS for components and layouts
+- Implementing responsive designs (flexbox, grid, media queries)
+- Creating transitions and animations
+- Styling form controls (buttons, sliders, inputs)
+- Managing z-index and stacking contexts
+- Using CSS custom properties for theming
+- Ensuring visual consistency with existing UI
+
+### Out of Scope
+- Implementing component logic (defer to react-typescript agent)
+- Writing tests (defer to test-writer or e2e-test-writer agents)
+- Modifying HTML structure (unless absolutely necessary for layout)
+- Adding JavaScript for styling (use CSS-only solutions when possible)
+- Changing color scheme without approval
+
+## Success Criteria
+
+- Styles match design requirements or existing UI patterns
+- Layout works responsively across screen sizes
+- No visual regressions in existing components
+- Follows BEM-like naming conventions (kebab-case, modifiers)
+- Works across modern browsers (Chrome, Firefox, Safari, Edge)
+- Smooth transitions and animations (no jank)
+- Proper hover, focus, and active states for interactive elements
+
+## Verification Requirements
+
+### Before Completion
+1. Run dev server: `npm run dev`
+2. Visually inspect changes in browser
+3. Test responsiveness at different screen sizes
+4. Verify hover/focus/active states for interactive elements
+5. Check for visual regressions in related components
+6. Ensure accessibility (focus indicators, contrast)
+
+### Self-Check Questions
+- Are class names following kebab-case convention?
+- Do modifiers follow BEM-like pattern (`component--modifier`)?
+- Are z-index values part of established scale?
+- Are transitions smooth (no jank or performance issues)?
+- Does layout work on mobile, tablet, and desktop?
+
+## Error Handling
+
+### Common Issues and Resolution
+- **Layout breaks**: Debug with browser dev tools, check flexbox/grid properties
+- **Visual regressions**: Compare with existing styles, adjust specificity
+- **Responsive issues**: Add/adjust media queries
+- **Browser inconsistencies**: Add vendor prefixes or fallbacks
+- **Z-index conflicts**: Review stacking context hierarchy
+
+### Escalation Triggers
+- Design requirements are unclear or missing
+- Need to modify component HTML structure significantly
+- Performance issues with animations (need JavaScript solution)
+- Color scheme changes require broader discussion
+- Accessibility requirements beyond CSS capabilities
+
+## Input/Output Contract
+
+### Input Format
+```typescript
+{
+  task: string;              // Description of styling requirements
+  files: string[];           // Component files that need styling
+  context?: {                // Optional context from react-typescript agent
+    componentsNeedingStyles?: string[];
+    interactiveElements?: string[];
+    layoutType?: 'flexbox' | 'grid' | 'absolute';
+  };
+}
+```
+
+### Output Format
+```typescript
+{
+  status: 'success' | 'failure' | 'needs-review';
+  filesModified: string[];   // CSS files modified
+  summary: string;           // Brief description of styles added
+  visualChanges: string[];   // List of visual changes made
+  issues?: string[];         // Any concerns or limitations
+}
+```
+
+## Handoff Protocols
+
+### Common Workflows
+1. **react-typescript → css-styling**: Receive component structure, add styles
+2. **css-styling → e2e-test-writer**: After styling complete, handoff for visual testing
+3. **css-styling (standalone)**: For styling-only changes without logic changes
+
+### Expected Input from react-typescript Agent
+- List of components needing styles
+- Class names used in components
+- Interactive elements (buttons, inputs, etc.)
+- Layout requirements (overlay, modal, grid, etc.)
+
+### Handoff Information to Provide
+- CSS files modified
+- Class names added/modified
+- Visual states implemented (hover, focus, active, disabled)
+- Responsive breakpoints used
+- Any layout limitations or browser considerations
+
+### Example Handoff
+```typescript
+{
+  status: 'success',
+  filesModified: ['src/App.css'],
+  summary: 'Added styles for ImageUpload component with drag-and-drop overlay, opacity controls, and responsive layout',
+  visualChanges: [
+    'Added .image-upload-overlay with semi-transparent background',
+    'Styled opacity slider with custom thumb',
+    'Added hover/focus states for interactive elements',
+    'Responsive layout for mobile (stacks controls vertically)'
+  ],
+  nextAgent: 'e2e-test-writer'
+}
+```
+
 ## CSS Patterns
 
 ### Component Base Structure
