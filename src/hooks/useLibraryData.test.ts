@@ -208,7 +208,7 @@ describe('useLibraryData', () => {
         widthUnits: 2,
         heightUnits: 2,
         color: '#f59e0b',
-        categories: ['organizer'] as const,
+        categories: ['organizer'],
       };
 
       act(() => {
@@ -232,7 +232,7 @@ describe('useLibraryData', () => {
         widthUnits: 1,
         heightUnits: 1,
         color: '#000000',
-        categories: ['bin'] as const,
+        categories: ['bin'],
       };
 
       act(() => {
@@ -259,7 +259,7 @@ describe('useLibraryData', () => {
         widthUnits: 1,
         heightUnits: 1,
         color: '#000000',
-        categories: ['bin'] as const,
+        categories: ['bin'],
       };
 
       expect(() => result.current.addItem(duplicateItem)).toThrow('already exists');
@@ -278,7 +278,7 @@ describe('useLibraryData', () => {
         widthUnits: 1,
         heightUnits: 1,
         color: '#000000',
-        categories: ['bin'] as const,
+        categories: ['bin'],
       };
 
       expect(() => result.current.addItem(invalidItem)).toThrow('must have id, name, and at least one category');
@@ -402,7 +402,7 @@ describe('useLibraryData', () => {
         widthUnits: 1,
         heightUnits: 1,
         color: '#000000',
-        categories: ['bin'] as const,
+        categories: ['bin'],
       };
       act(() => {
         result.current.addItem(newItem);
@@ -433,7 +433,7 @@ describe('useLibraryData', () => {
           widthUnits: 1,
           heightUnits: 1,
           color: '#000000',
-          categories: ['bin'] as const,
+          categories: ['bin'],
         });
       });
 
@@ -704,14 +704,14 @@ describe('useLibraryData', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      const originalCategory = result.current.getItemById('bin-1x1')?.category;
+      const originalCategories = result.current.getItemById('bin-1x1')?.categories;
 
       act(() => {
         result.current.updateItem('bin-1x1', { name: 'New Name' });
       });
 
       const updated = result.current.getItemById('bin-1x1');
-      expect(updated?.category).toBe(originalCategory);
+      expect(updated?.categories).toEqual(originalCategories);
     });
   });
 });
