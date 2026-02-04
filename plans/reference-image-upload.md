@@ -2,12 +2,12 @@
 
 ## Overview
 
-Enable users to upload reference images that render as overlays on the grid. Users can use these images as visual guides when placing library items. Each image has independent scale, opacity, and position controls.
+Enable users to upload reference images that render as overlays **on top of** the grid and all placed items. Users adjust image opacity to see their placed bins through the reference image, allowing them to visually fit-check their layout against the reference (e.g., a photo of items they want to organize). Each image has independent scale, opacity, and position controls.
 
 ## User Stories
 
-1. **As a user**, I want to upload a reference image so I can visually plan my bin layout
-2. **As a user**, I want to adjust the opacity of each image so placed items remain visible
+1. **As a user**, I want to upload a reference image so I can visually fit-check my bin layout against real items
+2. **As a user**, I want to adjust the opacity of each image so I can see placed bins through the reference
 3. **As a user**, I want to scale images to match my grid dimensions
 4. **As a user**, I want to reposition images by dragging them
 5. **As a user**, I want to toggle between "image move mode" and "item move mode"
@@ -76,13 +76,14 @@ src/components/
 ### Layer Hierarchy (z-index)
 
 ```
+Layer 4: Reference images (z-index: 10) ← NEW (topmost)
 Layer 3: Selected placed items (z-index: 2)
 Layer 2: Placed items (z-index: 1)
-Layer 1: Reference images (z-index: 0) ← NEW
-Layer 0: Spacer overlays (z-index: -1) ← Adjust existing
+Layer 1: Grid cells (z-index: 0)
+Layer 0: Spacer overlays (z-index: -1)
 ```
 
-Reference images render **above** spacers but **below** placed items.
+Reference images render **on top of everything** so users see placed items through the image (controlled by opacity). This enables visual fit-checking against the reference.
 
 ### GridPreview Integration
 
@@ -166,8 +167,9 @@ interface InteractionModeToggleProps {
 │                   │                                     │
 │  Library Panel    │     Grid Preview                    │
 │                   │     ┌─────────────────────────────┐ │
-│                   │     │ [Reference Image Layer]     │ │
+│                   │     │ [Reference Image Layer] TOP │ │
 │                   │     │ [Placed Items Layer]        │ │
+│                   │     │ [Grid Cells Layer]          │ │
 │                   │     └─────────────────────────────┘ │
 │                   │                                     │
 │                   │  ┌──────────────────────────────┐   │
@@ -203,9 +205,8 @@ interface InteractionModeToggleProps {
 ### Phase 3: Image Rendering
 
 - [ ] Create `ReferenceImageOverlay` component
-- [ ] Integrate overlays into `GridPreview`
-- [ ] Adjust spacer z-index to render below reference images
-- [ ] Add CSS for image overlay positioning and opacity
+- [ ] Integrate overlays into `GridPreview` (rendered on top of all items)
+- [ ] Add CSS for image overlay positioning, opacity, and high z-index
 - [ ] Write unit tests for overlay component
 
 ### Phase 4: Image Controls
@@ -289,8 +290,8 @@ interface InteractionModeToggleProps {
 ## Acceptance Criteria
 
 1. User can upload one or more images
-2. Images render above spacers but below placed items
-3. Each image has independent opacity control (0-100%)
+2. Images render **on top of** all placed items (highest z-index layer)
+3. Each image has independent opacity control (0-100%) to see items through
 4. Each image has independent scale control (10-200%)
 5. User can drag images to reposition (when in images mode)
 6. User can toggle between "items" and "images" interaction modes
