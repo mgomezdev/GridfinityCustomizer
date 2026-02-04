@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { PlacedItemWithValidity, DragData, LibraryItem } from '../types/gridfinity';
 
 interface PlacedItemOverlayProps {
@@ -9,9 +10,35 @@ interface PlacedItemOverlayProps {
   getItemById: (id: string) => LibraryItem | undefined;
 }
 
+interface ImageLoadState {
+  forUrl: string;
+  loaded: boolean;
+  error: boolean;
+}
+
 export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, getItemById }: PlacedItemOverlayProps) {
   const libraryItem = getItemById(item.itemId);
   const color = item.isValid ? (libraryItem?.color || '#646cff') : '#ef4444';
+
+  const [loadState, setLoadState] = useState<ImageLoadState>({
+    forUrl: '',
+    loaded: false,
+    error: false,
+  });
+
+  // Derive current state - automatically "resets" when URL changes
+  const isCurrentUrl = loadState.forUrl === libraryItem?.imageUrl;
+  const imageLoaded = isCurrentUrl && loadState.loaded;
+  const imageError = isCurrentUrl && loadState.error;
+  const shouldShowImage = libraryItem?.imageUrl && imageLoaded && !imageError;
+
+  const handleImageLoad = () => {
+    setLoadState({ forUrl: libraryItem?.imageUrl ?? '', loaded: true, error: false });
+  };
+
+  const handleImageError = () => {
+    setLoadState({ forUrl: libraryItem?.imageUrl ?? '', loaded: false, error: true });
+  };
 
   const handleDragStart = (e: React.DragEvent) => {
     const dragData: DragData = {
@@ -43,6 +70,18 @@ export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, ge
       onDragStart={handleDragStart}
       onClick={handleClick}
     >
+      {libraryItem?.imageUrl && !imageError && (
+        <div className="placed-item-image-container">
+          <img
+            src={libraryItem.imageUrl}
+            alt={libraryItem.name}
+            className={`placed-item-image ${shouldShowImage ? 'visible' : 'hidden'}`}
+            loading="lazy"
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+          />
+        </div>
+      )}
       <span className="placed-item-label">{libraryItem?.name}</span>
     </div>
   );

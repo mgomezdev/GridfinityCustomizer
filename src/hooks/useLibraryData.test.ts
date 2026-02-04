@@ -7,9 +7,9 @@ describe('useLibraryData', () => {
   const mockLibraryData = {
     version: '1.0.0',
     items: [
-      { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', category: 'bin' },
-      { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#646cff', category: 'bin' },
-      { id: 'divider-1x1', name: '1x1 Divider', widthUnits: 1, heightUnits: 1, color: '#22c55e', category: 'divider' },
+      { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', categories: ['bin'] },
+      { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#646cff', categories: ['bin'] },
+      { id: 'divider-1x1', name: '1x1 Divider', widthUnits: 1, heightUnits: 1, color: '#22c55e', categories: ['divider'] },
     ],
   };
 
@@ -138,11 +138,11 @@ describe('useLibraryData', () => {
 
     const bins = result.current.getItemsByCategory('bin');
     expect(bins).toHaveLength(2);
-    expect(bins.every(item => item.category === 'bin')).toBe(true);
+    expect(bins.every(item => item.categories.includes('bin'))).toBe(true);
 
     const dividers = result.current.getItemsByCategory('divider');
     expect(dividers).toHaveLength(1);
-    expect(dividers[0].category).toBe('divider');
+    expect(dividers[0].categories[0]).toBe('divider');
 
     const organizers = result.current.getItemsByCategory('organizer');
     expect(organizers).toHaveLength(0);
@@ -208,7 +208,7 @@ describe('useLibraryData', () => {
         widthUnits: 2,
         heightUnits: 2,
         color: '#f59e0b',
-        category: 'organizer' as const,
+        categories: ['organizer'] as const,
       };
 
       act(() => {
@@ -232,7 +232,7 @@ describe('useLibraryData', () => {
         widthUnits: 1,
         heightUnits: 1,
         color: '#000000',
-        category: 'bin' as const,
+        categories: ['bin'] as const,
       };
 
       act(() => {
@@ -259,7 +259,7 @@ describe('useLibraryData', () => {
         widthUnits: 1,
         heightUnits: 1,
         color: '#000000',
-        category: 'bin' as const,
+        categories: ['bin'] as const,
       };
 
       expect(() => result.current.addItem(duplicateItem)).toThrow('already exists');
@@ -278,10 +278,10 @@ describe('useLibraryData', () => {
         widthUnits: 1,
         heightUnits: 1,
         color: '#000000',
-        category: 'bin' as const,
+        categories: ['bin'] as const,
       };
 
-      expect(() => result.current.addItem(invalidItem)).toThrow('must have id, name, and category');
+      expect(() => result.current.addItem(invalidItem)).toThrow('must have id, name, and at least one category');
     });
 
     it('should update an existing item', async () => {
@@ -343,7 +343,7 @@ describe('useLibraryData', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(() => result.current.updateItem('bin-1x1', { name: '' })).toThrow('must have id, name, and category');
+      expect(() => result.current.updateItem('bin-1x1', { name: '' })).toThrow('must have id, name, and at least one category');
     });
 
     it('should delete an item', async () => {
@@ -402,7 +402,7 @@ describe('useLibraryData', () => {
         widthUnits: 1,
         heightUnits: 1,
         color: '#000000',
-        category: 'bin' as const,
+        categories: ['bin'] as const,
       };
       act(() => {
         result.current.addItem(newItem);
@@ -433,7 +433,7 @@ describe('useLibraryData', () => {
           widthUnits: 1,
           heightUnits: 1,
           color: '#000000',
-          category: 'bin' as const,
+          categories: ['bin'] as const,
         });
       });
 
@@ -449,7 +449,7 @@ describe('useLibraryData', () => {
 
     it('should load custom library from localStorage on mount', async () => {
       const customLibrary = [
-        { id: 'custom-1', name: 'Custom Bin', widthUnits: 1, heightUnits: 1, color: '#000000', category: 'bin' },
+        { id: 'custom-1', name: 'Custom Bin', widthUnits: 1, heightUnits: 1, color: '#000000', categories: ['bin'] },
       ];
       localStorage.setItem('gridfinity-library-custom', JSON.stringify(customLibrary));
 
@@ -477,7 +477,7 @@ describe('useLibraryData', () => {
 
     it('should fallback to defaults if custom library has invalid items', async () => {
       const invalidLibrary = [
-        { id: 'missing-name', widthUnits: 1, heightUnits: 1, color: '#000000', category: 'bin' },
+        { id: 'missing-name', widthUnits: 1, heightUnits: 1, color: '#000000', categories: ['bin'] },
       ];
       localStorage.setItem('gridfinity-library-custom', JSON.stringify(invalidLibrary));
 
@@ -488,6 +488,230 @@ describe('useLibraryData', () => {
       });
 
       expect(result.current.items).toEqual(mockLibraryData.items);
+    });
+  });
+
+  describe('updateItemCategories', () => {
+    beforeEach(() => {
+      (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+        ok: true,
+        json: async () => mockLibraryData,
+      });
+    });
+
+    it('should update all items in a category', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // Initially, 2 items in 'bin' category
+      const binItems = result.current.items.filter(item => item.categories.includes('bin'));
+      expect(binItems).toHaveLength(2);
+
+      act(() => {
+        result.current.updateItemCategories('bin', 'container');
+      });
+
+      // After update, 0 items in 'bin', 2 in 'container'
+      const binItemsAfter = result.current.items.filter(item => item.categories.includes('bin'));
+      const containerItems = result.current.items.filter(item => item.categories[0] === 'container');
+      expect(binItemsAfter).toHaveLength(0);
+      expect(containerItems).toHaveLength(2);
+    });
+
+    it('should save updated categories to localStorage', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      act(() => {
+        result.current.updateItemCategories('bin', 'container');
+      });
+
+      const stored = localStorage.getItem('gridfinity-library-custom');
+      expect(stored).toBeTruthy();
+      const parsed = JSON.parse(stored!);
+      const containerItems = parsed.filter((item: LibraryItem) => item.categories[0] === 'container');
+      expect(containerItems).toHaveLength(2);
+    });
+
+    it('should not affect items in other categories', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      const dividerItemsBefore = result.current.items.filter(item => item.categories.includes('divider'));
+      expect(dividerItemsBefore).toHaveLength(1);
+
+      act(() => {
+        result.current.updateItemCategories('bin', 'container');
+      });
+
+      const dividerItemsAfter = result.current.items.filter(item => item.categories.includes('divider'));
+      expect(dividerItemsAfter).toHaveLength(1);
+      expect(dividerItemsAfter[0]).toEqual(dividerItemsBefore[0]);
+    });
+
+    it('should handle updating non-existent category', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      const initialLength = result.current.items.length;
+
+      act(() => {
+        result.current.updateItemCategories('non-existent', 'new-category');
+      });
+
+      // Should not affect any items
+      expect(result.current.items.length).toBe(initialLength);
+    });
+
+    it('should handle renaming category to itself', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      const initialBinCount = result.current.items.filter(item => item.categories.includes('bin')).length;
+
+      act(() => {
+        result.current.updateItemCategories('bin', 'bin');
+      });
+
+      const binItems = result.current.items.filter(item => item.categories.includes('bin'));
+      // When renaming to itself, category remains the same
+      expect(binItems).toHaveLength(initialBinCount);
+    });
+  });
+
+  describe('Edge Cases', () => {
+    beforeEach(() => {
+      (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+        ok: true,
+        json: async () => mockLibraryData,
+      });
+    });
+
+    it('should handle adding item with minimum valid dimensions', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      const minItem: LibraryItem = {
+        id: 'min-item',
+        name: 'Minimum Item',
+        widthUnits: 1,
+        heightUnits: 1,
+        color: '#000000',
+        categories: ['bin'],
+      };
+
+      act(() => {
+        result.current.addItem(minItem);
+      });
+
+      expect(result.current.getItemById('min-item')).toEqual(minItem);
+    });
+
+    it('should handle adding item with very large dimensions', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      const largeItem: LibraryItem = {
+        id: 'large-item',
+        name: 'Large Item',
+        widthUnits: 100,
+        heightUnits: 100,
+        color: '#000000',
+        categories: ['bin'],
+      };
+
+      act(() => {
+        result.current.addItem(largeItem);
+      });
+
+      expect(result.current.getItemById('large-item')?.widthUnits).toBe(100);
+      expect(result.current.getItemById('large-item')?.heightUnits).toBe(100);
+    });
+
+    it('should handle items with special characters in name', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      const specialItem: LibraryItem = {
+        id: 'special',
+        name: 'Item & "Special" <Chars>',
+        widthUnits: 1,
+        heightUnits: 1,
+        color: '#000000',
+        categories: ['bin'],
+      };
+
+      act(() => {
+        result.current.addItem(specialItem);
+      });
+
+      expect(result.current.getItemById('special')?.name).toBe('Item & "Special" <Chars>');
+    });
+
+    it('should handle updating multiple fields simultaneously', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      act(() => {
+        result.current.updateItem('bin-1x1', {
+          name: 'Updated Bin',
+          color: '#ff0000',
+          widthUnits: 3,
+          heightUnits: 3,
+        });
+      });
+
+      const updated = result.current.getItemById('bin-1x1');
+      expect(updated).toMatchObject({
+        name: 'Updated Bin',
+        color: '#ff0000',
+        widthUnits: 3,
+        heightUnits: 3,
+      });
+    });
+
+    it('should preserve other properties when updating', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      const originalCategory = result.current.getItemById('bin-1x1')?.category;
+
+      act(() => {
+        result.current.updateItem('bin-1x1', { name: 'New Name' });
+      });
+
+      const updated = result.current.getItemById('bin-1x1');
+      expect(updated?.category).toBe(originalCategory);
     });
   });
 });

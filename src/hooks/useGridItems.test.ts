@@ -6,9 +6,9 @@ import type { LibraryItem } from '../types/gridfinity';
 describe('useGridItems', () => {
   // Mock library items
   const mockLibraryItems: Record<string, LibraryItem> = {
-    'bin-1x1': { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', category: 'bin' },
-    'bin-2x2': { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#646cff', category: 'bin' },
-    'bin-1x2': { id: 'bin-1x2', name: '1x2 Bin', widthUnits: 1, heightUnits: 2, color: '#646cff', category: 'bin' },
+    'bin-1x1': { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', categories: ['bin'] },
+    'bin-2x2': { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#646cff', categories: ['bin'] },
+    'bin-1x2': { id: 'bin-1x2', name: '1x2 Bin', widthUnits: 1, heightUnits: 2, color: '#646cff', categories: ['bin'] },
   };
 
   const mockGetItemById = (id: string): LibraryItem | undefined => {
@@ -493,6 +493,95 @@ describe('useGridItems', () => {
 
       expect(result.current.placedItems).toHaveLength(4);
       expect(result.current.placedItems.every(item => item.isValid)).toBe(true);
+    });
+
+    it('should handle very large grid (100x100)', () => {
+      const { result } = renderHook(() => useGridItems(100, 100, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+        result.current.addItem('bin-1x1', 99, 99);
+      });
+
+      expect(result.current.placedItems).toHaveLength(2);
+      expect(result.current.placedItems.every(item => item.isValid)).toBe(true);
+    });
+
+    it('should handle placing item at exact boundary', () => {
+      const { result } = renderHook(() => useGridItems(5, 5, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-2x2', 3, 3);
+      });
+
+      // 2x2 item at position (3,3) on a 5x5 grid:
+      // occupies cells (3,3), (4,3), (3,4), (4,4) - all within bounds
+      expect(result.current.placedItems[0].isValid).toBe(true);
+    });
+
+    it('should handle rotation on 1x1 item (no effect)', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+      });
+
+      const instanceId = result.current.placedItems[0].instanceId;
+
+      act(() => {
+        result.current.rotateItem(instanceId);
+      });
+
+      expect(result.current.placedItems[0]).toMatchObject({
+        width: 1,
+        height: 1,
+        isRotated: true,
+      });
+    });
+
+    it('should handle deleting non-existent item gracefully', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+      });
+
+      act(() => {
+        result.current.deleteItem('non-existent-id');
+      });
+
+      // Should not crash, item count unchanged
+      expect(result.current.placedItems).toHaveLength(1);
+    });
+
+    it('should handle moving non-existent item gracefully', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+      });
+
+      act(() => {
+        result.current.moveItem('non-existent-id', 2, 2);
+      });
+
+      // Should not crash, item position unchanged
+      expect(result.current.placedItems[0]).toMatchObject({ x: 0, y: 0 });
+    });
+
+    it('should handle rotating non-existent item gracefully', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+      });
+
+      act(() => {
+        result.current.rotateItem('non-existent-id');
+      });
+
+      // Should not crash, item rotation unchanged
+      expect(result.current.placedItems[0].isRotated).toBe(false);
     });
   });
 });

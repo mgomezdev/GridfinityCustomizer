@@ -1,10 +1,29 @@
+import { useState } from 'react';
 import type { LibraryItem, DragData } from '../types/gridfinity';
 
 interface LibraryItemCardProps {
   item: LibraryItem;
 }
 
+interface ImageLoadState {
+  forUrl: string;
+  loaded: boolean;
+  error: boolean;
+}
+
 export function LibraryItemCard({ item }: LibraryItemCardProps) {
+  const [loadState, setLoadState] = useState<ImageLoadState>({
+    forUrl: '',
+    loaded: false,
+    error: false,
+  });
+
+  // Derive current state - automatically "resets" when URL changes
+  const isCurrentUrl = loadState.forUrl === item.imageUrl;
+  const imageLoaded = isCurrentUrl && loadState.loaded;
+  const imageError = isCurrentUrl && loadState.error;
+  const shouldShowImage = item.imageUrl && imageLoaded && !imageError;
+
   const handleDragStart = (e: React.DragEvent) => {
     const dragData: DragData = {
       type: 'library',
@@ -12,6 +31,14 @@ export function LibraryItemCard({ item }: LibraryItemCardProps) {
     };
     e.dataTransfer.setData('application/json', JSON.stringify(dragData));
     e.dataTransfer.effectAllowed = 'copy';
+  };
+
+  const handleImageLoad = () => {
+    setLoadState({ forUrl: item.imageUrl ?? '', loaded: true, error: false });
+  };
+
+  const handleImageError = () => {
+    setLoadState({ forUrl: item.imageUrl ?? '', loaded: false, error: true });
   };
 
   // Generate mini grid preview
@@ -36,8 +63,22 @@ export function LibraryItemCard({ item }: LibraryItemCardProps) {
       draggable
       onDragStart={handleDragStart}
     >
-      <div className="library-item-preview">
-        {previewCells}
+      <div className="library-item-preview-container">
+        {item.imageUrl && !imageError && (
+          <img
+            src={item.imageUrl}
+            alt={item.name}
+            className={`library-item-image ${shouldShowImage ? 'visible' : 'hidden'}`}
+            loading="lazy"
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+          />
+        )}
+        {!shouldShowImage && (
+          <div className="library-item-preview">
+            {previewCells}
+          </div>
+        )}
       </div>
       <div className="library-item-info">
         <span className="library-item-name">{item.name}</span>
