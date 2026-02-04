@@ -98,7 +98,13 @@ e2e/
 - Use page objects for E2E tests
 - Mock external dependencies, not internal modules
 
-## Git Workflow
+## Git Workflow (Gitflow)
+
+- No direct commits to `develop` or `main`
+- Use named branches: `feature/*`, `bug/*`, `chore/*`, etc.
+- Feature branches merge into `develop` (squash merge)
+- Only `develop` merges into `main`
+- No cherry-picking
 
 ```bash
 # Create feature branch
