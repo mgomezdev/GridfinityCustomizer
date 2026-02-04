@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
-import type { LibraryItem } from '../types/gridfinity';
+import type { LibraryItem, Category } from '../types/gridfinity';
 import { LibraryItemCard } from './LibraryItemCard';
 import { LibraryManager } from './LibraryManager';
 
 const STORAGE_KEY = 'gridfinity-collapsed-categories';
 
-type CategoryKey = 'bins' | 'dividers' | 'organizers';
-
 interface ItemLibraryProps {
   items: LibraryItem[];
+  categories: Category[];
   isLoading: boolean;
   error: Error | null;
   onAddItem: (item: LibraryItem) => void;
@@ -16,10 +15,17 @@ interface ItemLibraryProps {
   onDeleteItem: (id: string) => void;
   onResetToDefaults: () => void;
   onExportLibrary: () => void;
+  onAddCategory: (category: Category) => void;
+  onUpdateCategory: (id: string, updates: Partial<Category>) => void;
+  onDeleteCategory: (id: string) => void;
+  onResetCategories: () => void;
+  onUpdateItemCategories: (oldCategoryId: string, newCategoryId: string) => void;
+  getCategoryById: (id: string) => Category | undefined;
 }
 
 export function ItemLibrary({
   items,
+  categories,
   isLoading,
   error,
   onAddItem,
@@ -27,6 +33,12 @@ export function ItemLibrary({
   onDeleteItem,
   onResetToDefaults,
   onExportLibrary,
+  onAddCategory,
+  onUpdateCategory,
+  onDeleteCategory,
+  onResetCategories,
+  onUpdateItemCategories,
+  getCategoryById,
 }: ItemLibraryProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showManager, setShowManager] = useState(false);
@@ -36,12 +48,19 @@ export function ItemLibrary({
     item.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const bins = filteredItems.filter(item => item.category === 'bin');
-  const dividers = filteredItems.filter(item => item.category === 'divider');
-  const organizers = filteredItems.filter(item => item.category === 'organizer');
+  // Group items by category dynamically
+  const itemsByCategory = categories.map(category => ({
+    category,
+    items: filteredItems.filter(item => item.categories.includes(category.id)),
+  }));
+
+  // Sort categories by order
+  const sortedCategories = itemsByCategory.sort((a, b) =>
+    (a.category.order || 0) - (b.category.order || 0)
+  );
 
   // Load collapsed state from localStorage, default all to expanded (false = expanded)
-  const [collapsedCategories, setCollapsedCategories] = useState<Set<CategoryKey>>(() => {
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
@@ -62,45 +81,45 @@ export function ItemLibrary({
     }
   }, [collapsedCategories]);
 
-  const toggleCategory = (category: CategoryKey) => {
+  const toggleCategory = (categoryId: string) => {
     setCollapsedCategories(prev => {
       const next = new Set(prev);
-      if (next.has(category)) {
-        next.delete(category);
+      if (next.has(categoryId)) {
+        next.delete(categoryId);
       } else {
-        next.add(category);
+        next.add(categoryId);
       }
       return next;
     });
   };
 
   const renderCategory = (
-    key: CategoryKey,
-    title: string,
+    category: Category,
     categoryItems: LibraryItem[]
   ) => {
     if (categoryItems.length === 0) return null;
 
-    const isCollapsed = collapsedCategories.has(key);
+    const isCollapsed = collapsedCategories.has(category.id);
 
     return (
-      <div className="item-library-category" key={key}>
+      <div className="item-library-category" key={category.id}>
         <h4
           className="category-title collapsible"
-          onClick={() => toggleCategory(key)}
+          onClick={() => toggleCategory(category.id)}
           role="button"
           tabIndex={0}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
-              toggleCategory(key);
+              toggleCategory(category.id);
             }
           }}
+          style={category.color ? { borderLeft: `4px solid ${category.color}` } : {}}
         >
           <span className={`category-chevron ${isCollapsed ? 'collapsed' : 'expanded'}`}>
             ▶
           </span>
-          {title} ({categoryItems.length})
+          {category.name} ({categoryItems.length})
         </h4>
         <div className={`category-items ${isCollapsed ? 'collapsed' : 'expanded'}`}>
           {categoryItems.map(item => (
@@ -134,7 +153,7 @@ export function ItemLibrary({
     );
   }
 
-  const hasResults = bins.length > 0 || dividers.length > 0 || organizers.length > 0;
+  const hasResults = filteredItems.length > 0;
 
   return (
     <div className="item-library">
@@ -181,18 +200,25 @@ export function ItemLibrary({
         </div>
       )}
 
-      {renderCategory('bins', 'Bins', bins)}
-      {renderCategory('dividers', 'Dividers', dividers)}
-      {renderCategory('organizers', 'Organizers', organizers)}
+      {sortedCategories.map(({ category, items: categoryItems }) =>
+        renderCategory(category, categoryItems)
+      )}
 
       {showManager && (
         <LibraryManager
           items={items}
+          categories={categories}
           onClose={() => setShowManager(false)}
           onAddItem={onAddItem}
           onUpdateItem={onUpdateItem}
           onDeleteItem={onDeleteItem}
           onResetToDefaults={onResetToDefaults}
+          onAddCategory={onAddCategory}
+          onUpdateCategory={onUpdateCategory}
+          onDeleteCategory={onDeleteCategory}
+          onResetCategories={onResetCategories}
+          onUpdateItemCategories={onUpdateItemCategories}
+          getCategoryById={getCategoryById}
         />
       )}
     </div>

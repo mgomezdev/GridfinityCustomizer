@@ -1,34 +1,51 @@
 import { useState } from 'react';
-import type { LibraryItem } from '../types/gridfinity';
+import type { LibraryItem, Category } from '../types/gridfinity';
+import { CategoryManager } from './CategoryManager';
 
 interface LibraryManagerProps {
   items: LibraryItem[];
+  categories: Category[];
   onClose: () => void;
   onAddItem: (item: LibraryItem) => void;
   onUpdateItem: (id: string, updates: Partial<LibraryItem>) => void;
   onDeleteItem: (id: string) => void;
   onResetToDefaults: () => void;
+  onAddCategory: (category: Category) => void;
+  onUpdateCategory: (id: string, updates: Partial<Category>) => void;
+  onDeleteCategory: (id: string) => void;
+  onResetCategories: () => void;
+  onUpdateItemCategories: (oldCategoryId: string, newCategoryId: string) => void;
+  getCategoryById: (id: string) => Category | undefined;
 }
 
 type FormMode = 'add' | 'edit' | null;
 
 export function LibraryManager({
   items,
+  categories,
   onClose,
   onAddItem,
   onUpdateItem,
   onDeleteItem,
   onResetToDefaults,
+  onAddCategory,
+  onUpdateCategory,
+  onDeleteCategory,
+  onResetCategories,
+  onUpdateItemCategories,
+  getCategoryById,
 }: LibraryManagerProps) {
   const [formMode, setFormMode] = useState<FormMode>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [formData, setFormData] = useState<Partial<LibraryItem>>({
     id: '',
     name: '',
     widthUnits: 1,
     heightUnits: 1,
     color: '#646cff',
-    category: 'bin',
+    categories: categories[0]?.id ? [categories[0].id] : ['bin'],
+    imageUrl: '',
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -41,9 +58,34 @@ export function LibraryManager({
       widthUnits: 1,
       heightUnits: 1,
       color: '#646cff',
-      category: 'bin',
+      categories: categories[0]?.id ? [categories[0].id] : ['bin'],
+      imageUrl: '',
     });
     setError(null);
+  };
+
+  const handleCategoryUpdate = (id: string, updates: Partial<Category>) => {
+    const oldCategory = getCategoryById(id);
+
+    // If name changed, cascade to all items
+    if (oldCategory && updates.id && updates.id !== oldCategory.id) {
+      onUpdateItemCategories(oldCategory.id, updates.id);
+    }
+
+    onUpdateCategory(id, updates);
+  };
+
+  const getItemsUsingCategory = (categoryId: string): LibraryItem[] => {
+    return items.filter(item => item.categories.includes(categoryId));
+  };
+
+  const handleCategoryToggle = (categoryId: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      categories: checked
+        ? [...(prev.categories || []), categoryId]
+        : (prev.categories || []).filter(id => id !== categoryId)
+    }));
   };
 
   const handleStartEdit = (item: LibraryItem) => {
@@ -112,11 +154,14 @@ export function LibraryManager({
           </div>
         )}
 
-        {formMode === null ? (
+        {formMode === null && !showCategoryManager ? (
           <>
             <div className="library-manager-actions">
               <button className="add-item-button" onClick={handleStartAdd}>
                 + Add New Item
+              </button>
+              <button className="manage-categories-button" onClick={() => setShowCategoryManager(true)}>
+                Manage Categories
               </button>
               <button className="reset-button" onClick={handleReset}>
                 Reset to Defaults
@@ -136,7 +181,8 @@ export function LibraryManager({
                     <div className="item-details">
                       <div className="item-name">{item.name}</div>
                       <div className="item-meta">
-                        {item.widthUnits}×{item.heightUnits} units • {item.category}
+                        {item.widthUnits}×{item.heightUnits} units • {item.categories.join(', ')}
+                        {item.imageUrl && ' • Has image'}
                       </div>
                       <div className="item-id">ID: {item.id}</div>
                     </div>
@@ -215,17 +261,28 @@ export function LibraryManager({
             </div>
 
             <div className="form-group">
-              <label htmlFor="item-category">Category *</label>
-              <select
-                id="item-category"
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value as LibraryItem['category'] })}
-                required
-              >
-                <option value="bin">Bin</option>
-                <option value="divider">Divider</option>
-                <option value="organizer">Organizer</option>
-              </select>
+              <label>Categories * (Select at least one)</label>
+              <div className="category-checkbox-list">
+                {categories.map(cat => (
+                  <label key={cat.id} className="category-checkbox-item">
+                    <input
+                      type="checkbox"
+                      checked={formData.categories?.includes(cat.id) || false}
+                      onChange={(e) => handleCategoryToggle(cat.id, e.target.checked)}
+                    />
+                    <span
+                      className="category-color-indicator"
+                      style={{ backgroundColor: cat.color }}
+                    />
+                    <span>{cat.name}</span>
+                  </label>
+                ))}
+              </div>
+              {formData.categories?.length === 0 && (
+                <div className="form-validation-error">
+                  At least one category must be selected
+                </div>
+              )}
             </div>
 
             <div className="form-group">
@@ -248,6 +305,21 @@ export function LibraryManager({
               </div>
             </div>
 
+            <div className="form-group">
+              <label htmlFor="item-image-url">Image URL (Optional)</label>
+              <input
+                id="item-image-url"
+                type="text"
+                value={formData.imageUrl || ''}
+                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                placeholder="e.g., /icons/bin.png or https://example.com/icon.png"
+              />
+              <small>
+                Provide a URL to display an image icon instead of the colored grid preview.
+                Supports PNG, JPG, SVG, and WebP formats. Leave empty to use the grid preview.
+              </small>
+            </div>
+
             <div className="form-actions">
               <button type="button" className="cancel-button" onClick={handleCancelForm}>
                 Cancel
@@ -257,6 +329,18 @@ export function LibraryManager({
               </button>
             </div>
           </form>
+        )}
+
+        {showCategoryManager && (
+          <CategoryManager
+            categories={categories}
+            onClose={() => setShowCategoryManager(false)}
+            onAddCategory={onAddCategory}
+            onUpdateCategory={handleCategoryUpdate}
+            onDeleteCategory={onDeleteCategory}
+            onResetToDefaults={onResetCategories}
+            getItemsUsingCategory={getItemsUsingCategory}
+          />
         )}
       </div>
     </div>

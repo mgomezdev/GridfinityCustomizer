@@ -37,10 +37,10 @@ vi.mock('./PlacedItemOverlay', () => ({
 describe('Bin Placement Integration Tests', () => {
   // Mock library items
   const mockLibraryItems: Record<string, LibraryItem> = {
-    'bin-1x1': { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', category: 'bin' },
-    'bin-2x2': { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#646cff', category: 'bin' },
-    'bin-1x2': { id: 'bin-1x2', name: '1x2 Bin', widthUnits: 1, heightUnits: 2, color: '#646cff', category: 'bin' },
-    'bin-3x2': { id: 'bin-3x2', name: '3x2 Bin', widthUnits: 3, heightUnits: 2, color: '#646cff', category: 'bin' },
+    'bin-1x1': { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', categories: ['bin'] },
+    'bin-2x2': { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#646cff', categories: ['bin'] },
+    'bin-1x2': { id: 'bin-1x2', name: '1x2 Bin', widthUnits: 1, heightUnits: 2, color: '#646cff', categories: ['bin'] },
+    'bin-3x2': { id: 'bin-3x2', name: '3x2 Bin', widthUnits: 3, heightUnits: 2, color: '#646cff', categories: ['bin'] },
   };
 
   const mockGetItemById = (id: string): LibraryItem | undefined => {
@@ -574,6 +574,100 @@ describe('Bin Placement Integration Tests', () => {
 
       expect(result.current.placedItems).toHaveLength(100);
       expect(result.current.placedItems.every(item => item.isValid)).toBe(true);
+    });
+
+    it('should handle very large grid (20x20)', () => {
+      const { result } = renderHook(() => useGridItems(20, 20, mockGetItemById));
+
+      act(() => {
+        for (let i = 0; i < 10; i++) {
+          result.current.handleDrop({ type: 'library', itemId: 'bin-2x2' }, i * 2, i * 2);
+        }
+      });
+
+      expect(result.current.placedItems).toHaveLength(10);
+      expect(result.current.placedItems.every(item => item.isValid)).toBe(true);
+    });
+  });
+
+  describe('Additional Edge Cases', () => {
+    it('should handle single-row grid (1xN)', () => {
+      const { result } = renderHook(() => useGridItems(1, 5, mockGetItemById));
+
+      act(() => {
+        result.current.handleDrop({ type: 'library', itemId: 'bin-1x1' }, 0, 0);
+        result.current.handleDrop({ type: 'library', itemId: 'bin-1x1' }, 0, 4);
+      });
+
+      expect(result.current.placedItems).toHaveLength(2);
+      expect(result.current.placedItems.every(item => item.isValid)).toBe(true);
+    });
+
+    it('should handle single-column grid (Nx1)', () => {
+      const { result } = renderHook(() => useGridItems(5, 1, mockGetItemById));
+
+      act(() => {
+        result.current.handleDrop({ type: 'library', itemId: 'bin-1x1' }, 0, 0);
+        result.current.handleDrop({ type: 'library', itemId: 'bin-1x1' }, 4, 0);
+      });
+
+      expect(result.current.placedItems).toHaveLength(2);
+      expect(result.current.placedItems.every(item => item.isValid)).toBe(true);
+    });
+
+    it('should invalidate bin when rotated into collision', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.handleDrop({ type: 'library', itemId: 'bin-1x2' }, 0, 0);
+        // Place at (1, 0) so rotation will cause collision
+        result.current.handleDrop({ type: 'library', itemId: 'bin-1x1' }, 1, 0);
+      });
+
+      const rotatingId = result.current.placedItems[0].instanceId;
+
+      expect(result.current.placedItems.every(item => item.isValid)).toBe(true);
+
+      // Rotating 1x2 at (0,0) to 2x1 will now collide with item at (1,0)
+      act(() => {
+        result.current.rotateItem(rotatingId);
+      });
+
+      const invalidItems = result.current.placedItems.filter(item => !item.isValid);
+      expect(invalidItems.length).toBeGreaterThan(0);
+    });
+
+    it('should handle moving bin to exact same position', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.handleDrop({ type: 'library', itemId: 'bin-1x1' }, 1, 1);
+      });
+
+      const instanceId = result.current.placedItems[0].instanceId;
+
+      act(() => {
+        result.current.handleDrop({ type: 'placed', itemId: 'bin-1x1', instanceId }, 1, 1);
+      });
+
+      expect(result.current.placedItems[0]).toMatchObject({
+        x: 1,
+        y: 1,
+        isValid: true,
+      });
+    });
+
+    it('should handle dropping library item on occupied space', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.handleDrop({ type: 'library', itemId: 'bin-2x2' }, 0, 0);
+        result.current.handleDrop({ type: 'library', itemId: 'bin-2x2' }, 0, 0);
+      });
+
+      expect(result.current.placedItems).toHaveLength(2);
+      const invalidItems = result.current.placedItems.filter(item => !item.isValid);
+      expect(invalidItems.length).toBeGreaterThan(0);
     });
   });
 });

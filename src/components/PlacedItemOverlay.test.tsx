@@ -617,4 +617,317 @@ describe('PlacedItemOverlay', () => {
       });
     });
   });
+
+  describe('Image Rendering', () => {
+    const mockGetItemByIdWithImage = (id: string): LibraryItem | undefined => {
+      const items: Record<string, LibraryItem> = {
+        'bin-with-image': {
+          id: 'bin-with-image',
+          name: 'Bin with Image',
+          widthUnits: 1,
+          heightUnits: 1,
+          color: '#646cff',
+          category: 'bin',
+          imageUrl: 'https://example.com/image.png',
+        },
+        'bin-no-image': {
+          id: 'bin-no-image',
+          name: 'Bin without Image',
+          widthUnits: 1,
+          heightUnits: 1,
+          color: '#646cff',
+          category: 'bin',
+        },
+      };
+      return items[id];
+    };
+
+    it('should render image when imageUrl is provided', () => {
+      const item = createMockItem({ itemId: 'bin-with-image' });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithImage}
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image');
+      expect(image).toBeInTheDocument();
+      expect(image).toHaveAttribute('src', 'https://example.com/image.png');
+    });
+
+    it('should have loading="lazy" attribute on image', () => {
+      const item = createMockItem({ itemId: 'bin-with-image' });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithImage}
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image');
+      expect(image).toHaveAttribute('loading', 'lazy');
+    });
+
+    it('should use item name as alt text', () => {
+      const item = createMockItem({ itemId: 'bin-with-image' });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithImage}
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image');
+      expect(image).toHaveAttribute('alt', 'Bin with Image');
+    });
+
+    it('should have hidden class before image loads', () => {
+      const item = createMockItem({ itemId: 'bin-with-image' });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithImage}
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image');
+      expect(image).toHaveClass('hidden');
+      expect(image).not.toHaveClass('visible');
+    });
+
+    it('should toggle to visible class when image loads', () => {
+      const item = createMockItem({ itemId: 'bin-with-image' });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithImage}
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image') as HTMLImageElement;
+      expect(image).toHaveClass('hidden');
+
+      fireEvent.load(image);
+
+      expect(image).toHaveClass('visible');
+      expect(image).not.toHaveClass('hidden');
+    });
+
+    it('should not render image when no imageUrl is provided', () => {
+      const item = createMockItem({ itemId: 'bin-no-image' });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithImage}
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image');
+      expect(image).not.toBeInTheDocument();
+    });
+
+    it('should show colored background when no imageUrl is provided', () => {
+      const item = createMockItem({ itemId: 'bin-no-image' });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithImage}
+        />
+      );
+
+      const element = container.querySelector('.placed-item');
+      expect(element).toHaveStyle({
+        backgroundColor: '#646cff66',
+        borderColor: '#646cff',
+      });
+    });
+
+    it('should hide image and show colored background when image fails to load', () => {
+      const item = createMockItem({ itemId: 'bin-with-image' });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithImage}
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image') as HTMLImageElement;
+      expect(image).toBeInTheDocument();
+
+      fireEvent.error(image);
+
+      // Image element should be removed from DOM after error
+      const imageAfterError = container.querySelector('.placed-item-image');
+      expect(imageAfterError).not.toBeInTheDocument();
+
+      // Background color should still be visible
+      const element = container.querySelector('.placed-item');
+      expect(element).toHaveStyle({
+        backgroundColor: '#646cff66',
+        borderColor: '#646cff',
+      });
+    });
+
+    it('should show colored background while image is loading', () => {
+      const item = createMockItem({ itemId: 'bin-with-image' });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithImage}
+        />
+      );
+
+      // Before image loads, background should be visible
+      const element = container.querySelector('.placed-item');
+      expect(element).toHaveStyle({
+        backgroundColor: '#646cff66',
+        borderColor: '#646cff',
+      });
+    });
+
+    it('should handle imageUrl changing during load', () => {
+      const item = createMockItem({ itemId: 'bin-with-image' });
+      const { container, rerender } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithImage}
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image') as HTMLImageElement;
+      expect(image).toHaveAttribute('src', 'https://example.com/image.png');
+
+      // Change the imageUrl
+      const updatedGetItemById = (id: string): LibraryItem | undefined => {
+        if (id === 'bin-with-image') {
+          return {
+            id: 'bin-with-image',
+            name: 'Bin with Image',
+            widthUnits: 1,
+            heightUnits: 1,
+            color: '#646cff',
+            category: 'bin',
+            imageUrl: 'https://example.com/new-image.png',
+          };
+        }
+        return undefined;
+      };
+
+      rerender(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={updatedGetItemById}
+        />
+      );
+
+      const newImage = container.querySelector('.placed-item-image');
+      expect(newImage).toHaveAttribute('src', 'https://example.com/new-image.png');
+      // Should be hidden again since it's a new URL
+      expect(newImage).toHaveClass('hidden');
+    });
+
+    it('should render multiple placed items with images independently', () => {
+      const item1 = createMockItem({ instanceId: 'item-1', itemId: 'bin-with-image', x: 0, y: 0 });
+      const item2 = createMockItem({ instanceId: 'item-2', itemId: 'bin-with-image', x: 1, y: 0 });
+
+      const { container } = render(
+        <>
+          <PlacedItemOverlay
+            item={item1}
+            gridX={4}
+            gridY={4}
+            isSelected={false}
+            onSelect={mockOnSelect}
+            getItemById={mockGetItemByIdWithImage}
+          />
+          <PlacedItemOverlay
+            item={item2}
+            gridX={4}
+            gridY={4}
+            isSelected={false}
+            onSelect={mockOnSelect}
+            getItemById={mockGetItemByIdWithImage}
+          />
+        </>
+      );
+
+      const images = container.querySelectorAll('.placed-item-image');
+      expect(images).toHaveLength(2);
+      expect(images[0]).toHaveClass('hidden');
+      expect(images[1]).toHaveClass('hidden');
+
+      // Load first image
+      fireEvent.load(images[0]);
+      expect(images[0]).toHaveClass('visible');
+      expect(images[1]).toHaveClass('hidden');
+
+      // Load second image
+      fireEvent.load(images[1]);
+      expect(images[0]).toHaveClass('visible');
+      expect(images[1]).toHaveClass('visible');
+    });
+
+    it('should keep label visible on top of image', () => {
+      const item = createMockItem({ itemId: 'bin-with-image' });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithImage}
+        />
+      );
+
+      const label = container.querySelector('.placed-item-label');
+      expect(label).toBeInTheDocument();
+      expect(label?.textContent).toBe('Bin with Image');
+    });
+  });
 });
