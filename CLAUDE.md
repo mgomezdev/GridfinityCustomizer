@@ -46,8 +46,8 @@ The application follows a standard React structure:
 - `src/types/` - TypeScript type definitions
 - `src/utils/` - Utility functions for gridfinity calculations
 
-## Git Workflow Rules
+## Git Workflow (Gitflow)
 
-- **Target branch**: PRs should merge into `develop`, not `main`
-- **No cherry-picking**: Never use `git cherry-pick` when merging code or handling PRs. If there are merge conflicts, resolve them properly through rebase or merge commits
-- **Preserve history**: Maintain clean, linear commit history where possible through proper branching and merging
+- Feature branches merge into `develop`
+- Only `develop` merges into `main`
+- No cherry-picking
