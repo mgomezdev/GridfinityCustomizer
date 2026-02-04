@@ -35,7 +35,7 @@ export function useLibraryData(): UseLibraryDataResult {
         setError(null);
 
         // Load default library from JSON
-        const response = await fetch('/library.json');
+        const response = await fetch('/library/library.json');
 
         if (!response.ok) {
           throw new Error(`Failed to load library: ${response.statusText}`);
