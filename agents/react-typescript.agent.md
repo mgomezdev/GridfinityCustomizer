@@ -4,6 +4,12 @@
 
 Primary development agent for React/TypeScript implementation tasks.
 
+## Model
+
+**Recommended: `sonnet`**
+
+React/TypeScript development requires strong reasoning about component architecture, type systems, state management patterns, and complex interactions. Sonnet provides the best balance of capability and cost for these tasks.
+
 ## Capabilities
 
 - Create and modify React functional components

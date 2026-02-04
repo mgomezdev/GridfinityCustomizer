@@ -4,6 +4,12 @@
 
 Specialized agent for writing unit tests using Vitest and React Testing Library.
 
+## Model
+
+**Recommended: `sonnet`**
+
+Writing comprehensive unit tests requires understanding complex code behavior, designing effective mocking strategies, and creating thorough test scenarios. Sonnet's reasoning capabilities ensure well-structured, maintainable tests.
+
 ## Capabilities
 
 - Write unit tests for React components

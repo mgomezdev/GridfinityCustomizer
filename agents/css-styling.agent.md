@@ -4,6 +4,12 @@
 
 Specialized agent for CSS styling, layout, and visual design.
 
+## Model
+
+**Recommended: `haiku`**
+
+CSS styling tasks are generally well-defined and follow established patterns (flexbox, grid, transitions, etc.). Haiku provides fast, cost-effective styling while maintaining quality for layout and visual design work.
+
 ## Capabilities
 
 - Write CSS for React components

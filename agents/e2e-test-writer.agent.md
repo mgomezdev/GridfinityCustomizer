@@ -4,6 +4,12 @@
 
 Specialized agent for writing end-to-end tests using Playwright.
 
+## Model
+
+**Recommended: `sonnet`**
+
+E2E testing requires understanding complex user workflows, designing maintainable page object models, and handling async browser interactions. Sonnet provides the reasoning needed for robust, comprehensive end-to-end test scenarios.
+
 ## Capabilities
 
 - Write E2E tests that simulate real user workflows
