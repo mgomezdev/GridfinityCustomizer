@@ -48,6 +48,8 @@ The application follows a standard React structure:
 
 ## Git Workflow (Gitflow)
 
-- Feature branches merge into `develop`
+- No direct commits to `develop` or `main`
+- Use named branches: `feature/*`, `bug/*`, `chore/*`, etc.
+- Feature branches merge into `develop` (squash merge)
 - Only `develop` merges into `main`
 - No cherry-picking
