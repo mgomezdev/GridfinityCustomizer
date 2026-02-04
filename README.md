@@ -32,6 +32,31 @@ npm test
 npm run build
 ```
 
+## Docker Deployment
+
+Build and run the application in a Docker container:
+
+```bash
+# Build the Docker image
+docker build -t gridfinity-customizer .
+
+# Run the container
+docker run -d -p 8080:80 --name gridfinity gridfinity-customizer
+
+# Or use docker-compose
+docker-compose up -d
+
+# Stop the container
+docker-compose down
+```
+
+The application will be available at `http://localhost:8080`.
+
+To use a different port:
+```bash
+PORT=3000 docker-compose up -d
+```
+
 ## Branching Strategy (Gitflow)
 
 | Branch | Purpose |
