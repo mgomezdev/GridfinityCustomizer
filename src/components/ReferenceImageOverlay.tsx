@@ -116,6 +116,7 @@ export function ReferenceImageOverlay({
     height: `${image.height}%`,
     opacity: image.opacity,
     transform: `scale(${image.scale})`,
+    transformOrigin: 'top left',
     pointerEvents: isInteractive ? 'auto' : 'none',
   };
 

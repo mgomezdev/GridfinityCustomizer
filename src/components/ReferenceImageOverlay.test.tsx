@@ -181,6 +181,25 @@ describe('ReferenceImageOverlay', () => {
       const overlayElement = container.querySelector('.reference-image-overlay');
       expect(overlayElement).toHaveStyle({ transform: 'scale(0.5)' });
     });
+
+    it('should use top-left transform-origin so scaled-down images can reach container edges', () => {
+      const image = createMockImage({ scale: 0.5, x: 0, y: 0 });
+      const { container } = render(
+        <ReferenceImageOverlay
+          image={image}
+          isInteractive={true}
+          onPositionChange={mockOnPositionChange}
+          onSelect={mockOnSelect}
+        />
+      );
+
+      const overlayElement = container.querySelector('.reference-image-overlay');
+      // With transform-origin: center (default), an element at left:0% with scale(0.5)
+      // visually shifts right by (width * 0.25). To allow placing at the true left edge,
+      // transform-origin must be top left (or 0 0).
+      expect(overlayElement).toHaveStyle({ transformOrigin: 'top left' });
+      expect(overlayElement).toHaveStyle({ left: '0%' });
+    });
   });
 
   describe('Percentage-based Positioning', () => {
