@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { UnitSystem, ImperialFormat, GridSpacerConfig } from './types/gridfinity';
 import { calculateGrid, mmToInches, inchesToMm } from './utils/conversions';
 import { useGridItems } from './hooks/useGridItems';
@@ -6,6 +6,7 @@ import { useSpacerCalculation } from './hooks/useSpacerCalculation';
 import { useBillOfMaterials } from './hooks/useBillOfMaterials';
 import { useLibraryData } from './hooks/useLibraryData';
 import { useCategoryData } from './hooks/useCategoryData';
+import { useReferenceImages } from './hooks/useReferenceImages';
 import { DimensionInput } from './components/DimensionInput';
 import { GridPreview } from './components/GridPreview';
 import { GridSummary } from './components/GridSummary';
@@ -13,6 +14,9 @@ import { ItemLibrary } from './components/ItemLibrary';
 import { ItemControls } from './components/ItemControls';
 import { SpacerControls } from './components/SpacerControls';
 import { BillOfMaterials } from './components/BillOfMaterials';
+import { ReferenceImageUploader } from './components/ReferenceImageUploader';
+import { InteractionModeToggle } from './components/InteractionModeToggle';
+import { ReferenceImageControls } from './components/ReferenceImageControls';
 import './App.css';
 
 function App() {
@@ -24,6 +28,7 @@ function App() {
     horizontal: 'none',
     vertical: 'none',
   });
+  const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
 
   const {
     categories,
@@ -35,6 +40,18 @@ function App() {
     deleteCategory,
     resetToDefaults: resetCategories,
   } = useCategoryData();
+
+  const {
+    images,
+    interactionMode,
+    addImage,
+    removeImage,
+    updateImagePosition,
+    updateImageScale,
+    updateImageOpacity,
+    toggleImageLock,
+    setInteractionMode,
+  } = useReferenceImages();
 
   const {
     items: libraryItems,
@@ -131,6 +148,84 @@ function App() {
     }
   };
 
+  const handleInteractionModeChange = (mode: 'items' | 'images') => {
+    setInteractionMode(mode);
+    // Clear selected image when switching to 'items' mode
+    if (mode === 'items') {
+      setSelectedImageId(null);
+    }
+  };
+
+  const handleRemoveImage = (id: string) => {
+    removeImage(id);
+    // Clear selection if we're removing the selected image
+    if (selectedImageId === id) {
+      setSelectedImageId(null);
+    }
+  };
+
+  // Find the selected image (or null if it doesn't exist)
+  const selectedImage = selectedImageId ? images.find(img => img.id === selectedImageId) ?? null : null;
+
+  // Keyboard shortcuts for reference images
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Don't fire shortcuts when user is typing in an input element
+      const activeElement = document.activeElement;
+      const isTyping = activeElement?.tagName === 'INPUT' ||
+                       activeElement?.tagName === 'TEXTAREA' ||
+                       activeElement?.tagName === 'SELECT';
+
+      if (isTyping) {
+        return;
+      }
+
+      // Tab or M: Toggle interaction mode (only when images exist)
+      if ((event.key === 'Tab' || event.key === 'm' || event.key === 'M') && images.length > 0) {
+        event.preventDefault();
+        setInteractionMode(interactionMode === 'items' ? 'images' : 'items');
+        // Clear selection when switching to items mode
+        if (interactionMode === 'images') {
+          setSelectedImageId(null);
+        }
+        return;
+      }
+
+      // Delete or Backspace: Remove selected image (only in images mode with selection)
+      if ((event.key === 'Delete' || event.key === 'Backspace') &&
+          interactionMode === 'images' &&
+          selectedImageId) {
+        event.preventDefault();
+        removeImage(selectedImageId);
+        // Clear selection after removing
+        setSelectedImageId(null);
+        return;
+      }
+
+      // Escape: Deselect image and switch to items mode
+      if (event.key === 'Escape') {
+        setSelectedImageId(null);
+        setInteractionMode('items');
+        return;
+      }
+
+      // L: Toggle lock on selected image (only in images mode with selection)
+      if ((event.key === 'l' || event.key === 'L') &&
+          interactionMode === 'images' &&
+          selectedImageId) {
+        event.preventDefault();
+        toggleImageLock(selectedImageId);
+        return;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [images.length, interactionMode, selectedImageId, setInteractionMode, toggleImageLock, removeImage]);
+
   return (
     <div className="app">
       <header className="app-header">
@@ -202,6 +297,25 @@ function App() {
           unit={unitSystem}
           imperialFormat={imperialFormat}
         />
+
+        <div className="reference-image-toolbar">
+          <ReferenceImageUploader onUpload={addImage} />
+          <InteractionModeToggle
+            mode={interactionMode}
+            onChange={handleInteractionModeChange}
+            hasImages={images.length > 0}
+          />
+        </div>
+
+        {selectedImage && interactionMode === 'images' && (
+          <ReferenceImageControls
+            image={selectedImage}
+            onScaleChange={(scale) => updateImageScale(selectedImage.id, scale)}
+            onOpacityChange={(opacity) => updateImageOpacity(selectedImage.id, opacity)}
+            onRemove={() => handleRemoveImage(selectedImage.id)}
+            onToggleLock={() => toggleImageLock(selectedImage.id)}
+          />
+        )}
       </section>
 
       <main className="app-main">
@@ -242,6 +356,11 @@ function App() {
             onDrop={handleDrop}
             onSelectItem={selectItem}
             getItemById={getItemById}
+            referenceImages={images}
+            interactionMode={interactionMode}
+            selectedImageId={selectedImageId}
+            onImagePositionChange={updateImagePosition}
+            onImageSelect={setSelectedImageId}
           />
         </section>
 

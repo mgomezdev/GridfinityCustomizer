@@ -80,3 +80,18 @@ export interface BOMItem {
   categories: string[];
   quantity: number;
 }
+
+export interface ReferenceImage {
+  id: string;
+  name: string;
+  dataUrl: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  opacity: number;
+  scale: number;
+  isLocked: boolean;
+}
+
+export type InteractionMode = 'items' | 'images';

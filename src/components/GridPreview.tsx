@@ -1,7 +1,8 @@
 import { useRef } from 'react';
-import type { PlacedItemWithValidity, DragData, ComputedSpacer, LibraryItem } from '../types/gridfinity';
+import type { PlacedItemWithValidity, DragData, ComputedSpacer, LibraryItem, ReferenceImage, InteractionMode } from '../types/gridfinity';
 import { PlacedItemOverlay } from './PlacedItemOverlay';
 import { SpacerOverlay } from './SpacerOverlay';
+import { ReferenceImageOverlay } from './ReferenceImageOverlay';
 
 interface GridPreviewProps {
   gridX: number;
@@ -12,6 +13,11 @@ interface GridPreviewProps {
   onDrop: (dragData: DragData, x: number, y: number) => void;
   onSelectItem: (instanceId: string | null) => void;
   getItemById: (id: string) => LibraryItem | undefined;
+  referenceImages?: ReferenceImage[];
+  interactionMode?: InteractionMode;
+  selectedImageId?: string | null;
+  onImagePositionChange?: (id: string, x: number, y: number) => void;
+  onImageSelect?: (id: string) => void;
 }
 
 export function GridPreview({
@@ -23,6 +29,10 @@ export function GridPreview({
   onDrop,
   onSelectItem,
   getItemById,
+  referenceImages = [],
+  interactionMode = 'items',
+  onImagePositionChange,
+  onImageSelect,
 }: GridPreviewProps) {
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -102,6 +112,11 @@ export function GridPreview({
   const gridWidth = 100 - totalHorizontalSpacers;
   const gridHeight = 100 - totalVerticalSpacers;
 
+  // Disable placed item interactions when in 'images' mode
+  const itemsStyle: React.CSSProperties = interactionMode === 'images'
+    ? { pointerEvents: 'none' }
+    : {};
+
   return (
     <div className="grid-preview" style={{ aspectRatio: `${gridX} / ${gridY}` }}>
       <div className="drawer-container">
@@ -124,15 +139,26 @@ export function GridPreview({
           onClick={handleGridClick}
         >
           {cells}
-          {placedItems.map(item => (
-            <PlacedItemOverlay
-              key={item.instanceId}
-              item={item}
-              gridX={gridX}
-              gridY={gridY}
-              isSelected={item.instanceId === selectedItemId}
-              onSelect={onSelectItem}
-              getItemById={getItemById}
+          <div style={itemsStyle}>
+            {placedItems.map(item => (
+              <PlacedItemOverlay
+                key={item.instanceId}
+                item={item}
+                gridX={gridX}
+                gridY={gridY}
+                isSelected={item.instanceId === selectedItemId}
+                onSelect={onSelectItem}
+                getItemById={getItemById}
+              />
+            ))}
+          </div>
+          {referenceImages.map(image => (
+            <ReferenceImageOverlay
+              key={image.id}
+              image={image}
+              isInteractive={interactionMode === 'images'}
+              onPositionChange={(x, y) => onImagePositionChange?.(image.id, x, y)}
+              onSelect={() => onImageSelect?.(image.id)}
             />
           ))}
         </div>
