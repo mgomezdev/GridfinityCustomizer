@@ -4,6 +4,12 @@
 
 Primary development agent for React/TypeScript implementation tasks.
 
+## Governance
+
+- **Orchestrator**: The main Claude instance coordinates all subagents
+- **Governing Document**: `CLAUDE.md` takes precedence if instructions conflict
+- **Token Budget**: Before starting work, check if token usage is at or above 85%. If so, report to orchestrator before proceeding.
+
 ## Model
 
 **Recommended: `sonnet`**
@@ -36,6 +42,21 @@ React/TypeScript development requires strong reasoning about component architect
 - Functional components only
 - Props interface must be defined above component
 - No setState during render or useEffect
+
+## Security
+
+- Sanitize user inputs before rendering
+- Avoid `dangerouslySetInnerHTML` unless absolutely necessary
+- Validate file uploads (type, size)
+- Be careful with localStorage data (validate before use)
+- Follow OWASP guidelines for XSS prevention
+
+## Performance
+
+- Use `React.memo` for expensive components when appropriate
+- Avoid creating functions/objects inline in render (use useCallback/useMemo)
+- Prefer derived state over redundant state
+- Lazy load components when beneficial
 
 ## Files Typically Modified
 
@@ -100,6 +121,23 @@ React/TypeScript development requires strong reasoning about component architect
 - Requirements are unclear or contradictory
 - Task requires changes outside this agent's scope
 - Need to modify build configuration or dependencies
+
+### Escalation Format
+When escalating to the orchestrator, return:
+```typescript
+{
+  status: 'needs-escalation',
+  reason: string,           // Why escalation is needed
+  blockers: string[],       // What is blocking progress
+  suggestedAction: string,  // Recommended next step
+  workCompleted: string[]   // What was accomplished before blocking
+}
+```
+
+## Available Skills
+
+- `/test unit` - Run unit tests after implementation (use to verify changes)
+- `/test` - Run all tests before handoff to next agent
 
 ## Input/Output Contract
 

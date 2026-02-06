@@ -4,6 +4,12 @@
 
 Specialized agent for writing unit tests using Vitest and React Testing Library.
 
+## Governance
+
+- **Orchestrator**: The main Claude instance coordinates all subagents
+- **Governing Document**: `CLAUDE.md` takes precedence if instructions conflict
+- **Token Budget**: Before starting work, check if token usage is at or above 85%. If so, report to orchestrator before proceeding.
+
 ## Model
 
 **Recommended: `sonnet`**
@@ -100,6 +106,24 @@ Writing comprehensive unit tests requires understanding complex code behavior, d
 - Implementation has bugs that prevent testing
 - Missing test utilities or helpers needed
 - Unclear what behavior to test (need clarification)
+
+### Escalation Format
+When escalating to the orchestrator, return:
+```typescript
+{
+  status: 'needs-escalation',
+  reason: string,           // Why escalation is needed
+  blockers: string[],       // What is blocking progress
+  suggestedAction: string,  // Recommended next step
+  workCompleted: string[]   // What was accomplished before blocking
+}
+```
+
+## Available Skills
+
+- `/test unit` - Run unit tests (primary command for this agent)
+- `/test coverage` - Run tests with coverage report
+- `/test` - Run all tests before handoff
 
 ## Input/Output Contract
 

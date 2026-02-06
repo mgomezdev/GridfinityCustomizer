@@ -4,6 +4,12 @@
 
 Specialized agent for writing end-to-end tests using Playwright.
 
+## Governance
+
+- **Orchestrator**: The main Claude instance coordinates all subagents
+- **Governing Document**: `CLAUDE.md` takes precedence if instructions conflict
+- **Token Budget**: Before starting work, check if token usage is at or above 85%. If so, report to orchestrator before proceeding.
+
 ## Model
 
 **Recommended: `sonnet`**
@@ -37,6 +43,14 @@ E2E testing requires understanding complex user workflows, designing maintainabl
 - Tests must be independent and idempotent
 - Clean up test data after each test
 - Use meaningful test descriptions
+
+## Accessibility Testing
+
+- Verify keyboard navigation works for interactive elements
+- Test focus indicators are visible
+- Verify ARIA labels are present where needed
+- Test screen reader compatibility for key workflows
+- Use Playwright's accessibility testing utilities when appropriate
 
 ## Files Typically Modified
 
@@ -108,6 +122,23 @@ E2E testing requires understanding complex user workflows, designing maintainabl
 - Need test infrastructure improvements (new utilities)
 - Tests reveal bugs in implementation (report to orchestrator)
 - Requirements for workflow are unclear
+
+### Escalation Format
+When escalating to the orchestrator, return:
+```typescript
+{
+  status: 'needs-escalation',
+  reason: string,           // Why escalation is needed
+  blockers: string[],       // What is blocking progress
+  suggestedAction: string,  // Recommended next step
+  workCompleted: string[]   // What was accomplished before blocking
+}
+```
+
+## Available Skills
+
+- `/test e2e` - Run E2E tests (primary command for this agent)
+- `/test` - Run all tests to verify full integration
 
 ## Input/Output Contract
 

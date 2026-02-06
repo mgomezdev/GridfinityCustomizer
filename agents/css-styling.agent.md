@@ -4,6 +4,12 @@
 
 Specialized agent for CSS styling, layout, and visual design.
 
+## Governance
+
+- **Orchestrator**: The main Claude instance coordinates all subagents
+- **Governing Document**: `CLAUDE.md` takes precedence if instructions conflict (note: CLAUDE.md specifies kebab-case for CSS classes)
+- **Token Budget**: Before starting work, check if token usage is at or above 85%. If so, report to orchestrator before proceeding.
+
 ## Model
 
 **Recommended: `haiku`**
@@ -34,6 +40,14 @@ CSS styling tasks are generally well-defined and follow established patterns (fl
 - No inline styles in components (except dynamic values)
 - Must work across modern browsers
 - Respect existing color scheme and spacing
+
+## Accessibility
+
+- Ensure focus indicators are clearly visible (`:focus`, `:focus-visible`)
+- Maintain sufficient color contrast (WCAG AA minimum)
+- Don't rely solely on color to convey information
+- Ensure interactive elements have adequate touch/click targets (44x44px minimum)
+- Support `prefers-reduced-motion` for animations
 
 ## Files Typically Modified
 
@@ -71,12 +85,14 @@ CSS styling tasks are generally well-defined and follow established patterns (fl
 ## Verification Requirements
 
 ### Before Completion
-1. Run dev server: `npm run dev`
-2. Visually inspect changes in browser
-3. Test responsiveness at different screen sizes
-4. Verify hover/focus/active states for interactive elements
-5. Check for visual regressions in related components
-6. Ensure accessibility (focus indicators, contrast)
+1. Run linter: `npm run lint`
+2. Run dev server: `npm run dev`
+3. Visually inspect changes in browser
+4. Test responsiveness at different screen sizes
+5. Verify hover/focus/active states for interactive elements
+6. Check for visual regressions in related components
+7. Ensure accessibility (focus indicators, contrast)
+8. Test keyboard navigation for new interactive elements
 
 ### Self-Check Questions
 - Are class names following kebab-case convention?
@@ -100,6 +116,23 @@ CSS styling tasks are generally well-defined and follow established patterns (fl
 - Performance issues with animations (need JavaScript solution)
 - Color scheme changes require broader discussion
 - Accessibility requirements beyond CSS capabilities
+
+### Escalation Format
+When escalating to the orchestrator, return:
+```typescript
+{
+  status: 'needs-escalation',
+  reason: string,           // Why escalation is needed
+  blockers: string[],       // What is blocking progress
+  suggestedAction: string,  // Recommended next step
+  workCompleted: string[]   // What was accomplished before blocking
+}
+```
+
+## Available Skills
+
+- `/test e2e` - Run E2E tests to verify visual changes don't break workflows
+- `/test` - Run all tests before handoff
 
 ## Input/Output Contract
 
