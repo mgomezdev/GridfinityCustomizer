@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { UnitSystem, ImperialFormat, GridSpacerConfig } from './types/gridfinity';
 import { calculateGrid, mmToInches, inchesToMm } from './utils/conversions';
 import { useGridItems } from './hooks/useGridItems';
@@ -166,6 +166,65 @@ function App() {
 
   // Find the selected image (or null if it doesn't exist)
   const selectedImage = selectedImageId ? images.find(img => img.id === selectedImageId) ?? null : null;
+
+  // Keyboard shortcuts for reference images
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Don't fire shortcuts when user is typing in an input element
+      const activeElement = document.activeElement;
+      const isTyping = activeElement?.tagName === 'INPUT' ||
+                       activeElement?.tagName === 'TEXTAREA' ||
+                       activeElement?.tagName === 'SELECT';
+
+      if (isTyping) {
+        return;
+      }
+
+      // Tab or M: Toggle interaction mode (only when images exist)
+      if ((event.key === 'Tab' || event.key === 'm' || event.key === 'M') && images.length > 0) {
+        event.preventDefault();
+        setInteractionMode(interactionMode === 'items' ? 'images' : 'items');
+        // Clear selection when switching to items mode
+        if (interactionMode === 'images') {
+          setSelectedImageId(null);
+        }
+        return;
+      }
+
+      // Delete or Backspace: Remove selected image (only in images mode with selection)
+      if ((event.key === 'Delete' || event.key === 'Backspace') &&
+          interactionMode === 'images' &&
+          selectedImageId) {
+        event.preventDefault();
+        removeImage(selectedImageId);
+        // Clear selection after removing
+        setSelectedImageId(null);
+        return;
+      }
+
+      // Escape: Deselect image and switch to items mode
+      if (event.key === 'Escape') {
+        setSelectedImageId(null);
+        setInteractionMode('items');
+        return;
+      }
+
+      // L: Toggle lock on selected image (only in images mode with selection)
+      if ((event.key === 'l' || event.key === 'L') &&
+          interactionMode === 'images' &&
+          selectedImageId) {
+        event.preventDefault();
+        toggleImageLock(selectedImageId);
+        return;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [images.length, interactionMode, selectedImageId, setInteractionMode, toggleImageLock, removeImage]);
 
   return (
     <div className="app">
