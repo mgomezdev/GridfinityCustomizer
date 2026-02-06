@@ -477,6 +477,7 @@ describe('Bin Placement Integration Tests', () => {
           selectedItemId={null}
           onDrop={result.current.handleDrop}
           onSelectItem={result.current.selectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -505,6 +506,7 @@ describe('Bin Placement Integration Tests', () => {
           selectedItemId={null}
           onDrop={result.current.handleDrop}
           onSelectItem={result.current.selectItem}
+          getItemById={mockGetItemById}
         />
       );
 
@@ -534,6 +536,7 @@ describe('Bin Placement Integration Tests', () => {
           selectedItemId={null}
           onDrop={result.current.handleDrop}
           onSelectItem={result.current.selectItem}
+          getItemById={mockGetItemById}
         />
       );
 
