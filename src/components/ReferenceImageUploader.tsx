@@ -33,7 +33,11 @@ export function ReferenceImageUploader({ onUpload }: ReferenceImageUploaderProps
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to upload image';
       setError(errorMessage);
-      setTimeout(() => setError(null), 3000);
+      // Use longer timeout for storage quota errors (5s) vs validation errors (3s)
+      const isStorageError = errorMessage.toLowerCase().includes('storage') ||
+                            errorMessage.toLowerCase().includes('quota');
+      const timeout = isStorageError ? 5000 : 3000;
+      setTimeout(() => setError(null), timeout);
     } finally {
       setIsUploading(false);
       // Reset file input so same file can be re-selected

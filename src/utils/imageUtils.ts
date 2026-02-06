@@ -1,4 +1,5 @@
 export const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+const LARGE_IMAGE_WARNING_THRESHOLD = 2 * 1024 * 1024; // 2MB
 
 const VALID_IMAGE_PREFIX = 'image/';
 
@@ -21,6 +22,14 @@ export async function fileToDataUrl(file: File): Promise<string> {
     const maxSizeMB = (MAX_IMAGE_SIZE_BYTES / (1024 * 1024)).toFixed(0);
     return Promise.reject(
       new Error(`File size (${sizeMB}MB) exceeds maximum allowed size of ${maxSizeMB}MB.`)
+    );
+  }
+
+  // Warn about large files but allow upload
+  if (file.size > LARGE_IMAGE_WARNING_THRESHOLD) {
+    const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+    console.warn(
+      `Large image file detected (${sizeMB}MB). This may impact performance and localStorage capacity.`
     );
   }
 

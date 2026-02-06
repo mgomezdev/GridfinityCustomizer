@@ -31,7 +31,13 @@ export function ReferenceImageOverlay({
   onSelect,
 }: ReferenceImageOverlayProps) {
   const [dragState, setDragState] = useState<DragState>(INITIAL_DRAG_STATE);
+  const [imageLoadError, setImageLoadError] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleImageError = () => {
+    console.error(`Failed to load reference image: ${image.name}`);
+    setImageLoadError(true);
+  };
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isInteractive || image.isLocked) return;
@@ -120,17 +126,39 @@ export function ReferenceImageOverlay({
       style={style}
       onMouseDown={handleMouseDown}
     >
-      <img
-        src={image.dataUrl}
-        alt={image.name}
-        draggable={false}
-        style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'contain',
-          userSelect: 'none',
-        }}
-      />
+      {imageLoadError ? (
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(200, 50, 50, 0.2)',
+            border: '2px dashed rgba(200, 50, 50, 0.5)',
+            color: '#c83232',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            textAlign: 'center',
+            padding: '10px',
+          }}
+        >
+          Failed to load image
+        </div>
+      ) : (
+        <img
+          src={image.dataUrl}
+          alt={image.name}
+          draggable={false}
+          onError={handleImageError}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            userSelect: 'none',
+          }}
+        />
+      )}
     </div>
   );
 }
