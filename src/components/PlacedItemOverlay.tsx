@@ -16,9 +16,18 @@ interface ImageLoadState {
   error: boolean;
 }
 
+// Get CSS variables once
+const getCSSVariable = (varName: string, fallback: string): string => {
+  if (typeof document === 'undefined') return fallback;
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || fallback;
+};
+
+const DEFAULT_VALID_COLOR = getCSSVariable('--grid-primary', '#00d9ff');
+const INVALID_COLOR = getCSSVariable('--invalid-primary', '#ff3366');
+
 export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, getItemById }: PlacedItemOverlayProps) {
   const libraryItem = getItemById(item.itemId);
-  const color = item.isValid ? (libraryItem?.color || '#646cff') : '#ef4444';
+  const color = item.isValid ? (libraryItem?.color || DEFAULT_VALID_COLOR) : INVALID_COLOR;
 
   const [loadState, setLoadState] = useState<ImageLoadState>({
     forUrl: '',
