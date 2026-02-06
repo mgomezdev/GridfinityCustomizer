@@ -684,12 +684,15 @@ describe('useReferenceImages', () => {
         throw new Error('QuotaExceededError');
       });
 
-      await act(async () => {
-        await result.current.addImage(mockFile);
-      });
+      // addImage should throw when storage fails
+      await expect(
+        act(async () => {
+          await result.current.addImage(mockFile);
+        })
+      ).rejects.toThrow();
 
-      // Image should be added to state despite localStorage error
-      expect(result.current.images).toHaveLength(1);
+      // Image should not be added to state when storage fails
+      expect(result.current.images).toHaveLength(0);
     });
   });
 

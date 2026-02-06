@@ -89,115 +89,101 @@ export function useReferenceImages(): UseReferenceImagesReturn {
         id: generateImageId(),
         name: file.name,
         dataUrl,
-        x: 10, // Default position (percentage)
-        y: 10, // Default position (percentage)
-        width: 50, // Default width (percentage)
-        height: 50, // Default height (percentage)
-        opacity: 0.5, // Default opacity (semi-transparent)
-        scale: 1, // Default scale
+        x: 10,
+        y: 10,
+        width: 50,
+        height: 50,
+        opacity: 0.5,
+        scale: 1,
         isLocked: false,
       };
 
-      const updatedImages = [...images, newImage];
-      setImages(updatedImages);
-      saveImagesToStorage(updatedImages);
+      setImages(prev => {
+        const updatedImages = [...prev, newImage];
+        saveImagesToStorage(updatedImages);
+        return updatedImages;
+      });
     } catch (err) {
       console.error('Failed to add image', err);
       throw err;
     }
-  }, [images]);
+  }, []);
 
   const removeImage = useCallback((id: string): void => {
-    const imageExists = images.find(img => img.id === id);
-
-    if (!imageExists) {
-      console.warn(`Image with id "${id}" not found`);
-      return;
-    }
-
-    const updatedImages = images.filter(img => img.id !== id);
-    setImages(updatedImages);
-    saveImagesToStorage(updatedImages);
-  }, [images]);
+    setImages(prev => {
+      const imageExists = prev.find(img => img.id === id);
+      if (!imageExists) {
+        console.warn(`Image with id "${id}" not found`);
+        return prev;
+      }
+      const updatedImages = prev.filter(img => img.id !== id);
+      saveImagesToStorage(updatedImages);
+      return updatedImages;
+    });
+  }, []);
 
   const updateImagePosition = useCallback((id: string, x: number, y: number): void => {
-    const imageIndex = images.findIndex(img => img.id === id);
-
-    if (imageIndex === -1) {
-      console.warn(`Image with id "${id}" not found`);
-      return;
-    }
-
-    // Don't update if image is locked
-    if (images[imageIndex].isLocked) {
-      console.warn(`Image with id "${id}" is locked`);
-      return;
-    }
-
-    const updatedImages = [...images];
-    updatedImages[imageIndex] = {
-      ...updatedImages[imageIndex],
-      x,
-      y,
-    };
-
-    setImages(updatedImages);
-    saveImagesToStorage(updatedImages);
-  }, [images]);
+    setImages(prev => {
+      const imageIndex = prev.findIndex(img => img.id === id);
+      if (imageIndex === -1) {
+        console.warn(`Image with id "${id}" not found`);
+        return prev;
+      }
+      if (prev[imageIndex].isLocked) {
+        console.warn(`Image with id "${id}" is locked`);
+        return prev;
+      }
+      const updatedImages = [...prev];
+      updatedImages[imageIndex] = { ...updatedImages[imageIndex], x, y };
+      saveImagesToStorage(updatedImages);
+      return updatedImages;
+    });
+  }, []);
 
   const updateImageScale = useCallback((id: string, scale: number): void => {
-    const imageIndex = images.findIndex(img => img.id === id);
-
-    if (imageIndex === -1) {
-      console.warn(`Image with id "${id}" not found`);
-      return;
-    }
-
-    const updatedImages = [...images];
-    updatedImages[imageIndex] = {
-      ...updatedImages[imageIndex],
-      scale,
-    };
-
-    setImages(updatedImages);
-    saveImagesToStorage(updatedImages);
-  }, [images]);
+    setImages(prev => {
+      const imageIndex = prev.findIndex(img => img.id === id);
+      if (imageIndex === -1) {
+        console.warn(`Image with id "${id}" not found`);
+        return prev;
+      }
+      const updatedImages = [...prev];
+      updatedImages[imageIndex] = { ...updatedImages[imageIndex], scale };
+      saveImagesToStorage(updatedImages);
+      return updatedImages;
+    });
+  }, []);
 
   const updateImageOpacity = useCallback((id: string, opacity: number): void => {
-    const imageIndex = images.findIndex(img => img.id === id);
-
-    if (imageIndex === -1) {
-      console.warn(`Image with id "${id}" not found`);
-      return;
-    }
-
-    const updatedImages = [...images];
-    updatedImages[imageIndex] = {
-      ...updatedImages[imageIndex],
-      opacity,
-    };
-
-    setImages(updatedImages);
-    saveImagesToStorage(updatedImages);
-  }, [images]);
+    setImages(prev => {
+      const imageIndex = prev.findIndex(img => img.id === id);
+      if (imageIndex === -1) {
+        console.warn(`Image with id "${id}" not found`);
+        return prev;
+      }
+      const updatedImages = [...prev];
+      updatedImages[imageIndex] = { ...updatedImages[imageIndex], opacity };
+      saveImagesToStorage(updatedImages);
+      return updatedImages;
+    });
+  }, []);
 
   const toggleImageLock = useCallback((id: string): void => {
-    const imageIndex = images.findIndex(img => img.id === id);
-
-    if (imageIndex === -1) {
-      console.warn(`Image with id "${id}" not found`);
-      return;
-    }
-
-    const updatedImages = [...images];
-    updatedImages[imageIndex] = {
-      ...updatedImages[imageIndex],
-      isLocked: !updatedImages[imageIndex].isLocked,
-    };
-
-    setImages(updatedImages);
-    saveImagesToStorage(updatedImages);
-  }, [images]);
+    setImages(prev => {
+      const imageIndex = prev.findIndex(img => img.id === id);
+      if (imageIndex === -1) {
+        console.warn(`Image with id "${id}" not found`);
+        return prev;
+      }
+      const updatedImages = [...prev];
+      updatedImages[imageIndex] = {
+        ...updatedImages[imageIndex],
+        isLocked: !updatedImages[imageIndex].isLocked,
+      };
+      saveImagesToStorage(updatedImages);
+      return updatedImages;
+    });
+  }, []);
 
   return {
     images,
