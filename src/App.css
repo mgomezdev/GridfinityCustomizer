@@ -17,6 +17,7 @@
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-xl);
   height: var(--header-height);
+  box-shadow: var(--shadow-sm);
 }
 
 .app-header h1 {
@@ -25,11 +26,7 @@
   font-size: var(--text-2xl);
   font-weight: var(--font-black);
   letter-spacing: var(--tracking-widest);
-  text-transform: uppercase;
-  background: linear-gradient(135deg, var(--grid-primary), var(--accent-primary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--text-primary);
 }
 
 .subtitle {
@@ -42,11 +39,13 @@
   align-items: center;
   gap: var(--space-lg);
   padding: var(--space-md) var(--space-lg);
-  background: var(--bg-elevated);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
   border-radius: var(--radius-xl);
   margin-bottom: var(--space-xl);
   flex-wrap: wrap;
   font-family: var(--font-body);
+  box-shadow: var(--shadow-sm);
 }
 
 .unit-toggle-compact,
@@ -83,7 +82,6 @@
   background: var(--grid-primary);
   border-color: var(--grid-primary);
   color: var(--bg-primary);
-  box-shadow: var(--shadow-glow-cyan);
 }
 
 .unit-toggle-compact button:hover:not(.active),
@@ -241,30 +239,8 @@
   border: 2px solid var(--grid-primary);
   border-radius: var(--radius-xl);
   box-sizing: border-box;
-  background:
-    /* Fine grid */
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 9px,
-      rgba(0, 217, 255, 0.03) 9px,
-      rgba(0, 217, 255, 0.03) 10px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 9px,
-      rgba(0, 217, 255, 0.03) 9px,
-      rgba(0, 217, 255, 0.03) 10px
-    ),
-    /* Radial glow */
-    radial-gradient(circle at 50% 50%,
-      rgba(0, 217, 255, 0.05),
-      transparent 70%
-    ),
-    /* Base color */
-    var(--bg-tertiary);
-  box-shadow: var(--shadow-glow-cyan);
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-sm);
 }
 
 .grid-container {
@@ -275,7 +251,7 @@
 }
 
 .grid-cell {
-  background: var(--grid-alpha-30);
+  background: var(--grid-cell-bg, rgba(59, 130, 246, 0.06));
   border: 2px solid var(--grid-primary);
   border-radius: var(--radius-md);
   min-width: 20px;
@@ -363,10 +339,11 @@
 
 /* Item Library Styles */
 .item-library {
-  background: var(--bg-elevated);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
   border-radius: var(--radius-xl);
   padding: var(--space-lg);
-  border: 1px solid var(--border-secondary);
+  box-shadow: var(--shadow-sm);
 }
 
 .item-library-title {
@@ -376,7 +353,7 @@
   font-weight: var(--font-bold);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
-  color: var(--grid-primary);
+  color: var(--text-primary);
 }
 
 .item-library-hint {
@@ -396,7 +373,7 @@
   padding: 0.5rem 2rem 0.5rem 0.75rem;
   border: 2px solid var(--border-secondary);
   border-radius: var(--radius-lg);
-  background: var(--bg-secondary);
+  background: var(--bg-primary);
   color: var(--text-primary);
   font-size: var(--text-base);
   font-family: var(--font-body);
@@ -489,7 +466,6 @@
 .export-library-button:hover {
   background: var(--valid-primary);
   color: var(--bg-primary);
-  box-shadow: 0 0 15px var(--valid-alpha-40);
 }
 
 .export-library-button:active {
@@ -543,7 +519,6 @@
 .manage-categories-button:hover {
   background: var(--accent-secondary);
   border-color: var(--accent-secondary);
-  box-shadow: 0 0 15px var(--accent-glow);
 }
 
 .manage-categories-button:active {
@@ -574,7 +549,7 @@
   max-width: 600px;
   max-height: 80vh;
   overflow-y: auto;
-  box-shadow: var(--shadow-lg), 0 0 30px var(--grid-alpha-30);
+  box-shadow: var(--shadow-lg);
 }
 
 .library-manager-header {
@@ -596,7 +571,7 @@
   font-weight: var(--font-black);
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
-  color: var(--grid-primary);
+  color: var(--text-primary);
 }
 
 .close-button {
@@ -655,7 +630,6 @@
 .add-item-button:hover {
   background: var(--valid-secondary);
   border-color: var(--valid-secondary);
-  box-shadow: 0 0 15px var(--valid-alpha-40);
 }
 
 .reset-button {
@@ -800,7 +774,7 @@
   font-weight: var(--font-bold);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
-  color: var(--grid-primary);
+  color: var(--text-primary);
 }
 
 .form-group {
@@ -831,7 +805,7 @@
 .form-group select {
   width: 100%;
   padding: var(--space-md);
-  background: var(--bg-secondary);
+  background: var(--bg-primary);
   border: 2px solid var(--border-secondary);
   border-radius: var(--radius-lg);
   color: var(--text-primary);
@@ -911,7 +885,7 @@
   width: 1rem;
   height: 1rem;
   border-radius: 2px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--border-primary);
 }
 
 .form-validation-error {
@@ -968,7 +942,6 @@
 .submit-button:hover {
   background: var(--valid-secondary);
   border-color: var(--valid-secondary);
-  box-shadow: 0 0 15px var(--valid-alpha-40);
 }
 
 .item-library-category {
@@ -1049,7 +1022,7 @@
   flex-direction: column;
   align-items: center;
   padding: var(--space-sm);
-  border: 2px solid var(--border-secondary);
+  border: 2px solid var(--border-primary);
   border-radius: var(--radius-lg);
   background: var(--bg-secondary);
   cursor: grab;
@@ -1059,8 +1032,8 @@
 
 .library-item-card:hover {
   border-color: var(--grid-primary);
-  background: var(--grid-alpha-10);
-  box-shadow: 0 0 10px var(--grid-alpha-30);
+  background: var(--blue-50, #EFF6FF);
+  box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
 
@@ -1159,8 +1132,8 @@
 }
 
 .placed-item.selected {
-  box-shadow: 0 0 0 3px var(--accent-glow), 0 0 15px var(--accent-glow);
-  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+  border-color: var(--blue-500);
   z-index: 2;
 }
 
@@ -1183,7 +1156,7 @@
   font-family: var(--font-body);
   text-align: center;
   color: var(--text-primary);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   pointer-events: none;
   padding: var(--space-xs);
   word-break: break-word;
@@ -1206,7 +1179,7 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.02);
   position: absolute;
   opacity: 0;
   transition: opacity 0.2s;
@@ -1261,14 +1234,15 @@
 
 /* Bill of Materials */
 .bill-of-materials {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
   border-radius: var(--radius-xl);
   padding: var(--space-lg);
   display: flex;
   flex-direction: column;
   height: fit-content;
   max-height: 600px;
+  box-shadow: var(--shadow-sm);
 }
 
 .bom-header {
@@ -1287,7 +1261,7 @@
   font-weight: var(--font-bold);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
-  color: var(--grid-primary);
+  color: var(--text-primary);
 }
 
 .bom-total {
@@ -1463,24 +1437,6 @@
   }
 }
 
-@media (prefers-color-scheme: light) {
-  .library-item-preview-cell {
-    background: rgba(0, 0, 0, 0.1);
-  }
-
-  .library-item-preview-cell.active {
-    border-color: rgba(0, 0, 0, 0.3);
-  }
-
-  .placed-item.selected {
-    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.3);
-  }
-
-  .placed-item-label {
-    color: white;
-  }
-}
-
 /* Reference Image Overlay */
 .reference-image-overlay {
   position: absolute;
@@ -1506,13 +1462,14 @@
 
 /* Reference Image Controls */
 .reference-image-controls {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
   border-radius: var(--radius-xl);
   padding: var(--space-lg);
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+  box-shadow: var(--shadow-sm);
 }
 
 .reference-image-controls__header {
@@ -1527,7 +1484,7 @@
   font-size: var(--text-lg);
   font-weight: var(--font-semibold);
   font-family: var(--font-body);
-  color: var(--grid-primary);
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1675,7 +1632,6 @@
 .reference-image-uploader__button:hover:not(:disabled) {
   background: var(--accent-secondary);
   border-color: var(--accent-secondary);
-  box-shadow: 0 0 15px var(--accent-glow);
 }
 
 .reference-image-uploader__button:active:not(:disabled) {
@@ -1740,7 +1696,6 @@
   background: var(--grid-primary);
   color: var(--bg-primary);
   border-color: var(--grid-primary);
-  box-shadow: var(--shadow-glow-cyan);
 }
 
 .interaction-mode-toggle__button--active:hover:not(:disabled) {

@@ -6,8 +6,8 @@ import type { PlacedItemWithValidity, LibraryItem } from '../types/gridfinity';
 describe('PlacedItemOverlay', () => {
   const mockGetItemById = (id: string): LibraryItem | undefined => {
     const items: Record<string, LibraryItem> = {
-      'bin-1x1': { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', categories: ['bin'] },
-      'bin-2x2': { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#646cff', categories: ['bin'] },
+      'bin-1x1': { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#3B82F6', categories: ['bin'] },
+      'bin-2x2': { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#3B82F6', categories: ['bin'] },
     };
     return items[id];
   };
@@ -195,8 +195,8 @@ describe('PlacedItemOverlay', () => {
 
       const element = container.querySelector('.placed-item');
       expect(element).toHaveStyle({
-        backgroundColor: '#646cff66',
-        borderColor: '#646cff',
+        backgroundColor: '#3B82F666',
+        borderColor: '#3B82F6',
       });
       expect(element).not.toHaveClass('invalid');
     });
@@ -216,8 +216,8 @@ describe('PlacedItemOverlay', () => {
 
       const element = container.querySelector('.placed-item');
       expect(element).toHaveStyle({
-        backgroundColor: '#ef444466',
-        borderColor: '#ef4444',
+        backgroundColor: '#EF444466',
+        borderColor: '#EF4444',
       });
       expect(element).toHaveClass('invalid');
     });
@@ -268,8 +268,8 @@ describe('PlacedItemOverlay', () => {
 
       const element = container.querySelector('.placed-item');
       expect(element).toHaveStyle({
-        backgroundColor: '#646cff66',
-        borderColor: '#646cff',
+        backgroundColor: '#3B82F666',
+        borderColor: '#3B82F6',
       });
     });
   });
@@ -626,7 +626,7 @@ describe('PlacedItemOverlay', () => {
           name: 'Bin with Image',
           widthUnits: 1,
           heightUnits: 1,
-          color: '#646cff',
+          color: '#3B82F6',
           categories: ['bin'],
           imageUrl: 'https://example.com/image.png',
         },
@@ -635,7 +635,7 @@ describe('PlacedItemOverlay', () => {
           name: 'Bin without Image',
           widthUnits: 1,
           heightUnits: 1,
-          color: '#646cff',
+          color: '#3B82F6',
           categories: ['bin'],
         },
       };
@@ -766,8 +766,8 @@ describe('PlacedItemOverlay', () => {
 
       const element = container.querySelector('.placed-item');
       expect(element).toHaveStyle({
-        backgroundColor: '#646cff66',
-        borderColor: '#646cff',
+        backgroundColor: '#3B82F666',
+        borderColor: '#3B82F6',
       });
     });
 
@@ -796,8 +796,8 @@ describe('PlacedItemOverlay', () => {
       // Background color should still be visible
       const element = container.querySelector('.placed-item');
       expect(element).toHaveStyle({
-        backgroundColor: '#646cff66',
-        borderColor: '#646cff',
+        backgroundColor: '#3B82F666',
+        borderColor: '#3B82F6',
       });
     });
 
@@ -817,8 +817,8 @@ describe('PlacedItemOverlay', () => {
       // Before image loads, background should be visible
       const element = container.querySelector('.placed-item');
       expect(element).toHaveStyle({
-        backgroundColor: '#646cff66',
-        borderColor: '#646cff',
+        backgroundColor: '#3B82F666',
+        borderColor: '#3B82F6',
       });
     });
 

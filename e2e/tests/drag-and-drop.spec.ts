@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { GridPage } from '../pages/GridPage';
 import { LibraryPage } from '../pages/LibraryPage';
-import { html5DragDrop } from '../utils/drag-drop';
+import { html5DragDrop, dragToGridCell } from '../utils/drag-drop';
 
 test.describe('Drag and Drop', () => {
   let gridPage: GridPage;
@@ -24,8 +24,8 @@ test.describe('Drag and Drop', () => {
     const firstItem = libraryPage.libraryItems.first();
     await expect(firstItem).toBeVisible();
 
-    // Drag to grid using HTML5 drag and drop
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 30, y: 30 });
+    // Drag to grid cell (0,0)
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
     // Should have one placed item now
     const newCount = await gridPage.getPlacedItemCount();
@@ -33,9 +33,9 @@ test.describe('Drag and Drop', () => {
   });
 
   test('placed item becomes selected after placement', async ({ page }) => {
-    // Drag first item to grid
+    // Drag first item to grid cell (0,0)
     const firstItem = libraryPage.libraryItems.first();
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 30, y: 30 });
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
     // The item should be selected (has .selected class)
     const selectedItems = page.locator('.placed-item.selected');
@@ -49,11 +49,11 @@ test.describe('Drag and Drop', () => {
     // Need at least 1 item for this test
     expect(itemCount).toBeGreaterThanOrEqual(1);
 
-    // Place first item
-    await html5DragDrop(page, items.first(), gridPage.gridContainer, { x: 30, y: 30 });
+    // Place first item at cell (0,0)
+    await dragToGridCell(page, items.first(), gridPage.gridContainer, 0, 0, 4, 4);
 
-    // Place the same item again in a different position
-    await html5DragDrop(page, items.first(), gridPage.gridContainer, { x: 150, y: 30 });
+    // Place the same item again at cell (2,0)
+    await dragToGridCell(page, items.first(), gridPage.gridContainer, 2, 0, 4, 4);
 
     // Should have 2 placed items
     const placedCount = await gridPage.getPlacedItemCount();
@@ -61,9 +61,9 @@ test.describe('Drag and Drop', () => {
   });
 
   test('can move a placed item to a new position', async ({ page }) => {
-    // First place an item
+    // First place an item at cell (0,0)
     const firstItem = libraryPage.libraryItems.first();
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 30, y: 30 });
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
     // Get the placed item
     const placedItem = page.locator('.placed-item').first();
@@ -73,8 +73,8 @@ test.describe('Drag and Drop', () => {
     const initialBox = await placedItem.boundingBox();
     expect(initialBox).not.toBeNull();
 
-    // Drag the placed item to a new position using HTML5 drag
-    await html5DragDrop(page, placedItem, gridPage.gridContainer, { x: 200, y: 100 });
+    // Drag the placed item to cell (2,1)
+    await dragToGridCell(page, placedItem, gridPage.gridContainer, 2, 1, 4, 4);
 
     // Get new position - should be different
     const newBox = await placedItem.boundingBox();
@@ -82,9 +82,9 @@ test.describe('Drag and Drop', () => {
   });
 
   test('clicking on empty grid area deselects item', async ({ page }) => {
-    // Place and select an item
+    // Place and select an item at cell (0,0)
     const firstItem = libraryPage.libraryItems.first();
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 30, y: 30 });
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
     // Item should be selected
     const selectedItems = page.locator('.placed-item.selected');

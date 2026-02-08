@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { GridPage } from '../pages/GridPage';
 import { LibraryPage } from '../pages/LibraryPage';
-import { html5DragDrop } from '../utils/drag-drop';
+import { html5DragDrop, dragToGridCell } from '../utils/drag-drop';
 
 test.describe('Item Manipulation', () => {
   let gridPage: GridPage;
@@ -18,7 +18,7 @@ test.describe('Item Manipulation', () => {
   test('can rotate a selected item', async ({ page }) => {
     // Place an item
     const firstItem = libraryPage.libraryItems.first();
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 50, y: 50 });
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
     // Item should be selected after placement
     const placedItem = page.locator('.placed-item').first();
@@ -44,7 +44,7 @@ test.describe('Item Manipulation', () => {
   test('can delete a selected item', async ({ page }) => {
     // Place an item
     const firstItem = libraryPage.libraryItems.first();
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 50, y: 50 });
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
     // Should have 1 item
     expect(await gridPage.getPlacedItemCount()).toBe(1);
@@ -68,7 +68,7 @@ test.describe('Item Manipulation', () => {
 
     // Place an item - it becomes selected automatically
     const firstItem = libraryPage.libraryItems.first();
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 50, y: 50 });
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
     // Item controls should now be visible
     await expect(itemControls).toBeVisible();
@@ -77,7 +77,7 @@ test.describe('Item Manipulation', () => {
   test('item controls hide when item is deselected', async ({ page }) => {
     // Place an item
     const firstItem = libraryPage.libraryItems.first();
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 50, y: 50 });
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
     // Item controls should be visible
     const itemControls = page.locator('.item-controls');
@@ -92,16 +92,16 @@ test.describe('Item Manipulation', () => {
   });
 
   test('can select a placed item by clicking on it', async ({ page }) => {
-    // Place first item
+    // Place first item at cell (0,0)
     const firstItem = libraryPage.libraryItems.first();
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 30, y: 30 });
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
     // Deselect by clicking empty area
     await gridPage.clickEmptyGridArea();
     await page.waitForTimeout(50);
 
-    // Place second item
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 150, y: 30 });
+    // Place second item at cell (2,0)
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 2, 0, 4, 4);
 
     // Second item should be selected (most recently placed)
     const placedItems = page.locator('.placed-item');

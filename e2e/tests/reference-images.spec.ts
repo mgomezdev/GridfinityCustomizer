@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { GridPage } from '../pages/GridPage';
 import { LibraryPage } from '../pages/LibraryPage';
-import { html5DragDrop } from '../utils/drag-drop';
+import { html5DragDrop, dragToGridCell } from '../utils/drag-drop';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -24,13 +24,13 @@ test.describe('Reference Images', () => {
   let libraryPage: LibraryPage;
   let testImagePath: string;
 
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }, testInfo) => {
     gridPage = new GridPage(page);
     libraryPage = new LibraryPage(page);
 
-    // Create a temporary test image file
+    // Create a temporary test image file (unique per worker to avoid parallel conflicts)
     const testDir = path.join(__dirname, '..', 'fixtures');
-    testImagePath = path.join(testDir, 'test-reference-image.png');
+    testImagePath = path.join(testDir, `test-reference-image-${testInfo.workerIndex}.png`);
 
     // Ensure fixtures directory exists
     if (!fs.existsSync(testDir)) {
@@ -366,7 +366,7 @@ test.describe('Reference Images', () => {
     const firstItem = libraryPage.libraryItems.first();
     await expect(firstItem).toBeVisible();
 
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 30, y: 30 });
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
     // Should have one placed item now
     const newCount = await gridPage.getPlacedItemCount();
