@@ -3,6 +3,8 @@ import type { Page, Locator } from '@playwright/test';
 /**
  * Performs HTML5 drag and drop with proper dataTransfer handling.
  * This simulates the full drag-and-drop flow that React components expect.
+ * Uses element handles from Playwright locators instead of elementFromPoint
+ * for reliable element targeting.
  */
 export async function html5DragDrop(
   page: Page,
@@ -29,28 +31,24 @@ export async function html5DragDrop(
     dropY = targetBox.y + targetBox.height / 2;
   }
 
+  // Get element handles directly from locators (more reliable than elementFromPoint)
+  const sourceHandle = await source.elementHandle();
+  if (!sourceHandle) {
+    throw new Error('Could not get element handle for source locator');
+  }
+
   // Execute the drag and drop in browser context with proper event simulation
   await page.evaluate(
-    async ({ sourceX, sourceY, dropX, dropY }) => {
+    async ({ sourceEl, sourceX, sourceY, dropX, dropY }) => {
       const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-      // Find elements at the coordinates
-      const sourceElement = document.elementFromPoint(sourceX, sourceY) as HTMLElement;
-      let targetElement = document.elementFromPoint(dropX, dropY) as HTMLElement;
-
-      if (!sourceElement) {
-        throw new Error('Could not find source element at coordinates');
-      }
-
-      // Find the draggable element (may be a parent)
-      const draggable = sourceElement.closest('[draggable="true"]') as HTMLElement;
-      if (!draggable) {
-        throw new Error('Could not find draggable element');
-      }
+      // Find the draggable element (may be a parent of the source)
+      const draggable = (sourceEl as HTMLElement).closest('[draggable="true"]') as HTMLElement
+        || sourceEl as HTMLElement;
 
       // Store the data that would be set during dragstart
       // We need to capture this and pass it through manually
-      let storedData: Record<string, string> = {};
+      const storedData: Record<string, string> = {};
 
       // Create a proxy dataTransfer that stores and retrieves data
       const createDataTransfer = () => {
@@ -95,14 +93,11 @@ export async function html5DragDrop(
       draggable.dispatchEvent(dragStartEvent);
       await sleep(50);
 
-      // Re-find target element in case DOM changed
-      targetElement = document.elementFromPoint(dropX, dropY) as HTMLElement;
-      if (!targetElement) {
-        throw new Error('Could not find target element at coordinates');
+      // Find the grid-container by selector (reliable regardless of overlapping elements)
+      const gridContainer = document.querySelector('.grid-container') as HTMLElement;
+      if (!gridContainer) {
+        throw new Error('Could not find grid container for drop events');
       }
-
-      // Find the grid-container for drop events
-      const gridContainer = targetElement.closest('.grid-container') || targetElement;
 
       // Dispatch dragover
       const dragOverEvent = new DragEvent('dragover', {
@@ -151,7 +146,7 @@ export async function html5DragDrop(
       });
       draggable.dispatchEvent(dragEndEvent);
     },
-    { sourceX, sourceY, dropX, dropY }
+    { sourceEl: sourceHandle, sourceX, sourceY, dropX, dropY }
   );
 
   // Wait for React state to update

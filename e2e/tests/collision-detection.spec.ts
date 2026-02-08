@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { GridPage } from '../pages/GridPage';
 import { LibraryPage } from '../pages/LibraryPage';
-import { html5DragDrop } from '../utils/drag-drop';
+import { html5DragDrop, dragToGridCell } from '../utils/drag-drop';
 
 test.describe('Collision Detection', () => {
   let gridPage: GridPage;
@@ -16,15 +16,15 @@ test.describe('Collision Detection', () => {
   });
 
   test('overlapping items are marked as invalid', async ({ page }) => {
-    // Place first item at position (0, 0)
+    // Place first item at cell (0, 0)
     const firstItem = libraryPage.libraryItems.first();
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 30, y: 30 });
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
     // No invalid items yet
     expect(await gridPage.hasInvalidItems()).toBe(false);
 
     // Place another item at the same position (overlapping)
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 30, y: 30 });
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
     // Both items should now be marked as invalid due to collision
     await page.waitForTimeout(100);
@@ -32,12 +32,12 @@ test.describe('Collision Detection', () => {
   });
 
   test('non-overlapping items remain valid', async ({ page }) => {
-    // Place first item at (0, 0)
+    // Place first item at cell (0, 0)
     const firstItem = libraryPage.libraryItems.first();
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 30, y: 30 });
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
-    // Place second item far away at different position
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 200, y: 200 });
+    // Place second item far away at cell (2, 2)
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 2, 2, 4, 4);
 
     // Should have 2 items
     expect(await gridPage.getPlacedItemCount()).toBe(2);
@@ -48,23 +48,23 @@ test.describe('Collision Detection', () => {
   });
 
   test('item moved to overlap becomes invalid', async ({ page }) => {
-    // Place first item
+    // Place first item at cell (0, 0)
     const firstItem = libraryPage.libraryItems.first();
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 30, y: 30 });
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
     // Deselect
     await gridPage.clickEmptyGridArea();
     await page.waitForTimeout(50);
 
-    // Place second item in non-overlapping position
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 200, y: 30 });
+    // Place second item in non-overlapping position at cell (2, 0)
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 2, 0, 4, 4);
 
     // Both should be valid
     expect(await gridPage.hasInvalidItems()).toBe(false);
 
-    // Move second item to overlap with first
+    // Move second item to overlap with first at cell (0, 0)
     const secondItem = page.locator('.placed-item').nth(1);
-    await html5DragDrop(page, secondItem, gridPage.gridContainer, { x: 30, y: 30 });
+    await dragToGridCell(page, secondItem, gridPage.gridContainer, 0, 0, 4, 4);
 
     // Now should have invalid items
     await page.waitForTimeout(100);
@@ -72,20 +72,9 @@ test.describe('Collision Detection', () => {
   });
 
   test('item extending beyond grid boundary is invalid', async ({ page }) => {
-    // Get grid dimensions
-    const dimensions = await gridPage.getGridDimensions();
-    const gridBox = await gridPage.gridContainer.boundingBox();
-    expect(gridBox).not.toBeNull();
-
-    // Try to place an item at the far right edge where it would overflow
-    const cellWidth = gridBox!.width / dimensions.columns;
-
-    // Get the first item
+    // Get the first item and place at the far right column
     const item = libraryPage.libraryItems.first();
-    await html5DragDrop(page, item, gridPage.gridContainer, {
-      x: gridBox!.width - cellWidth / 2,
-      y: 30,
-    });
+    await dragToGridCell(page, item, gridPage.gridContainer, 3, 0, 4, 4);
 
     // Wait for placement
     await page.waitForTimeout(100);
@@ -99,19 +88,19 @@ test.describe('Collision Detection', () => {
   });
 
   test('moving item away from overlap makes it valid', async ({ page }) => {
-    // Create overlapping items first
+    // Create overlapping items first at cell (0, 0)
     const firstItem = libraryPage.libraryItems.first();
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 30, y: 30 });
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 30, y: 30 });
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
     // Should have invalid items
     await page.waitForTimeout(100);
     expect(await gridPage.hasInvalidItems()).toBe(true);
 
-    // Move one item away
+    // Move one item away to cell (2, 2)
     const secondItem = page.locator('.placed-item').nth(1);
-    await html5DragDrop(page, secondItem, gridPage.gridContainer, { x: 200, y: 200 });
+    await dragToGridCell(page, secondItem, gridPage.gridContainer, 2, 2, 4, 4);
 
     // Should no longer have invalid items
     await page.waitForTimeout(100);

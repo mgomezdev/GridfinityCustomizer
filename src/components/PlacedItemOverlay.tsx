@@ -22,8 +22,8 @@ const getCSSVariable = (varName: string, fallback: string): string => {
   return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || fallback;
 };
 
-const DEFAULT_VALID_COLOR = getCSSVariable('--grid-primary', '#00d9ff');
-const INVALID_COLOR = getCSSVariable('--invalid-primary', '#ff3366');
+const DEFAULT_VALID_COLOR = getCSSVariable('--grid-primary', '#3B82F6');
+const INVALID_COLOR = getCSSVariable('--invalid-primary', '#EF4444');
 
 export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, getItemById }: PlacedItemOverlayProps) {
   const libraryItem = getItemById(item.itemId);
