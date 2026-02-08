@@ -3,9 +3,13 @@ import type { ReferenceImage } from '../types/gridfinity';
 
 interface ReferenceImageOverlayProps {
   image: ReferenceImage;
-  isInteractive: boolean;
+  isSelected: boolean;
   onPositionChange: (x: number, y: number) => void;
   onSelect: () => void;
+  onScaleChange: (scale: number) => void;
+  onOpacityChange: (opacity: number) => void;
+  onRemove: () => void;
+  onToggleLock: () => void;
 }
 
 interface DragState {
@@ -26,9 +30,13 @@ const INITIAL_DRAG_STATE: DragState = {
 
 export function ReferenceImageOverlay({
   image,
-  isInteractive,
+  isSelected,
   onPositionChange,
   onSelect,
+  onScaleChange,
+  onOpacityChange,
+  onRemove,
+  onToggleLock,
 }: ReferenceImageOverlayProps) {
   const [dragState, setDragState] = useState<DragState>(INITIAL_DRAG_STATE);
   const [imageLoadError, setImageLoadError] = useState(false);
@@ -40,8 +48,6 @@ export function ReferenceImageOverlay({
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!isInteractive) return;
-
     e.preventDefault();
     e.stopPropagation();
 
@@ -56,6 +62,20 @@ export function ReferenceImageOverlay({
       startImageX: image.x,
       startImageY: image.y,
     });
+  };
+
+  const handleToolbarMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
+  const handleOpacityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const percentage = Number(e.target.value);
+    onOpacityChange(percentage / 100);
+  };
+
+  const handleScaleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const percentage = Number(e.target.value);
+    onScaleChange(percentage / 100);
   };
 
   // Attach global mouse event listeners during drag
@@ -98,70 +118,131 @@ export function ReferenceImageOverlay({
   }, [dragState, onPositionChange]);
 
   const baseClassName = 'reference-image-overlay';
-  const interactiveClassName = isInteractive ? `${baseClassName}--interactive` : '';
+  const interactiveClassName = `${baseClassName}--interactive`;
   const draggingClassName = dragState.isDragging ? `${baseClassName}--dragging` : '';
   const lockedClassName = image.isLocked ? `${baseClassName}--locked` : '';
+  const selectedClassName = isSelected ? `${baseClassName}--selected` : '';
 
   const className = [
     baseClassName,
     interactiveClassName,
     draggingClassName,
     lockedClassName,
+    selectedClassName,
   ]
     .filter(Boolean)
     .join(' ');
 
-  const style: React.CSSProperties = {
+  // Outer wrapper handles positioning only — no transform or opacity
+  const wrapperStyle: React.CSSProperties = {
     left: `${image.x}%`,
     top: `${image.y}%`,
     width: `${image.width}%`,
     height: `${image.height}%`,
+    pointerEvents: 'auto',
+  };
+
+  // Inner content carries the visual transforms (scale + opacity)
+  const contentStyle: React.CSSProperties = {
+    width: '100%',
+    height: '100%',
     opacity: image.opacity,
     transform: `scale(${image.scale})`,
     transformOrigin: 'top left',
-    pointerEvents: isInteractive ? 'auto' : 'none',
   };
+
+  const opacityPercentage = Math.round(image.opacity * 100);
+  const scalePercentage = Math.round(image.scale * 100);
 
   return (
     <div
       ref={containerRef}
       className={className}
-      style={style}
+      style={wrapperStyle}
       onMouseDown={handleMouseDown}
     >
-      {imageLoadError ? (
+      {isSelected && (
         <div
-          style={{
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: 'rgba(200, 50, 50, 0.2)',
-            border: '2px dashed rgba(200, 50, 50, 0.5)',
-            color: '#c83232',
-            fontSize: '14px',
-            fontWeight: 'bold',
-            textAlign: 'center',
-            padding: '10px',
-          }}
+          className="reference-image-overlay__toolbar"
+          onMouseDown={handleToolbarMouseDown}
         >
-          Failed to load image
+          <label className="reference-image-overlay__toolbar-label">
+            Op
+            <input
+              id="opacity-slider"
+              type="range"
+              min="0"
+              max="100"
+              value={opacityPercentage}
+              onChange={handleOpacityChange}
+              className="reference-image-overlay__toolbar-slider"
+              title={`Opacity: ${opacityPercentage}%`}
+            />
+          </label>
+          <label className="reference-image-overlay__toolbar-label">
+            Sc
+            <input
+              id="scale-slider"
+              type="range"
+              min="10"
+              max="200"
+              value={scalePercentage}
+              onChange={handleScaleChange}
+              className="reference-image-overlay__toolbar-slider"
+              title={`Scale: ${scalePercentage}%`}
+            />
+          </label>
+          <button
+            className="reference-image-overlay__toolbar-btn reference-image-overlay__toolbar-btn--lock"
+            onClick={onToggleLock}
+            title={image.isLocked ? 'Unlock image' : 'Lock image'}
+          >
+            {image.isLocked ? 'Unlock' : 'Lock'}
+          </button>
+          <button
+            className="reference-image-overlay__toolbar-btn reference-image-overlay__toolbar-btn--remove"
+            onClick={onRemove}
+            title="Remove image"
+          >
+            ×
+          </button>
         </div>
-      ) : (
-        <img
-          src={image.dataUrl}
-          alt={image.name}
-          draggable={false}
-          onError={handleImageError}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain',
-            userSelect: 'none',
-          }}
-        />
       )}
+      <div className="reference-image-overlay__content" style={contentStyle}>
+        {imageLoadError ? (
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(200, 50, 50, 0.2)',
+              border: '2px dashed rgba(200, 50, 50, 0.5)',
+              color: '#c83232',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              textAlign: 'center',
+              padding: '10px',
+            }}
+          >
+            Failed to load image
+          </div>
+        ) : (
+          <img
+            src={image.dataUrl}
+            alt={image.name}
+            draggable={false}
+            onError={handleImageError}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              userSelect: 'none',
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }

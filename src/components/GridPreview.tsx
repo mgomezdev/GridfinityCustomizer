@@ -1,5 +1,5 @@
 import { useRef, useMemo } from 'react';
-import type { PlacedItemWithValidity, DragData, ComputedSpacer, LibraryItem, ReferenceImage, InteractionMode } from '../types/gridfinity';
+import type { PlacedItemWithValidity, DragData, ComputedSpacer, LibraryItem, ReferenceImage } from '../types/gridfinity';
 import { PlacedItemOverlay } from './PlacedItemOverlay';
 import { SpacerOverlay } from './SpacerOverlay';
 import { ReferenceImageOverlay } from './ReferenceImageOverlay';
@@ -15,10 +15,13 @@ interface GridPreviewProps {
   getItemById: (id: string) => LibraryItem | undefined;
   onDeleteItem?: (instanceId: string) => void;
   referenceImages?: ReferenceImage[];
-  interactionMode?: InteractionMode;
   selectedImageId?: string | null;
   onImagePositionChange?: (id: string, x: number, y: number) => void;
   onImageSelect?: (id: string) => void;
+  onImageScaleChange?: (id: string, scale: number) => void;
+  onImageOpacityChange?: (id: string, opacity: number) => void;
+  onImageRemove?: (id: string) => void;
+  onImageToggleLock?: (id: string) => void;
 }
 
 export function GridPreview({
@@ -32,9 +35,13 @@ export function GridPreview({
   getItemById,
   onDeleteItem,
   referenceImages = [],
-  interactionMode = 'items',
+  selectedImageId,
   onImagePositionChange,
   onImageSelect,
+  onImageScaleChange,
+  onImageOpacityChange,
+  onImageRemove,
+  onImageToggleLock,
 }: GridPreviewProps) {
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -110,11 +117,6 @@ export function GridPreview({
     onSelectItem(null);
   };
 
-  // Disable placed item interactions when in 'images' mode
-  const itemsStyle: React.CSSProperties = interactionMode === 'images'
-    ? { pointerEvents: 'none' }
-    : {};
-
   return (
     <div className="grid-preview" style={{ aspectRatio: `${gridX} / ${gridY}` }}>
       <div className="drawer-container">
@@ -137,27 +139,29 @@ export function GridPreview({
           onClick={handleGridClick}
         >
           {cells}
-          <div style={itemsStyle}>
-            {placedItems.map(item => (
-              <PlacedItemOverlay
-                key={item.instanceId}
-                item={item}
-                gridX={gridX}
-                gridY={gridY}
-                isSelected={item.instanceId === selectedItemId}
-                onSelect={onSelectItem}
-                getItemById={getItemById}
-                onDelete={onDeleteItem}
-              />
-            ))}
-          </div>
           {referenceImages.map(image => (
             <ReferenceImageOverlay
               key={image.id}
               image={image}
-              isInteractive={interactionMode === 'images'}
+              isSelected={image.id === selectedImageId}
               onPositionChange={(x, y) => onImagePositionChange?.(image.id, x, y)}
               onSelect={() => onImageSelect?.(image.id)}
+              onScaleChange={(scale) => onImageScaleChange?.(image.id, scale)}
+              onOpacityChange={(opacity) => onImageOpacityChange?.(image.id, opacity)}
+              onRemove={() => onImageRemove?.(image.id)}
+              onToggleLock={() => onImageToggleLock?.(image.id)}
+            />
+          ))}
+          {placedItems.map(item => (
+            <PlacedItemOverlay
+              key={item.instanceId}
+              item={item}
+              gridX={gridX}
+              gridY={gridY}
+              isSelected={item.instanceId === selectedItemId}
+              onSelect={onSelectItem}
+              getItemById={getItemById}
+              onDelete={onDeleteItem}
             />
           ))}
         </div>
