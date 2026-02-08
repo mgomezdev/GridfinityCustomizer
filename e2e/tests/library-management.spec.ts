@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { LibraryPage } from '../pages/LibraryPage';
 import { BOMPage } from '../pages/BOMPage';
 import { GridPage } from '../pages/GridPage';
-import { html5DragDrop } from '../utils/drag-drop';
+import { html5DragDrop, dragToGridCell } from '../utils/drag-drop';
 
 test.describe('Library Management', () => {
   let libraryPage: LibraryPage;
@@ -74,7 +74,7 @@ test.describe('Bill of Materials Updates', () => {
 
     // Place an item
     const firstItem = libraryPage.libraryItems.first();
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 50, y: 50 });
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
     // BOM should now have 1 entry
     await page.waitForTimeout(100);
@@ -85,13 +85,13 @@ test.describe('Bill of Materials Updates', () => {
     // Place same item twice
     const firstItem = libraryPage.libraryItems.first();
 
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 30, y: 30 });
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
     // Deselect to avoid moving the item
     await gridPage.clickEmptyGridArea();
     await page.waitForTimeout(50);
 
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 150, y: 30 });
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 2, 0, 4, 4);
 
     await page.waitForTimeout(100);
 
@@ -109,14 +109,14 @@ test.describe('Bill of Materials Updates', () => {
 
     // Need at least 2 different items
     if (itemCount >= 2) {
-      // Place first item type
-      await html5DragDrop(page, items.first(), gridPage.gridContainer, { x: 30, y: 30 });
+      // Place first item type at cell (0,0)
+      await dragToGridCell(page, items.first(), gridPage.gridContainer, 0, 0, 4, 4);
 
       await gridPage.clickEmptyGridArea();
       await page.waitForTimeout(50);
 
-      // Place second item type
-      await html5DragDrop(page, items.nth(1), gridPage.gridContainer, { x: 150, y: 30 });
+      // Place second item type at cell (2,0)
+      await dragToGridCell(page, items.nth(1), gridPage.gridContainer, 2, 0, 4, 4);
 
       await page.waitForTimeout(100);
 
@@ -128,7 +128,7 @@ test.describe('Bill of Materials Updates', () => {
   test('BOM updates when item is deleted', async ({ page }) => {
     // Place an item
     const firstItem = libraryPage.libraryItems.first();
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 50, y: 50 });
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
     // BOM should have 1 entry
     await page.waitForTimeout(100);
@@ -148,12 +148,12 @@ test.describe('Bill of Materials Updates', () => {
     // Place same item twice
     const firstItem = libraryPage.libraryItems.first();
 
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 30, y: 30 });
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
     await gridPage.clickEmptyGridArea();
     await page.waitForTimeout(50);
 
-    await html5DragDrop(page, firstItem, gridPage.gridContainer, { x: 150, y: 30 });
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 2, 0, 4, 4);
 
     await page.waitForTimeout(100);
 

@@ -307,4 +307,61 @@ describe('ItemLibrary', () => {
 
     expect(mockWriteOps.onExportLibrary).toHaveBeenCalledTimes(1);
   });
+
+  describe('Category Grouping', () => {
+    it('should show items with multiple categories under each category', () => {
+      const multiCategoryItem: LibraryItem = {
+        id: 'multi-1',
+        name: 'Multi-Category Item',
+        widthUnits: 1,
+        heightUnits: 1,
+        color: '#646cff',
+        categories: ['bin', 'organizer'],
+      };
+
+      const itemsWithMulti = [...mockLibraryItems, multiCategoryItem];
+
+      render(<ItemLibrary items={itemsWithMulti} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+
+      expect(screen.getByText(/Bins \(3\)/)).toBeInTheDocument();
+      expect(screen.getByText(/Organizers \(2\)/)).toBeInTheDocument();
+
+      const multiItems = screen.getAllByText('Multi-Category Item');
+      expect(multiItems).toHaveLength(2);
+    });
+
+    it('should not render empty categories', () => {
+      const emptyCategory: Category = { id: 'empty', name: 'Empty Category', color: '#999999', order: 4 };
+      const categoriesWithEmpty = [...mockCategories, emptyCategory];
+
+      render(<ItemLibrary items={mockLibraryItems} categories={categoriesWithEmpty} isLoading={false} error={null} {...mockWriteOps} />);
+
+      expect(screen.queryByText(/Empty Category/)).not.toBeInTheDocument();
+    });
+
+    it('should correctly group filtered items by category', () => {
+      const multiCategoryItem: LibraryItem = {
+        id: 'multi-2',
+        name: 'Bin Divider Combo',
+        widthUnits: 2,
+        heightUnits: 2,
+        color: '#646cff',
+        categories: ['bin', 'divider'],
+      };
+
+      const itemsWithMulti = [...mockLibraryItems, multiCategoryItem];
+
+      render(<ItemLibrary items={itemsWithMulti} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+
+      const searchInput = screen.getByPlaceholderText('Search items...');
+      fireEvent.change(searchInput, { target: { value: 'Combo' } });
+
+      expect(screen.getByText(/Bins \(1\)/)).toBeInTheDocument();
+      expect(screen.getByText(/Dividers \(1\)/)).toBeInTheDocument();
+      expect(screen.queryByText(/Organizers/)).not.toBeInTheDocument();
+
+      const comboItems = screen.getAllByText('Bin Divider Combo');
+      expect(comboItems).toHaveLength(2);
+    });
+  });
 });

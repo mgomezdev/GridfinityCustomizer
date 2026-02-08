@@ -8,6 +8,7 @@ interface PlacedItemOverlayProps {
   isSelected: boolean;
   onSelect: (instanceId: string) => void;
   getItemById: (id: string) => LibraryItem | undefined;
+  onDelete?: (instanceId: string) => void;
 }
 
 interface ImageLoadState {
@@ -16,9 +17,12 @@ interface ImageLoadState {
   error: boolean;
 }
 
-export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, getItemById }: PlacedItemOverlayProps) {
+const DEFAULT_VALID_COLOR = '#3B82F6';
+const INVALID_COLOR = '#EF4444';
+
+export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, getItemById, onDelete }: PlacedItemOverlayProps) {
   const libraryItem = getItemById(item.itemId);
-  const color = item.isValid ? (libraryItem?.color || '#646cff') : '#ef4444';
+  const color = item.isValid ? (libraryItem?.color || DEFAULT_VALID_COLOR) : INVALID_COLOR;
 
   const [loadState, setLoadState] = useState<ImageLoadState>({
     forUrl: '',
@@ -55,6 +59,12 @@ export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, ge
     onSelect(item.instanceId);
   };
 
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onDelete?.(item.instanceId);
+  };
+
   return (
     <div
       className={`placed-item ${isSelected ? 'selected' : ''} ${!item.isValid ? 'invalid' : ''}`}
@@ -83,6 +93,19 @@ export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, ge
         </div>
       )}
       <span className="placed-item-label">{libraryItem?.name}</span>
+      {isSelected && onDelete && (
+        <button
+          className="placed-item-delete-btn"
+          onClick={handleDeleteClick}
+          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          draggable={false}
+          aria-label="Remove item"
+          title="Remove item"
+        >
+          &times;
+        </button>
+      )}
     </div>
   );
 }

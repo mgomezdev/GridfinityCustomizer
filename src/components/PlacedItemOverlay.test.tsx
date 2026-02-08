@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { PlacedItemOverlay } from './PlacedItemOverlay';
 import type { PlacedItemWithValidity, LibraryItem } from '../types/gridfinity';
@@ -6,8 +6,8 @@ import type { PlacedItemWithValidity, LibraryItem } from '../types/gridfinity';
 describe('PlacedItemOverlay', () => {
   const mockGetItemById = (id: string): LibraryItem | undefined => {
     const items: Record<string, LibraryItem> = {
-      'bin-1x1': { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', categories: ['bin'] },
-      'bin-2x2': { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#646cff', categories: ['bin'] },
+      'bin-1x1': { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#3B82F6', categories: ['bin'] },
+      'bin-2x2': { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#3B82F6', categories: ['bin'] },
     };
     return items[id];
   };
@@ -195,8 +195,8 @@ describe('PlacedItemOverlay', () => {
 
       const element = container.querySelector('.placed-item');
       expect(element).toHaveStyle({
-        backgroundColor: '#646cff66',
-        borderColor: '#646cff',
+        backgroundColor: '#3B82F666',
+        borderColor: '#3B82F6',
       });
       expect(element).not.toHaveClass('invalid');
     });
@@ -216,8 +216,8 @@ describe('PlacedItemOverlay', () => {
 
       const element = container.querySelector('.placed-item');
       expect(element).toHaveStyle({
-        backgroundColor: '#ef444466',
-        borderColor: '#ef4444',
+        backgroundColor: '#EF444466',
+        borderColor: '#EF4444',
       });
       expect(element).toHaveClass('invalid');
     });
@@ -268,8 +268,8 @@ describe('PlacedItemOverlay', () => {
 
       const element = container.querySelector('.placed-item');
       expect(element).toHaveStyle({
-        backgroundColor: '#646cff66',
-        borderColor: '#646cff',
+        backgroundColor: '#3B82F666',
+        borderColor: '#3B82F6',
       });
     });
   });
@@ -618,6 +618,166 @@ describe('PlacedItemOverlay', () => {
     });
   });
 
+  describe('Inline Delete Button', () => {
+    const mockOnDelete = vi.fn();
+
+    beforeEach(() => {
+      mockOnDelete.mockClear();
+    });
+
+    it('should render delete button when selected and onDelete provided', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onDelete={mockOnDelete}
+        />
+      );
+
+      const deleteBtn = screen.getByRole('button', { name: 'Remove item' });
+      expect(deleteBtn).toBeInTheDocument();
+    });
+
+    it('should NOT render delete button when not selected', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onDelete={mockOnDelete}
+        />
+      );
+
+      expect(screen.queryByRole('button', { name: 'Remove item' })).not.toBeInTheDocument();
+    });
+
+    it('should NOT render delete button when onDelete not provided', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      expect(screen.queryByRole('button', { name: 'Remove item' })).not.toBeInTheDocument();
+    });
+
+    it('should call onDelete with correct instanceId on click', () => {
+      const item = createMockItem({ instanceId: 'delete-me-123' });
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onDelete={mockOnDelete}
+        />
+      );
+
+      const deleteBtn = screen.getByRole('button', { name: 'Remove item' });
+      fireEvent.click(deleteBtn);
+
+      expect(mockOnDelete).toHaveBeenCalledWith('delete-me-123');
+      expect(mockOnDelete).toHaveBeenCalledTimes(1);
+    });
+
+    it('should NOT trigger onSelect when delete button is clicked', () => {
+      const item = createMockItem();
+      mockOnSelect.mockClear();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onDelete={mockOnDelete}
+        />
+      );
+
+      const deleteBtn = screen.getByRole('button', { name: 'Remove item' });
+      fireEvent.click(deleteBtn);
+
+      expect(mockOnSelect).not.toHaveBeenCalled();
+    });
+
+    it('should NOT propagate click to parent', () => {
+      const item = createMockItem();
+      const parentClickHandler = vi.fn();
+      render(
+        <div onClick={parentClickHandler}>
+          <PlacedItemOverlay
+            item={item}
+            gridX={4}
+            gridY={4}
+            isSelected={true}
+            onSelect={mockOnSelect}
+            getItemById={mockGetItemById}
+            onDelete={mockOnDelete}
+          />
+        </div>
+      );
+
+      const deleteBtn = screen.getByRole('button', { name: 'Remove item' });
+      fireEvent.click(deleteBtn);
+
+      expect(parentClickHandler).not.toHaveBeenCalled();
+    });
+
+    it('should have draggable="false" attribute', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onDelete={mockOnDelete}
+        />
+      );
+
+      const deleteBtn = screen.getByRole('button', { name: 'Remove item' });
+      expect(deleteBtn).toHaveAttribute('draggable', 'false');
+    });
+
+    it('should have aria-label="Remove item"', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onDelete={mockOnDelete}
+        />
+      );
+
+      const deleteBtn = screen.getByRole('button', { name: 'Remove item' });
+      expect(deleteBtn).toHaveAttribute('aria-label', 'Remove item');
+    });
+  });
+
   describe('Image Rendering', () => {
     const mockGetItemByIdWithImage = (id: string): LibraryItem | undefined => {
       const items: Record<string, LibraryItem> = {
@@ -626,7 +786,7 @@ describe('PlacedItemOverlay', () => {
           name: 'Bin with Image',
           widthUnits: 1,
           heightUnits: 1,
-          color: '#646cff',
+          color: '#3B82F6',
           categories: ['bin'],
           imageUrl: 'https://example.com/image.png',
         },
@@ -635,7 +795,7 @@ describe('PlacedItemOverlay', () => {
           name: 'Bin without Image',
           widthUnits: 1,
           heightUnits: 1,
-          color: '#646cff',
+          color: '#3B82F6',
           categories: ['bin'],
         },
       };
@@ -766,8 +926,8 @@ describe('PlacedItemOverlay', () => {
 
       const element = container.querySelector('.placed-item');
       expect(element).toHaveStyle({
-        backgroundColor: '#646cff66',
-        borderColor: '#646cff',
+        backgroundColor: '#3B82F666',
+        borderColor: '#3B82F6',
       });
     });
 
@@ -796,8 +956,8 @@ describe('PlacedItemOverlay', () => {
       // Background color should still be visible
       const element = container.querySelector('.placed-item');
       expect(element).toHaveStyle({
-        backgroundColor: '#646cff66',
-        borderColor: '#646cff',
+        backgroundColor: '#3B82F666',
+        borderColor: '#3B82F6',
       });
     });
 
@@ -817,8 +977,8 @@ describe('PlacedItemOverlay', () => {
       // Before image loads, background should be visible
       const element = container.querySelector('.placed-item');
       expect(element).toHaveStyle({
-        backgroundColor: '#646cff66',
-        borderColor: '#646cff',
+        backgroundColor: '#3B82F666',
+        borderColor: '#3B82F6',
       });
     });
 

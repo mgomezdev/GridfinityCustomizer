@@ -594,6 +594,104 @@ describe('useLibraryData', () => {
     });
   });
 
+  describe('batchUpdateItems', () => {
+    beforeEach(() => {
+      localStorage.clear();
+      (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+        ok: true,
+        json: async () => mockLibraryData,
+      });
+    });
+
+    it('should update multiple items in a single call', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      act(() => {
+        result.current.batchUpdateItems([
+          { id: 'bin-1x1', updates: { name: 'Updated 1x1', color: '#ff0000' } },
+          { id: 'bin-2x2', updates: { name: 'Updated 2x2', color: '#00ff00' } },
+        ]);
+      });
+
+      const item1 = result.current.getItemById('bin-1x1');
+      const item2 = result.current.getItemById('bin-2x2');
+
+      expect(item1?.name).toBe('Updated 1x1');
+      expect(item1?.color).toBe('#ff0000');
+      expect(item2?.name).toBe('Updated 2x2');
+      expect(item2?.color).toBe('#00ff00');
+    });
+
+    it('should skip non-existent item IDs without error', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      act(() => {
+        result.current.batchUpdateItems([
+          { id: 'bin-1x1', updates: { name: 'Updated 1x1' } },
+          { id: 'non-existent', updates: { name: 'Should Skip' } },
+          { id: 'bin-2x2', updates: { name: 'Updated 2x2' } },
+        ]);
+      });
+
+      const item1 = result.current.getItemById('bin-1x1');
+      const item2 = result.current.getItemById('bin-2x2');
+      const nonExistent = result.current.getItemById('non-existent');
+
+      expect(item1?.name).toBe('Updated 1x1');
+      expect(item2?.name).toBe('Updated 2x2');
+      expect(nonExistent).toBeUndefined();
+    });
+
+    it('should persist batch updates to localStorage', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      act(() => {
+        result.current.batchUpdateItems([
+          { id: 'bin-1x1', updates: { color: '#111111' } },
+          { id: 'bin-2x2', updates: { color: '#222222' } },
+        ]);
+      });
+
+      const stored = localStorage.getItem('gridfinity-library-custom');
+      expect(stored).toBeTruthy();
+      const parsed = JSON.parse(stored!);
+
+      const item1 = parsed.find((item: LibraryItem) => item.id === 'bin-1x1');
+      const item2 = parsed.find((item: LibraryItem) => item.id === 'bin-2x2');
+
+      expect(item1.color).toBe('#111111');
+      expect(item2.color).toBe('#222222');
+    });
+
+    it('should handle empty updates array', async () => {
+      const { result } = renderHook(() => useLibraryData());
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      const itemsBefore = result.current.items;
+
+      act(() => {
+        result.current.batchUpdateItems([]);
+      });
+
+      expect(result.current.items).toEqual(itemsBefore);
+    });
+  });
+
   describe('Edge Cases', () => {
     beforeEach(() => {
       (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({

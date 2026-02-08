@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { GridPreview } from './GridPreview';
-import type { PlacedItemWithValidity, LibraryItem } from '../types/gridfinity';
+import type { PlacedItemWithValidity, LibraryItem, ComputedSpacer } from '../types/gridfinity';
 
 // Mock the PlacedItemOverlay component
 vi.mock('./PlacedItemOverlay', () => ({
@@ -52,6 +52,17 @@ describe('GridPreview', () => {
     height: 1,
     isRotated: false,
     isValid: true,
+    ...overrides,
+  });
+
+  const createMockSpacer = (overrides?: Partial<ComputedSpacer>): ComputedSpacer => ({
+    id: 'spacer-1',
+    position: 'left',
+    size: 5,
+    renderX: 0,
+    renderY: 0,
+    renderWidth: 10,
+    renderHeight: 100,
     ...overrides,
   });
 
@@ -527,6 +538,248 @@ describe('GridPreview', () => {
 
       expect(screen.getByTestId('placed-item-item-1')).toBeInTheDocument();
       expect(screen.getByTestId('placed-item-item-2')).toBeInTheDocument();
+    });
+  });
+
+  describe('Spacer Offset Calculations', () => {
+    it('should calculate grid offset with left spacer', () => {
+      const spacers = [
+        createMockSpacer({
+          id: 'spacer-1',
+          position: 'left',
+          renderWidth: 10,
+          renderHeight: 100,
+        }),
+      ];
+
+      const { container } = render(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={[]}
+          selectedItemId={null}
+          spacers={spacers}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const gridContainer = container.querySelector('.grid-container');
+      expect(gridContainer).toHaveStyle({
+        left: '10%',
+        top: '0%',
+        width: '90%',
+        height: '100%',
+      });
+    });
+
+    it('should calculate grid offset with right spacer (no left)', () => {
+      const spacers = [
+        createMockSpacer({
+          id: 'spacer-1',
+          position: 'right',
+          renderWidth: 15,
+          renderHeight: 100,
+        }),
+      ];
+
+      const { container } = render(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={[]}
+          selectedItemId={null}
+          spacers={spacers}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const gridContainer = container.querySelector('.grid-container');
+      expect(gridContainer).toHaveStyle({
+        left: '15%',
+        top: '0%',
+        width: '85%',
+        height: '100%',
+      });
+    });
+
+    it('should calculate grid offset with top spacer', () => {
+      const spacers = [
+        createMockSpacer({
+          id: 'spacer-1',
+          position: 'top',
+          renderWidth: 100,
+          renderHeight: 12,
+        }),
+      ];
+
+      const { container } = render(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={[]}
+          selectedItemId={null}
+          spacers={spacers}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const gridContainer = container.querySelector('.grid-container');
+      expect(gridContainer).toHaveStyle({
+        left: '0%',
+        top: '12%',
+        width: '100%',
+        height: '88%',
+      });
+    });
+
+    it('should calculate grid offset with bottom spacer (no top)', () => {
+      const spacers = [
+        createMockSpacer({
+          id: 'spacer-1',
+          position: 'bottom',
+          renderWidth: 100,
+          renderHeight: 20,
+        }),
+      ];
+
+      const { container } = render(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={[]}
+          selectedItemId={null}
+          spacers={spacers}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const gridContainer = container.querySelector('.grid-container');
+      expect(gridContainer).toHaveStyle({
+        left: '0%',
+        top: '20%',
+        width: '100%',
+        height: '80%',
+      });
+    });
+
+    it('should calculate grid offset with multiple spacers', () => {
+      const spacers = [
+        createMockSpacer({
+          id: 'spacer-left',
+          position: 'left',
+          renderWidth: 10,
+          renderHeight: 100,
+        }),
+        createMockSpacer({
+          id: 'spacer-top',
+          position: 'top',
+          renderWidth: 100,
+          renderHeight: 12,
+        }),
+      ];
+
+      const { container } = render(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={[]}
+          selectedItemId={null}
+          spacers={spacers}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const gridContainer = container.querySelector('.grid-container');
+      expect(gridContainer).toHaveStyle({
+        left: '10%',
+        top: '12%',
+        width: '90%',
+        height: '88%',
+      });
+    });
+
+    it('should prioritize left spacer over right spacer for offset', () => {
+      const spacers = [
+        createMockSpacer({
+          id: 'spacer-left',
+          position: 'left',
+          renderWidth: 10,
+          renderHeight: 100,
+        }),
+        createMockSpacer({
+          id: 'spacer-right',
+          position: 'right',
+          renderWidth: 15,
+          renderHeight: 100,
+        }),
+      ];
+
+      const { container } = render(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={[]}
+          selectedItemId={null}
+          spacers={spacers}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const gridContainer = container.querySelector('.grid-container');
+      // Left spacer should be used for offset, but width includes both
+      expect(gridContainer).toHaveStyle({
+        left: '10%',
+        width: '75%', // 100 - 10 (left) - 15 (right)
+      });
+    });
+
+    it('should prioritize top spacer over bottom spacer for offset', () => {
+      const spacers = [
+        createMockSpacer({
+          id: 'spacer-top',
+          position: 'top',
+          renderWidth: 100,
+          renderHeight: 12,
+        }),
+        createMockSpacer({
+          id: 'spacer-bottom',
+          position: 'bottom',
+          renderWidth: 100,
+          renderHeight: 20,
+        }),
+      ];
+
+      const { container } = render(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={[]}
+          selectedItemId={null}
+          spacers={spacers}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const gridContainer = container.querySelector('.grid-container');
+      // Top spacer should be used for offset, but height includes both
+      expect(gridContainer).toHaveStyle({
+        top: '12%',
+        height: '68%', // 100 - 12 (top) - 20 (bottom)
+      });
     });
   });
 

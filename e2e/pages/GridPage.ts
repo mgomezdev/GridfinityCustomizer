@@ -67,12 +67,10 @@ export class GridPage {
   }
 
   async clickEmptyGridArea(): Promise<void> {
-    // Click on an empty cell in the grid (bottom-right area to avoid placed items)
-    const box = await this.gridContainer.boundingBox();
-    if (box) {
-      // Click in the bottom-right area where items are less likely to be
-      await this.page.mouse.click(box.x + box.width - 20, box.y + box.height - 20);
-    }
+    // Click on the last grid cell (bottom-right) which should be empty
+    // This reliably triggers the grid container's onClick handler for deselection
+    const lastCell = this.page.locator('.grid-cell').last();
+    await lastCell.click();
   }
 
   async setDimensions(width: number, depth: number): Promise<void> {
