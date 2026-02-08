@@ -454,6 +454,55 @@ describe('useGridItems', () => {
     });
   });
 
+  describe('clearAll', () => {
+    it('should remove all placed items', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+        result.current.addItem('bin-1x1', 1, 0);
+        result.current.addItem('bin-2x2', 2, 2);
+      });
+
+      expect(result.current.placedItems).toHaveLength(3);
+
+      act(() => {
+        result.current.clearAll();
+      });
+
+      expect(result.current.placedItems).toHaveLength(0);
+    });
+
+    it('should clear selection', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+      });
+
+      expect(result.current.selectedItemId).not.toBeNull();
+
+      act(() => {
+        result.current.clearAll();
+      });
+
+      expect(result.current.selectedItemId).toBeNull();
+    });
+
+    it('should handle empty state gracefully', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      expect(result.current.placedItems).toHaveLength(0);
+
+      act(() => {
+        result.current.clearAll();
+      });
+
+      expect(result.current.placedItems).toHaveLength(0);
+      expect(result.current.selectedItemId).toBeNull();
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle zero-dimension grid', () => {
       const { result } = renderHook(() => useGridItems(0, 0, mockGetItemById));

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { UnitSystem, ImperialFormat, GridSpacerConfig } from './types/gridfinity';
 import { calculateGrid, mmToInches, inchesToMm } from './utils/conversions';
 import { useGridItems } from './hooks/useGridItems';
@@ -130,21 +130,28 @@ function App() {
     selectedItemId,
     rotateItem,
     deleteItem,
+    clearAll,
     selectItem,
     handleDrop,
   } = useGridItems(gridResult.gridX, gridResult.gridY, getItemById);
 
   const bomItems = useBillOfMaterials(placedItems, libraryItems);
 
-  const handleRotateSelected = () => {
+  const handleRotateSelected = useCallback(() => {
     if (selectedItemId) {
       rotateItem(selectedItemId);
     }
-  };
+  }, [selectedItemId, rotateItem]);
 
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = useCallback(() => {
     if (selectedItemId) {
       deleteItem(selectedItemId);
+    }
+  }, [selectedItemId, deleteItem]);
+
+  const handleClearAll = () => {
+    if (window.confirm(`Remove all ${placedItems.length} placed items?`)) {
+      clearAll();
     }
   };
 
@@ -191,19 +198,36 @@ function App() {
         return;
       }
 
-      // Delete or Backspace: Remove selected image (only in images mode with selection)
-      if ((event.key === 'Delete' || event.key === 'Backspace') &&
-          interactionMode === 'images' &&
-          selectedImageId) {
+      // Delete or Backspace: Remove selected image (images mode) or selected item (items mode)
+      if ((event.key === 'Delete' || event.key === 'Backspace')) {
+        if (interactionMode === 'images' && selectedImageId) {
+          event.preventDefault();
+          removeImage(selectedImageId);
+          setSelectedImageId(null);
+          return;
+        }
+        if (interactionMode === 'items' && selectedItemId) {
+          event.preventDefault();
+          handleDeleteSelected();
+          return;
+        }
+      }
+
+      // R: Rotate selected item (items mode only)
+      if ((event.key === 'r' || event.key === 'R') &&
+          interactionMode === 'items' &&
+          selectedItemId) {
         event.preventDefault();
-        removeImage(selectedImageId);
-        // Clear selection after removing
-        setSelectedImageId(null);
+        handleRotateSelected();
         return;
       }
 
-      // Escape: Deselect image and switch to items mode
+      // Escape: Deselect current selection
       if (event.key === 'Escape') {
+        if (interactionMode === 'items' && selectedItemId) {
+          selectItem(null);
+          return;
+        }
         setSelectedImageId(null);
         setInteractionMode('items');
         return;
@@ -224,7 +248,7 @@ function App() {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [images.length, interactionMode, selectedImageId, setInteractionMode, toggleImageLock, removeImage]);
+  }, [images.length, interactionMode, selectedImageId, selectedItemId, setInteractionMode, toggleImageLock, removeImage, handleDeleteSelected, handleRotateSelected, selectItem]);
 
   return (
     <div className="app">
@@ -305,6 +329,11 @@ function App() {
             onChange={handleInteractionModeChange}
             hasImages={images.length > 0}
           />
+          {placedItems.length > 0 && (
+            <button className="clear-all-button" onClick={handleClearAll}>
+              Clear All ({placedItems.length})
+            </button>
+          )}
         </div>
 
         {selectedImage && interactionMode === 'images' && (
@@ -356,6 +385,7 @@ function App() {
             onDrop={handleDrop}
             onSelectItem={selectItem}
             getItemById={getItemById}
+            onDeleteItem={deleteItem}
             referenceImages={images}
             interactionMode={interactionMode}
             selectedImageId={selectedImageId}

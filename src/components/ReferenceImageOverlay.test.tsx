@@ -462,7 +462,7 @@ describe('ReferenceImageOverlay', () => {
       expect(mockOnSelect).not.toHaveBeenCalled();
     });
 
-    it('should NOT call onSelect when image is locked', () => {
+    it('should call onSelect when image is locked (allows selecting to unlock)', () => {
       const image = createMockImage({ isLocked: true });
       const { container } = render(
         <ReferenceImageOverlay
@@ -476,7 +476,7 @@ describe('ReferenceImageOverlay', () => {
       const overlayElement = container.querySelector('.reference-image-overlay');
       fireEvent.mouseDown(overlayElement!, { clientX: 100, clientY: 100 });
 
-      expect(mockOnSelect).not.toHaveBeenCalled();
+      expect(mockOnSelect).toHaveBeenCalled();
     });
 
     it('should prevent default and stop propagation on mousedown when interactive and unlocked', () => {

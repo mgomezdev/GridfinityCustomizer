@@ -13,6 +13,7 @@ interface GridPreviewProps {
   onDrop: (dragData: DragData, x: number, y: number) => void;
   onSelectItem: (instanceId: string | null) => void;
   getItemById: (id: string) => LibraryItem | undefined;
+  onDeleteItem?: (instanceId: string) => void;
   referenceImages?: ReferenceImage[];
   interactionMode?: InteractionMode;
   selectedImageId?: string | null;
@@ -29,6 +30,7 @@ export function GridPreview({
   onDrop,
   onSelectItem,
   getItemById,
+  onDeleteItem,
   referenceImages = [],
   interactionMode = 'items',
   onImagePositionChange,
@@ -149,6 +151,7 @@ export function GridPreview({
                 isSelected={item.instanceId === selectedItemId}
                 onSelect={onSelectItem}
                 getItemById={getItemById}
+                onDelete={onDeleteItem}
               />
             ))}
           </div>

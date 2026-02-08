@@ -1163,6 +1163,50 @@
   letter-spacing: var(--tracking-wide);
 }
 
+/* Placed Item Inline Delete Button */
+.placed-item-delete-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-secondary);
+  background: var(--bg-primary);
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 3;
+  padding: 0;
+  animation: delete-btn-appear 0.15s ease-out;
+}
+
+.placed-item-delete-btn:hover {
+  background: var(--invalid-primary);
+  border-color: var(--invalid-primary);
+  color: white;
+  transform: scale(1.15);
+}
+
+.placed-item-delete-btn:active {
+  transform: scale(0.95);
+}
+
+@keyframes delete-btn-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* Placed Item Image Support */
 .placed-item-image-container {
   position: absolute;
@@ -1435,6 +1479,26 @@
   .bom-sidebar {
     order: 1;
   }
+}
+
+/* Clear All Button */
+.clear-all-button {
+  padding: var(--space-sm) var(--space-lg);
+  border: 2px solid var(--invalid-primary);
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--invalid-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.clear-all-button:hover {
+  background: var(--invalid-alpha-40);
 }
 
 /* Reference Image Overlay */
