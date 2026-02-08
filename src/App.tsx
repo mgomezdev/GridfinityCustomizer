@@ -15,8 +15,6 @@ import { ItemControls } from './components/ItemControls';
 import { SpacerControls } from './components/SpacerControls';
 import { BillOfMaterials } from './components/BillOfMaterials';
 import { ReferenceImageUploader } from './components/ReferenceImageUploader';
-import { InteractionModeToggle } from './components/InteractionModeToggle';
-import { ReferenceImageControls } from './components/ReferenceImageControls';
 import './App.css';
 
 function App() {
@@ -43,14 +41,12 @@ function App() {
 
   const {
     images,
-    interactionMode,
     addImage,
     removeImage,
     updateImagePosition,
     updateImageScale,
     updateImageOpacity,
     toggleImageLock,
-    setInteractionMode,
   } = useReferenceImages();
 
   const {
@@ -158,14 +154,6 @@ function App() {
     }
   };
 
-  const handleInteractionModeChange = (mode: 'items' | 'images') => {
-    setInteractionMode(mode);
-    // Clear selected image when switching to 'items' mode
-    if (mode === 'items') {
-      setSelectedImageId(null);
-    }
-  };
-
   const handleRemoveImage = (id: string) => {
     removeImage(id);
     // Clear selection if we're removing the selected image
@@ -173,9 +161,6 @@ function App() {
       setSelectedImageId(null);
     }
   };
-
-  // Find the selected image (or null if it doesn't exist)
-  const selectedImage = selectedImageId ? images.find(img => img.id === selectedImageId) ?? null : null;
 
   // Keyboard shortcuts — use ref to avoid re-registering listener on every state change
   const keyDownHandlerRef = useRef<(event: KeyboardEvent) => void>();
@@ -191,55 +176,37 @@ function App() {
       return;
     }
 
-    // Tab or M: Toggle interaction mode (only when images exist)
-    if ((event.key === 'Tab' || event.key === 'm' || event.key === 'M') && images.length > 0) {
-      event.preventDefault();
-      setInteractionMode(interactionMode === 'items' ? 'images' : 'items');
-      if (interactionMode === 'images') {
-        setSelectedImageId(null);
-      }
-      return;
-    }
-
-    // Delete or Backspace: Remove selected image (images mode) or selected item (items mode)
+    // Delete or Backspace: Remove selected image or selected item
     if ((event.key === 'Delete' || event.key === 'Backspace')) {
-      if (interactionMode === 'images' && selectedImageId) {
+      if (selectedImageId) {
         event.preventDefault();
         removeImage(selectedImageId);
         setSelectedImageId(null);
         return;
       }
-      if (interactionMode === 'items' && selectedItemId) {
+      if (selectedItemId) {
         event.preventDefault();
         handleDeleteSelected();
         return;
       }
     }
 
-    // R: Rotate selected item (items mode only)
-    if ((event.key === 'r' || event.key === 'R') &&
-        interactionMode === 'items' &&
-        selectedItemId) {
+    // R: Rotate selected item
+    if ((event.key === 'r' || event.key === 'R') && selectedItemId) {
       event.preventDefault();
       handleRotateSelected();
       return;
     }
 
-    // Escape: Deselect current selection
+    // Escape: Clear both selections
     if (event.key === 'Escape') {
-      if (interactionMode === 'items' && selectedItemId) {
-        selectItem(null);
-        return;
-      }
+      selectItem(null);
       setSelectedImageId(null);
-      setInteractionMode('items');
       return;
     }
 
-    // L: Toggle lock on selected image (only in images mode with selection)
-    if ((event.key === 'l' || event.key === 'L') &&
-        interactionMode === 'images' &&
-        selectedImageId) {
+    // L: Toggle lock on selected image
+    if ((event.key === 'l' || event.key === 'L') && selectedImageId) {
       event.preventDefault();
       toggleImageLock(selectedImageId);
       return;
@@ -324,29 +291,6 @@ function App() {
           imperialFormat={imperialFormat}
         />
 
-        <div className="reference-image-toolbar">
-          <ReferenceImageUploader onUpload={addImage} />
-          <InteractionModeToggle
-            mode={interactionMode}
-            onChange={handleInteractionModeChange}
-            hasImages={images.length > 0}
-          />
-          {placedItems.length > 0 && (
-            <button className="clear-all-button" onClick={handleClearAll}>
-              Clear All ({placedItems.length})
-            </button>
-          )}
-        </div>
-
-        {selectedImage && interactionMode === 'images' && (
-          <ReferenceImageControls
-            image={selectedImage}
-            onScaleChange={(scale) => updateImageScale(selectedImage.id, scale)}
-            onOpacityChange={(opacity) => updateImageOpacity(selectedImage.id, opacity)}
-            onRemove={() => handleRemoveImage(selectedImage.id)}
-            onToggleLock={() => toggleImageLock(selectedImage.id)}
-          />
-        )}
       </section>
 
       <main className="app-main">
@@ -378,6 +322,14 @@ function App() {
         </section>
 
         <section className="preview">
+          <div className="reference-image-toolbar">
+            <ReferenceImageUploader onUpload={addImage} />
+            {placedItems.length > 0 && (
+              <button className="clear-all-button" onClick={handleClearAll}>
+                Clear All ({placedItems.length})
+              </button>
+            )}
+          </div>
           <GridPreview
             gridX={gridResult.gridX}
             gridY={gridResult.gridY}
@@ -385,14 +337,17 @@ function App() {
             selectedItemId={selectedItemId}
             spacers={spacers}
             onDrop={handleDrop}
-            onSelectItem={selectItem}
+            onSelectItem={(id) => { selectItem(id); if (id) setSelectedImageId(null); }}
             getItemById={getItemById}
             onDeleteItem={deleteItem}
             referenceImages={images}
-            interactionMode={interactionMode}
             selectedImageId={selectedImageId}
             onImagePositionChange={updateImagePosition}
-            onImageSelect={setSelectedImageId}
+            onImageSelect={(id) => { setSelectedImageId(id); selectItem(null); }}
+            onImageScaleChange={updateImageScale}
+            onImageOpacityChange={updateImageOpacity}
+            onImageRemove={handleRemoveImage}
+            onImageToggleLock={toggleImageLock}
           />
         </section>
 

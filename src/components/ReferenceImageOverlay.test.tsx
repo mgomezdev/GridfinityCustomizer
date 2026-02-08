@@ -6,10 +6,18 @@ import type { ReferenceImage } from '../types/gridfinity';
 describe('ReferenceImageOverlay', () => {
   const mockOnPositionChange = vi.fn();
   const mockOnSelect = vi.fn();
+  const mockOnScaleChange = vi.fn();
+  const mockOnOpacityChange = vi.fn();
+  const mockOnRemove = vi.fn();
+  const mockOnToggleLock = vi.fn();
 
   beforeEach(() => {
     mockOnPositionChange.mockClear();
     mockOnSelect.mockClear();
+    mockOnScaleChange.mockClear();
+    mockOnOpacityChange.mockClear();
+    mockOnRemove.mockClear();
+    mockOnToggleLock.mockClear();
   });
 
   const createMockImage = (overrides?: Partial<ReferenceImage>): ReferenceImage => ({
@@ -26,16 +34,21 @@ describe('ReferenceImageOverlay', () => {
     ...overrides,
   });
 
+  const defaultProps = {
+    isSelected: false,
+    onPositionChange: mockOnPositionChange,
+    onSelect: mockOnSelect,
+    onScaleChange: mockOnScaleChange,
+    onOpacityChange: mockOnOpacityChange,
+    onRemove: mockOnRemove,
+    onToggleLock: mockOnToggleLock,
+  };
+
   describe('Image Rendering', () => {
     it('should render image with correct src (dataUrl)', () => {
       const image = createMockImage({ dataUrl: 'data:image/png;base64,testData' });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const imgElement = container.querySelector('img');
@@ -46,12 +59,7 @@ describe('ReferenceImageOverlay', () => {
     it('should use image name as alt text', () => {
       const image = createMockImage({ name: 'my-reference.jpg' });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const imgElement = container.querySelector('img');
@@ -61,12 +69,7 @@ describe('ReferenceImageOverlay', () => {
     it('should set draggable to false on image element', () => {
       const image = createMockImage();
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const imgElement = container.querySelector('img');
@@ -75,129 +78,87 @@ describe('ReferenceImageOverlay', () => {
   });
 
   describe('Opacity Styling', () => {
-    it('should apply opacity style from image.opacity', () => {
+    it('should apply opacity style on content div from image.opacity', () => {
       const image = createMockImage({ opacity: 0.7 });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
-      const overlayElement = container.querySelector('.reference-image-overlay');
-      expect(overlayElement).toHaveStyle({ opacity: '0.7' });
+      const contentElement = container.querySelector('.reference-image-overlay__content');
+      expect(contentElement).toHaveStyle({ opacity: '0.7' });
     });
 
     it('should handle opacity of 0', () => {
       const image = createMockImage({ opacity: 0 });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
-      const overlayElement = container.querySelector('.reference-image-overlay');
-      expect(overlayElement).toHaveStyle({ opacity: '0' });
+      const contentElement = container.querySelector('.reference-image-overlay__content');
+      expect(contentElement).toHaveStyle({ opacity: '0' });
     });
 
     it('should handle opacity of 1', () => {
       const image = createMockImage({ opacity: 1 });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
-      const overlayElement = container.querySelector('.reference-image-overlay');
-      expect(overlayElement).toHaveStyle({ opacity: '1' });
+      const contentElement = container.querySelector('.reference-image-overlay__content');
+      expect(contentElement).toHaveStyle({ opacity: '1' });
     });
   });
 
   describe('Scale Transform', () => {
-    it('should apply scale transform from image.scale', () => {
+    it('should apply scale transform on content div from image.scale', () => {
       const image = createMockImage({ scale: 1.5 });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
-      const overlayElement = container.querySelector('.reference-image-overlay');
-      expect(overlayElement).toHaveStyle({ transform: 'scale(1.5)' });
+      const contentElement = container.querySelector('.reference-image-overlay__content');
+      expect(contentElement).toHaveStyle({ transform: 'scale(1.5)' });
     });
 
     it('should handle scale of 1 (no scaling)', () => {
       const image = createMockImage({ scale: 1 });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
-      const overlayElement = container.querySelector('.reference-image-overlay');
-      expect(overlayElement).toHaveStyle({ transform: 'scale(1)' });
+      const contentElement = container.querySelector('.reference-image-overlay__content');
+      expect(contentElement).toHaveStyle({ transform: 'scale(1)' });
     });
 
     it('should handle very large scale values', () => {
       const image = createMockImage({ scale: 5 });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
-      const overlayElement = container.querySelector('.reference-image-overlay');
-      expect(overlayElement).toHaveStyle({ transform: 'scale(5)' });
+      const contentElement = container.querySelector('.reference-image-overlay__content');
+      expect(contentElement).toHaveStyle({ transform: 'scale(5)' });
     });
 
     it('should handle small scale values', () => {
       const image = createMockImage({ scale: 0.5 });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
-      const overlayElement = container.querySelector('.reference-image-overlay');
-      expect(overlayElement).toHaveStyle({ transform: 'scale(0.5)' });
+      const contentElement = container.querySelector('.reference-image-overlay__content');
+      expect(contentElement).toHaveStyle({ transform: 'scale(0.5)' });
     });
 
     it('should use top-left transform-origin so scaled-down images can reach container edges', () => {
       const image = createMockImage({ scale: 0.5, x: 0, y: 0 });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={true}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
+      const contentElement = container.querySelector('.reference-image-overlay__content');
+      expect(contentElement).toHaveStyle({ transformOrigin: 'top left' });
       const overlayElement = container.querySelector('.reference-image-overlay');
-      // With transform-origin: center (default), an element at left:0% with scale(0.5)
-      // visually shifts right by (width * 0.25). To allow placing at the true left edge,
-      // transform-origin must be top left (or 0 0).
-      expect(overlayElement).toHaveStyle({ transformOrigin: 'top left' });
       expect(overlayElement).toHaveStyle({ left: '0%' });
     });
   });
@@ -206,12 +167,7 @@ describe('ReferenceImageOverlay', () => {
     it('should apply left position as percentage', () => {
       const image = createMockImage({ x: 25 });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
@@ -221,12 +177,7 @@ describe('ReferenceImageOverlay', () => {
     it('should apply top position as percentage', () => {
       const image = createMockImage({ y: 30 });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
@@ -236,12 +187,7 @@ describe('ReferenceImageOverlay', () => {
     it('should apply width as percentage', () => {
       const image = createMockImage({ width: 60 });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
@@ -251,12 +197,7 @@ describe('ReferenceImageOverlay', () => {
     it('should apply height as percentage', () => {
       const image = createMockImage({ height: 45 });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
@@ -266,12 +207,7 @@ describe('ReferenceImageOverlay', () => {
     it('should position at (0, 0) correctly', () => {
       const image = createMockImage({ x: 0, y: 0 });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
@@ -281,12 +217,7 @@ describe('ReferenceImageOverlay', () => {
     it('should handle 100% dimensions', () => {
       const image = createMockImage({ x: 0, y: 0, width: 100, height: 100 });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
@@ -299,31 +230,11 @@ describe('ReferenceImageOverlay', () => {
     });
   });
 
-  describe('Interactive Mode - Pointer Events', () => {
-    it('should have pointer-events: none when isInteractive=false', () => {
+  describe('Pointer Events', () => {
+    it('should always have pointer-events: auto', () => {
       const image = createMockImage();
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
-      );
-
-      const overlayElement = container.querySelector('.reference-image-overlay');
-      expect(overlayElement).toHaveStyle({ pointerEvents: 'none' });
-    });
-
-    it('should have pointer-events: auto when isInteractive=true', () => {
-      const image = createMockImage();
-      const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={true}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
@@ -335,57 +246,27 @@ describe('ReferenceImageOverlay', () => {
     it('should have base class reference-image-overlay', () => {
       const image = createMockImage();
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
       expect(overlayElement).toHaveClass('reference-image-overlay');
     });
 
-    it('should have interactive class when isInteractive=true', () => {
+    it('should always have interactive class', () => {
       const image = createMockImage();
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={true}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
       expect(overlayElement).toHaveClass('reference-image-overlay--interactive');
     });
 
-    it('should NOT have interactive class when isInteractive=false', () => {
-      const image = createMockImage();
-      const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
-      );
-
-      const overlayElement = container.querySelector('.reference-image-overlay');
-      expect(overlayElement).not.toHaveClass('reference-image-overlay--interactive');
-    });
-
     it('should have locked class when image.isLocked=true', () => {
       const image = createMockImage({ isLocked: true });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={true}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
@@ -395,12 +276,7 @@ describe('ReferenceImageOverlay', () => {
     it('should NOT have locked class when image.isLocked=false', () => {
       const image = createMockImage({ isLocked: false });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={true}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
@@ -410,12 +286,7 @@ describe('ReferenceImageOverlay', () => {
     it('should have dragging class when actively dragging', () => {
       const image = createMockImage({ isLocked: false });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={true}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
@@ -425,18 +296,33 @@ describe('ReferenceImageOverlay', () => {
 
       expect(overlayElement).toHaveClass('reference-image-overlay--dragging');
     });
+
+    it('should have selected class when isSelected=true', () => {
+      const image = createMockImage();
+      const { container } = render(
+        <ReferenceImageOverlay image={image} {...defaultProps} isSelected={true} />
+      );
+
+      const overlayElement = container.querySelector('.reference-image-overlay');
+      expect(overlayElement).toHaveClass('reference-image-overlay--selected');
+    });
+
+    it('should NOT have selected class when isSelected=false', () => {
+      const image = createMockImage();
+      const { container } = render(
+        <ReferenceImageOverlay image={image} {...defaultProps} isSelected={false} />
+      );
+
+      const overlayElement = container.querySelector('.reference-image-overlay');
+      expect(overlayElement).not.toHaveClass('reference-image-overlay--selected');
+    });
   });
 
   describe('Click/Select Behavior', () => {
     it('should call onSelect on mousedown when interactive', () => {
       const image = createMockImage();
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={true}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
@@ -445,32 +331,10 @@ describe('ReferenceImageOverlay', () => {
       expect(mockOnSelect).toHaveBeenCalledTimes(1);
     });
 
-    it('should NOT call onSelect when isInteractive=false', () => {
-      const image = createMockImage();
-      const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
-      );
-
-      const overlayElement = container.querySelector('.reference-image-overlay');
-      fireEvent.mouseDown(overlayElement!, { clientX: 100, clientY: 100 });
-
-      expect(mockOnSelect).not.toHaveBeenCalled();
-    });
-
     it('should call onSelect when image is locked (allows selecting to unlock)', () => {
       const image = createMockImage({ isLocked: true });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={true}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
@@ -482,12 +346,7 @@ describe('ReferenceImageOverlay', () => {
     it('should prevent default and stop propagation on mousedown when interactive and unlocked', () => {
       const image = createMockImage({ isLocked: false });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={true}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
@@ -507,12 +366,7 @@ describe('ReferenceImageOverlay', () => {
       const image = createMockImage({ x: 10, y: 20, isLocked: false });
       const { container } = render(
         <div style={{ width: '1000px', height: '800px' }}>
-          <ReferenceImageOverlay
-            image={image}
-            isInteractive={true}
-            onPositionChange={mockOnPositionChange}
-            onSelect={mockOnSelect}
-          />
+          <ReferenceImageOverlay image={image} {...defaultProps} />
         </div>
       );
 
@@ -525,29 +379,7 @@ describe('ReferenceImageOverlay', () => {
     it('should NOT initiate drag when image is locked', () => {
       const image = createMockImage({ isLocked: true });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={true}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
-      );
-
-      const overlayElement = container.querySelector('.reference-image-overlay');
-      fireEvent.mouseDown(overlayElement!, { clientX: 100, clientY: 100 });
-
-      expect(overlayElement).not.toHaveClass('reference-image-overlay--dragging');
-    });
-
-    it('should NOT initiate drag when not interactive', () => {
-      const image = createMockImage({ isLocked: false });
-      const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
@@ -561,19 +393,13 @@ describe('ReferenceImageOverlay', () => {
 
       const { container } = render(
         <div style={{ width: '1000px', height: '800px' }}>
-          <ReferenceImageOverlay
-            image={image}
-            isInteractive={true}
-            onPositionChange={mockOnPositionChange}
-            onSelect={mockOnSelect}
-          />
+          <ReferenceImageOverlay image={image} {...defaultProps} />
         </div>
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
       const parentElement = overlayElement!.parentElement!;
 
-      // Mock getBoundingClientRect
       vi.spyOn(parentElement, 'getBoundingClientRect').mockReturnValue({
         width: 1000,
         height: 800,
@@ -586,14 +412,9 @@ describe('ReferenceImageOverlay', () => {
         toJSON: () => {},
       });
 
-      // Start drag at (500, 400)
       fireEvent.mouseDown(overlayElement!, { clientX: 500, clientY: 400 });
-
-      // Move to (600, 500) - delta of (100, 100) pixels
       fireEvent.mouseMove(document, { clientX: 600, clientY: 500 });
 
-      // Delta in percentage: 100/1000 = 10%, 100/800 = 12.5%
-      // New position: x: 10 + 10 = 20, y: 20 + 12.5 = 32.5
       expect(mockOnPositionChange).toHaveBeenCalledWith(20, 32.5);
     });
 
@@ -602,12 +423,7 @@ describe('ReferenceImageOverlay', () => {
 
       const { container } = render(
         <div style={{ width: '1000px', height: '800px' }}>
-          <ReferenceImageOverlay
-            image={image}
-            isInteractive={true}
-            onPositionChange={mockOnPositionChange}
-            onSelect={mockOnSelect}
-          />
+          <ReferenceImageOverlay image={image} {...defaultProps} />
         </div>
       );
 
@@ -626,19 +442,13 @@ describe('ReferenceImageOverlay', () => {
         toJSON: () => {},
       });
 
-      // Start drag at (500, 400)
       fireEvent.mouseDown(overlayElement!, { clientX: 500, clientY: 400 });
-
-      // Move far left and up to trigger clamping to 0
       fireEvent.mouseMove(document, { clientX: -1000, clientY: -1000 });
 
-      // Should be clamped to (0, 0)
       expect(mockOnPositionChange).toHaveBeenCalledWith(0, 0);
 
-      // Move far right and down to trigger clamping to 100
       fireEvent.mouseMove(document, { clientX: 2000, clientY: 2000 });
 
-      // Should be clamped to (100, 100)
       expect(mockOnPositionChange).toHaveBeenCalledWith(100, 100);
     });
 
@@ -646,12 +456,7 @@ describe('ReferenceImageOverlay', () => {
       const image = createMockImage({ isLocked: false });
       const { container } = render(
         <div style={{ width: '1000px', height: '800px' }}>
-          <ReferenceImageOverlay
-            image={image}
-            isInteractive={true}
-            onPositionChange={mockOnPositionChange}
-            onSelect={mockOnSelect}
-          />
+          <ReferenceImageOverlay image={image} {...defaultProps} />
         </div>
       );
 
@@ -667,17 +472,11 @@ describe('ReferenceImageOverlay', () => {
     it('should handle drag with no parent element gracefully', () => {
       const image = createMockImage({ isLocked: false });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={true}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
 
-      // Mock parentElement to be null
       Object.defineProperty(overlayElement, 'parentElement', {
         value: null,
         writable: true,
@@ -687,26 +486,19 @@ describe('ReferenceImageOverlay', () => {
       fireEvent.mouseDown(overlayElement!, { clientX: 100, clientY: 100 });
       fireEvent.mouseMove(document, { clientX: 200, clientY: 200 });
 
-      // Should not crash and onPositionChange should not be called
       expect(mockOnPositionChange).not.toHaveBeenCalled();
     });
 
     it('should not update position during drag if no parent container', () => {
       const image = createMockImage({ isLocked: false });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={true}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
 
       fireEvent.mouseDown(overlayElement!, { clientX: 100, clientY: 100 });
 
-      // Mock parentElement to return null during mousemove
       const originalParentElement = overlayElement!.parentElement;
       Object.defineProperty(overlayElement, 'parentElement', {
         get: () => null,
@@ -717,7 +509,6 @@ describe('ReferenceImageOverlay', () => {
 
       expect(mockOnPositionChange).not.toHaveBeenCalled();
 
-      // Restore
       Object.defineProperty(overlayElement, 'parentElement', {
         get: () => originalParentElement,
         configurable: true,
@@ -725,16 +516,124 @@ describe('ReferenceImageOverlay', () => {
     });
   });
 
+  describe('Inline Toolbar', () => {
+    it('should NOT render toolbar when isSelected=false', () => {
+      const image = createMockImage();
+      const { container } = render(
+        <ReferenceImageOverlay image={image} {...defaultProps} isSelected={false} />
+      );
+
+      const toolbar = container.querySelector('.reference-image-overlay__toolbar');
+      expect(toolbar).not.toBeInTheDocument();
+    });
+
+    it('should render toolbar when isSelected=true', () => {
+      const image = createMockImage();
+      const { container } = render(
+        <ReferenceImageOverlay image={image} {...defaultProps} isSelected={true} />
+      );
+
+      const toolbar = container.querySelector('.reference-image-overlay__toolbar');
+      expect(toolbar).toBeInTheDocument();
+    });
+
+    it('should call onOpacityChange with correct decimal value when slider changes', () => {
+      const image = createMockImage({ opacity: 0.5 });
+      const { container } = render(
+        <ReferenceImageOverlay image={image} {...defaultProps} isSelected={true} />
+      );
+
+      const opacitySlider = container.querySelector('#opacity-slider') as HTMLInputElement;
+      expect(opacitySlider).toBeInTheDocument();
+
+      fireEvent.change(opacitySlider, { target: { value: '80' } });
+      expect(mockOnOpacityChange).toHaveBeenCalledWith(0.8);
+    });
+
+    it('should call onScaleChange with correct decimal value when slider changes', () => {
+      const image = createMockImage({ scale: 1 });
+      const { container } = render(
+        <ReferenceImageOverlay image={image} {...defaultProps} isSelected={true} />
+      );
+
+      const scaleSlider = container.querySelector('#scale-slider') as HTMLInputElement;
+      expect(scaleSlider).toBeInTheDocument();
+
+      fireEvent.change(scaleSlider, { target: { value: '150' } });
+      expect(mockOnScaleChange).toHaveBeenCalledWith(1.5);
+    });
+
+    it('should call onToggleLock when lock button is clicked', () => {
+      const image = createMockImage({ isLocked: false });
+      const { container } = render(
+        <ReferenceImageOverlay image={image} {...defaultProps} isSelected={true} />
+      );
+
+      const lockButton = container.querySelector('.reference-image-overlay__toolbar-btn--lock');
+      expect(lockButton).toBeInTheDocument();
+      expect(lockButton).toHaveTextContent('Lock');
+
+      fireEvent.click(lockButton!);
+      expect(mockOnToggleLock).toHaveBeenCalledTimes(1);
+    });
+
+    it('should show "Unlock" text when image is locked', () => {
+      const image = createMockImage({ isLocked: true });
+      const { container } = render(
+        <ReferenceImageOverlay image={image} {...defaultProps} isSelected={true} />
+      );
+
+      const lockButton = container.querySelector('.reference-image-overlay__toolbar-btn--lock');
+      expect(lockButton).toHaveTextContent('Unlock');
+    });
+
+    it('should call onRemove when remove button is clicked', () => {
+      const image = createMockImage();
+      const { container } = render(
+        <ReferenceImageOverlay image={image} {...defaultProps} isSelected={true} />
+      );
+
+      const removeButton = container.querySelector('.reference-image-overlay__toolbar-btn--remove');
+      expect(removeButton).toBeInTheDocument();
+
+      fireEvent.click(removeButton!);
+      expect(mockOnRemove).toHaveBeenCalledTimes(1);
+    });
+
+    it('should stop propagation on toolbar mousedown to prevent drag', () => {
+      const image = createMockImage();
+      const { container } = render(
+        <ReferenceImageOverlay image={image} {...defaultProps} isSelected={true} />
+      );
+
+      const toolbar = container.querySelector('.reference-image-overlay__toolbar');
+      const event = new MouseEvent('mousedown', { bubbles: true });
+      const stopPropagationSpy = vi.spyOn(event, 'stopPropagation');
+
+      toolbar!.dispatchEvent(event);
+
+      expect(stopPropagationSpy).toHaveBeenCalled();
+    });
+
+    it('should render toolbar outside the scaled content so it stays constant size', () => {
+      const image = createMockImage({ scale: 2 });
+      const { container } = render(
+        <ReferenceImageOverlay image={image} {...defaultProps} isSelected={true} />
+      );
+
+      const toolbar = container.querySelector('.reference-image-overlay__toolbar');
+      const content = container.querySelector('.reference-image-overlay__content');
+      // Toolbar is a sibling of content, not a child — so it's not affected by content's scale
+      expect(toolbar!.parentElement).toBe(content!.parentElement);
+      expect(content).toHaveStyle({ transform: 'scale(2)' });
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle fractional percentage values', () => {
       const image = createMockImage({ x: 33.33, y: 66.67, width: 25.5, height: 12.75 });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
@@ -749,12 +648,7 @@ describe('ReferenceImageOverlay', () => {
     it('should handle negative position values', () => {
       const image = createMockImage({ x: -10, y: -20 });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
@@ -767,12 +661,7 @@ describe('ReferenceImageOverlay', () => {
     it('should handle position values greater than 100', () => {
       const image = createMockImage({ x: 150, y: 200 });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={false}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
@@ -792,12 +681,7 @@ describe('ReferenceImageOverlay', () => {
         scale: 1.2,
       });
       const { container } = render(
-        <ReferenceImageOverlay
-          image={image}
-          isInteractive={true}
-          onPositionChange={mockOnPositionChange}
-          onSelect={mockOnSelect}
-        />
+        <ReferenceImageOverlay image={image} {...defaultProps} />
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
@@ -806,9 +690,13 @@ describe('ReferenceImageOverlay', () => {
         top: '25%',
         width: '60%',
         height: '40%',
+        pointerEvents: 'auto',
+      });
+
+      const contentElement = container.querySelector('.reference-image-overlay__content');
+      expect(contentElement).toHaveStyle({
         opacity: '0.8',
         transform: 'scale(1.2)',
-        pointerEvents: 'auto',
       });
     });
 
@@ -817,12 +705,7 @@ describe('ReferenceImageOverlay', () => {
 
       const { container } = render(
         <div style={{ width: '1000px', height: '800px' }}>
-          <ReferenceImageOverlay
-            image={image}
-            isInteractive={true}
-            onPositionChange={mockOnPositionChange}
-            onSelect={mockOnSelect}
-          />
+          <ReferenceImageOverlay image={image} {...defaultProps} />
         </div>
       );
 
@@ -843,13 +726,11 @@ describe('ReferenceImageOverlay', () => {
 
       fireEvent.mouseDown(overlayElement!, { clientX: 500, clientY: 400 });
 
-      // Simulate rapid movements
       fireEvent.mouseMove(document, { clientX: 510, clientY: 410 });
       fireEvent.mouseMove(document, { clientX: 520, clientY: 420 });
       fireEvent.mouseMove(document, { clientX: 530, clientY: 430 });
       fireEvent.mouseMove(document, { clientX: 540, clientY: 440 });
 
-      // Last call should be with the final position
       expect(mockOnPositionChange).toHaveBeenLastCalledWith(54, 55);
       expect(mockOnPositionChange.mock.calls.length).toBeGreaterThan(1);
     });
@@ -860,26 +741,18 @@ describe('ReferenceImageOverlay', () => {
       const image = createMockImage({ isLocked: false });
       const { container, unmount } = render(
         <div style={{ width: '1000px', height: '800px' }}>
-          <ReferenceImageOverlay
-            image={image}
-            isInteractive={true}
-            onPositionChange={mockOnPositionChange}
-            onSelect={mockOnSelect}
-          />
+          <ReferenceImageOverlay image={image} {...defaultProps} />
         </div>
       );
 
       const overlayElement = container.querySelector('.reference-image-overlay');
       fireEvent.mouseDown(overlayElement!, { clientX: 100, clientY: 100 });
 
-      // Unmount while dragging
       unmount();
 
-      // Events after unmount should not cause errors
       fireEvent.mouseMove(document, { clientX: 200, clientY: 200 });
       fireEvent.mouseUp(document);
 
-      // No additional calls after unmount
       expect(mockOnPositionChange).not.toHaveBeenCalled();
     });
 
@@ -888,12 +761,7 @@ describe('ReferenceImageOverlay', () => {
 
       const { container, rerender } = render(
         <div style={{ width: '1000px', height: '800px' }}>
-          <ReferenceImageOverlay
-            image={image}
-            isInteractive={true}
-            onPositionChange={mockOnPositionChange}
-            onSelect={mockOnSelect}
-          />
+          <ReferenceImageOverlay image={image} {...defaultProps} />
         </div>
       );
 
@@ -914,25 +782,15 @@ describe('ReferenceImageOverlay', () => {
 
       fireEvent.mouseDown(overlayElement!, { clientX: 500, clientY: 400 });
 
-      // Change image position while dragging
       const updatedImage = createMockImage({ x: 30, y: 40, isLocked: false });
       rerender(
         <div style={{ width: '1000px', height: '800px' }}>
-          <ReferenceImageOverlay
-            image={updatedImage}
-            isInteractive={true}
-            onPositionChange={mockOnPositionChange}
-            onSelect={mockOnSelect}
-          />
+          <ReferenceImageOverlay image={updatedImage} {...defaultProps} />
         </div>
       );
 
-      // Continue dragging - should use original starting position from when drag started
       fireEvent.mouseMove(document, { clientX: 600, clientY: 500 });
 
-      // Delta: 100px / 1000px = 10%, 100px / 800px = 12.5%
-      // Drag state was captured at mousedown with original position (10, 20)
-      // New position should be based on original starting position: 10 + 10 = 20, 20 + 12.5 = 32.5
       expect(mockOnPositionChange).toHaveBeenCalledWith(20, 32.5);
     });
   });

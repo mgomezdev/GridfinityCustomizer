@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { GridPage } from '../pages/GridPage';
 import { LibraryPage } from '../pages/LibraryPage';
-import { html5DragDrop, dragToGridCell } from '../utils/drag-drop';
+import { dragToGridCell } from '../utils/drag-drop';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -94,28 +94,24 @@ test.describe('Reference Images', () => {
     await fileInput.setInputFiles(testImagePath);
     await page.waitForTimeout(200);
 
-    // Switch to images mode
-    const imagesButton = page.locator('.interaction-mode-toggle__button').filter({ hasText: 'Images' });
-    await expect(imagesButton).toBeEnabled();
-    await imagesButton.click();
-
-    // Select the image by clicking on it
+    // Select the image by clicking on it directly
     const referenceImage = page.locator('.reference-image-overlay').first();
     await referenceImage.click();
 
-    // Wait for controls to appear
+    // Wait for toolbar to appear
     await page.waitForTimeout(100);
 
-    // Verify controls are visible
-    const controls = page.locator('.reference-image-controls');
-    await expect(controls).toBeVisible();
+    // Verify toolbar is visible on the overlay
+    const toolbar = page.locator('.reference-image-overlay__toolbar');
+    await expect(toolbar).toBeVisible();
 
-    // Find and adjust opacity slider
-    const opacitySlider = page.locator('#opacity-slider');
+    // Find and adjust opacity slider inside the toolbar
+    const opacitySlider = toolbar.locator('#opacity-slider');
     await expect(opacitySlider).toBeVisible();
 
-    // Get initial opacity
-    const initialOpacity = await referenceImage.evaluate((el) => {
+    // Get initial opacity from the content div (which carries the visual styles)
+    const contentDiv = referenceImage.locator('.reference-image-overlay__content');
+    const initialOpacity = await contentDiv.evaluate((el) => {
       return window.getComputedStyle(el).opacity;
     });
 
@@ -124,15 +120,11 @@ test.describe('Reference Images', () => {
     await page.waitForTimeout(100);
 
     // Verify opacity changed
-    const newOpacity = await referenceImage.evaluate((el) => {
+    const newOpacity = await contentDiv.evaluate((el) => {
       return window.getComputedStyle(el).opacity;
     });
     expect(parseFloat(newOpacity)).toBeCloseTo(0.8, 1);
     expect(newOpacity).not.toBe(initialOpacity);
-
-    // Verify label shows percentage
-    const opacityLabel = page.locator('.reference-image-controls__label').filter({ hasText: 'Opacity' });
-    await expect(opacityLabel).toContainText('80%');
   });
 
   test('can adjust image scale', async ({ page }) => {
@@ -141,21 +133,19 @@ test.describe('Reference Images', () => {
     await fileInput.setInputFiles(testImagePath);
     await page.waitForTimeout(200);
 
-    // Switch to images mode
-    const imagesButton = page.locator('.interaction-mode-toggle__button').filter({ hasText: 'Images' });
-    await imagesButton.click();
-
-    // Select the image
+    // Select the image by clicking on it directly
     const referenceImage = page.locator('.reference-image-overlay').first();
     await referenceImage.click();
     await page.waitForTimeout(100);
 
-    // Find and adjust scale slider
-    const scaleSlider = page.locator('#scale-slider');
+    // Find and adjust scale slider inside the toolbar
+    const toolbar = page.locator('.reference-image-overlay__toolbar');
+    const scaleSlider = toolbar.locator('#scale-slider');
     await expect(scaleSlider).toBeVisible();
 
-    // Get initial transform
-    const initialTransform = await referenceImage.evaluate((el) => {
+    // Get initial transform from the content div (which carries the visual styles)
+    const contentDiv = referenceImage.locator('.reference-image-overlay__content');
+    const initialTransform = await contentDiv.evaluate((el) => {
       return window.getComputedStyle(el).transform;
     });
 
@@ -164,48 +154,10 @@ test.describe('Reference Images', () => {
     await page.waitForTimeout(100);
 
     // Verify scale changed
-    const newTransform = await referenceImage.evaluate((el) => {
+    const newTransform = await contentDiv.evaluate((el) => {
       return window.getComputedStyle(el).transform;
     });
     expect(newTransform).not.toBe(initialTransform);
-
-    // Verify label shows percentage
-    const scaleLabel = page.locator('.reference-image-controls__label').filter({ hasText: 'Scale' });
-    await expect(scaleLabel).toContainText('150%');
-  });
-
-  test('can toggle interaction mode', async ({ page }) => {
-    // Initially, Images button should be disabled (no images)
-    const imagesButton = page.locator('.interaction-mode-toggle__button').filter({ hasText: 'Images' });
-    await expect(imagesButton).toBeDisabled();
-
-    // Items button should be active initially
-    const itemsButton = page.locator('.interaction-mode-toggle__button').filter({ hasText: 'Items' });
-    await expect(itemsButton).toHaveClass(/interaction-mode-toggle__button--active/);
-
-    // Upload an image
-    const fileInput = page.locator('input[type="file"][accept="image/*"]');
-    await fileInput.setInputFiles(testImagePath);
-    await page.waitForTimeout(200);
-
-    // Images button should now be enabled
-    await expect(imagesButton).toBeEnabled();
-
-    // Click Images button
-    await imagesButton.click();
-    await page.waitForTimeout(100);
-
-    // Images button should now be active
-    await expect(imagesButton).toHaveClass(/interaction-mode-toggle__button--active/);
-    await expect(itemsButton).not.toHaveClass(/interaction-mode-toggle__button--active/);
-
-    // Switch back to Items mode
-    await itemsButton.click();
-    await page.waitForTimeout(100);
-
-    // Items button should be active again
-    await expect(itemsButton).toHaveClass(/interaction-mode-toggle__button--active/);
-    await expect(imagesButton).not.toHaveClass(/interaction-mode-toggle__button--active/);
   });
 
   test('can lock and unlock image', async ({ page }) => {
@@ -214,16 +166,14 @@ test.describe('Reference Images', () => {
     await fileInput.setInputFiles(testImagePath);
     await page.waitForTimeout(200);
 
-    // Switch to images mode and select image
-    const imagesButton = page.locator('.interaction-mode-toggle__button').filter({ hasText: 'Images' });
-    await imagesButton.click();
-
+    // Select image by clicking directly
     const referenceImage = page.locator('.reference-image-overlay').first();
     await referenceImage.click();
     await page.waitForTimeout(100);
 
-    // Find lock button
-    const lockButton = page.locator('.reference-image-controls__button--lock');
+    // Find lock button in the inline toolbar
+    const toolbar = page.locator('.reference-image-overlay__toolbar');
+    const lockButton = toolbar.locator('.reference-image-overlay__toolbar-btn--lock');
     await expect(lockButton).toBeVisible();
     await expect(lockButton).toHaveText('Lock');
 
@@ -279,18 +229,15 @@ test.describe('Reference Images', () => {
     let referenceImages = page.locator('.reference-image-overlay');
     await expect(referenceImages).toHaveCount(1);
 
-    // Switch to images mode and select image
-    const imagesButton = page.locator('.interaction-mode-toggle__button').filter({ hasText: 'Images' });
-    await imagesButton.click();
-
+    // Select image by clicking directly
     const referenceImage = page.locator('.reference-image-overlay').first();
     await referenceImage.click();
     await page.waitForTimeout(100);
 
-    // Find and click remove button
-    const removeButton = page.locator('.reference-image-controls__button--remove');
+    // Find and click remove button in the inline toolbar
+    const toolbar = page.locator('.reference-image-overlay__toolbar');
+    const removeButton = toolbar.locator('.reference-image-overlay__toolbar-btn--remove');
     await expect(removeButton).toBeVisible();
-    await expect(removeButton).toHaveText('Remove');
     await removeButton.click();
 
     // Wait for removal
@@ -299,13 +246,6 @@ test.describe('Reference Images', () => {
     // Image should be gone
     referenceImages = page.locator('.reference-image-overlay');
     await expect(referenceImages).toHaveCount(0);
-
-    // Controls should be gone
-    const controls = page.locator('.reference-image-controls');
-    await expect(controls).not.toBeVisible();
-
-    // Images button should be disabled again
-    await expect(imagesButton).toBeDisabled();
   });
 
   test('reference images persist after page reload', async ({ page }) => {
@@ -348,15 +288,11 @@ test.describe('Reference Images', () => {
     expect(imageDataAfter).toBe(imageDataBefore);
   });
 
-  test('placed items still work in items mode', async ({ page }) => {
+  test('placed items can be dragged while images are present', async ({ page }) => {
     // Upload a reference image first
     const fileInput = page.locator('input[type="file"][accept="image/*"]');
     await fileInput.setInputFiles(testImagePath);
     await page.waitForTimeout(200);
-
-    // Verify we're in items mode
-    const itemsButton = page.locator('.interaction-mode-toggle__button').filter({ hasText: 'Items' });
-    await expect(itemsButton).toHaveClass(/interaction-mode-toggle__button--active/);
 
     // Get initial placed item count
     const initialCount = await gridPage.getPlacedItemCount();
@@ -376,17 +312,12 @@ test.describe('Reference Images', () => {
     const selectedItems = page.locator('.placed-item.selected');
     await expect(selectedItems).toHaveCount(1);
 
-    // Reference image should be visible with pointer-events: none in items mode
+    // Reference image should still be visible
     const referenceImage = page.locator('.reference-image-overlay').first();
     await expect(referenceImage).toBeVisible();
-
-    const pointerEvents = await referenceImage.evaluate((el) => {
-      return window.getComputedStyle(el).pointerEvents;
-    });
-    expect(pointerEvents).toBe('none');
   });
 
-  test('reference image is interactive only in images mode', async ({ page }) => {
+  test('reference image is always interactive', async ({ page }) => {
     // Upload an image
     const fileInput = page.locator('input[type="file"][accept="image/*"]');
     await fileInput.setInputFiles(testImagePath);
@@ -394,28 +325,21 @@ test.describe('Reference Images', () => {
 
     const referenceImage = page.locator('.reference-image-overlay').first();
 
-    // In items mode, image should have pointer-events: none
-    let pointerEvents = await referenceImage.evaluate((el) => {
-      return window.getComputedStyle(el).pointerEvents;
-    });
-    expect(pointerEvents).toBe('none');
-
-    // Should not have interactive class
-    await expect(referenceImage).not.toHaveClass(/reference-image-overlay--interactive/);
-
-    // Switch to images mode
-    const imagesButton = page.locator('.interaction-mode-toggle__button').filter({ hasText: 'Images' });
-    await imagesButton.click();
-    await page.waitForTimeout(100);
-
-    // In images mode, image should have pointer-events: auto
-    pointerEvents = await referenceImage.evaluate((el) => {
+    // Image should always have pointer-events: auto
+    const pointerEvents = await referenceImage.evaluate((el) => {
       return window.getComputedStyle(el).pointerEvents;
     });
     expect(pointerEvents).toBe('auto');
 
-    // Should have interactive class
+    // Should always have interactive class
     await expect(referenceImage).toHaveClass(/reference-image-overlay--interactive/);
+
+    // Clicking the image should select it and show inline toolbar
+    await referenceImage.click();
+    await page.waitForTimeout(100);
+
+    const toolbar = page.locator('.reference-image-overlay__toolbar');
+    await expect(toolbar).toBeVisible();
   });
 
   test('can upload multiple reference images', async ({ page }) => {
