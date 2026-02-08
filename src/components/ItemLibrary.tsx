@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { LibraryItem, Category } from '../types/gridfinity';
 import { LibraryItemCard } from './LibraryItemCard';
 import { LibraryManager } from './LibraryManager';
@@ -48,11 +48,22 @@ export function ItemLibrary({
     item.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Group items by category dynamically
-  const itemsByCategory = categories.map(category => ({
-    category,
-    items: filteredItems.filter(item => item.categories.includes(category.id)),
-  }));
+  // Group items by category using single-pass Map lookup
+  const itemsByCategory = useMemo(() => {
+    const categoryMap = new Map<string, LibraryItem[]>();
+    for (const item of filteredItems) {
+      for (const categoryId of item.categories) {
+        if (!categoryMap.has(categoryId)) {
+          categoryMap.set(categoryId, []);
+        }
+        categoryMap.get(categoryId)!.push(item);
+      }
+    }
+    return categories.map(category => ({
+      category,
+      items: categoryMap.get(category.id) || [],
+    }));
+  }, [categories, filteredItems]);
 
   // Sort categories by order
   const sortedCategories = itemsByCategory.sort((a, b) =>

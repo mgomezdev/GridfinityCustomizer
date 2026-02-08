@@ -17,14 +17,8 @@ interface ImageLoadState {
   error: boolean;
 }
 
-// Get CSS variables once
-const getCSSVariable = (varName: string, fallback: string): string => {
-  if (typeof document === 'undefined') return fallback;
-  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || fallback;
-};
-
-const DEFAULT_VALID_COLOR = getCSSVariable('--grid-primary', '#3B82F6');
-const INVALID_COLOR = getCSSVariable('--invalid-primary', '#EF4444');
+const DEFAULT_VALID_COLOR = '#3B82F6';
+const INVALID_COLOR = '#EF4444';
 
 export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, getItemById, onDelete }: PlacedItemOverlayProps) {
   const libraryItem = getItemById(item.itemId);
