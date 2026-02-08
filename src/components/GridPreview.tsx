@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useMemo } from 'react';
 import type { PlacedItemWithValidity, DragData, ComputedSpacer, LibraryItem, ReferenceImage, InteractionMode } from '../types/gridfinity';
 import { PlacedItemOverlay } from './PlacedItemOverlay';
 import { SpacerOverlay } from './SpacerOverlay';
@@ -38,19 +38,43 @@ export function GridPreview({
 }: GridPreviewProps) {
   const gridRef = useRef<HTMLDivElement>(null);
 
+  // Memoize cells array (must be before early return per Rules of Hooks)
+  const cells = useMemo(() => {
+    if (gridX <= 0 || gridY <= 0) return [];
+    const result = [];
+    for (let y = 0; y < gridY; y++) {
+      for (let x = 0; x < gridX; x++) {
+        result.push(<div key={`${x}-${y}`} className="grid-cell" />);
+      }
+    }
+    return result;
+  }, [gridX, gridY]);
+
+  // Calculate grid offset and size based on spacers (optimized single-loop)
+  const { gridOffsetX, gridOffsetY, gridWidth, gridHeight } = useMemo(() => {
+    let leftWidth = 0, rightWidth = 0, topHeight = 0, bottomHeight = 0;
+
+    for (const s of spacers) {
+      if (s.position === 'left') leftWidth = s.renderWidth;
+      else if (s.position === 'right') rightWidth = s.renderWidth;
+      else if (s.position === 'top') topHeight = s.renderHeight;
+      else if (s.position === 'bottom') bottomHeight = s.renderHeight;
+    }
+
+    return {
+      gridOffsetX: leftWidth || rightWidth,
+      gridOffsetY: topHeight || bottomHeight,
+      gridWidth: 100 - (leftWidth + rightWidth),
+      gridHeight: 100 - (topHeight + bottomHeight),
+    };
+  }, [spacers]);
+
   if (gridX <= 0 || gridY <= 0) {
     return (
       <div className="grid-preview empty">
         <p>Enter dimensions to see grid preview</p>
       </div>
     );
-  }
-
-  const cells = [];
-  for (let y = 0; y < gridY; y++) {
-    for (let x = 0; x < gridX; x++) {
-      cells.push(<div key={`${x}-${y}`} className="grid-cell" />);
-    }
   }
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -85,34 +109,6 @@ export function GridPreview({
   const handleGridClick = () => {
     onSelectItem(null);
   };
-
-  // Calculate grid offset based on spacers (for one-sided mode)
-  const hasLeftSpacer = spacers.some(s => s.position === 'left');
-  const hasTopSpacer = spacers.some(s => s.position === 'top');
-
-  const gridOffsetX = hasLeftSpacer
-    ? spacers.find(s => s.position === 'left')!.renderWidth
-    : spacers.some(s => s.position === 'right')
-      ? spacers.find(s => s.position === 'right')!.renderWidth
-      : 0;
-
-  const gridOffsetY = hasTopSpacer
-    ? spacers.find(s => s.position === 'top')!.renderHeight
-    : spacers.some(s => s.position === 'bottom')
-      ? spacers.find(s => s.position === 'bottom')!.renderHeight
-      : 0;
-
-  // Calculate grid size as percentage (100% minus spacer widths)
-  const totalHorizontalSpacers = spacers
-    .filter(s => s.position === 'left' || s.position === 'right')
-    .reduce((sum, s) => sum + s.renderWidth, 0);
-
-  const totalVerticalSpacers = spacers
-    .filter(s => s.position === 'top' || s.position === 'bottom')
-    .reduce((sum, s) => sum + s.renderHeight, 0);
-
-  const gridWidth = 100 - totalHorizontalSpacers;
-  const gridHeight = 100 - totalVerticalSpacers;
 
   // Disable placed item interactions when in 'images' mode
   const itemsStyle: React.CSSProperties = interactionMode === 'images'

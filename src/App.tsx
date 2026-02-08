@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { UnitSystem, ImperialFormat, GridSpacerConfig } from './types/gridfinity';
 import { calculateGrid, mmToInches, inchesToMm } from './utils/conversions';
 import { useGridItems } from './hooks/useGridItems';
@@ -63,20 +63,23 @@ function App() {
     deleteItem: deleteLibraryItem,
     resetToDefaults,
     updateItemCategories,
+    batchUpdateItems,
   } = useLibraryData();
 
   const handleDeleteCategory = (categoryId: string) => {
-    // First, remove the category from all items that use it
-    libraryItems.forEach(item => {
-      if (item.categories.includes(categoryId)) {
-        const updatedCategories = item.categories.filter(id => id !== categoryId);
-        if (updatedCategories.length > 0) {
-          updateItem(item.id, { categories: updatedCategories });
-        }
-      }
-    });
+    // Batch-remove the category from all items in a single state update
+    const updates = libraryItems
+      .filter(item => item.categories.includes(categoryId))
+      .map(item => ({
+        id: item.id,
+        updates: { categories: item.categories.filter(id => id !== categoryId) },
+      }))
+      .filter(u => u.updates.categories.length > 0);
 
-    // Then delete the category itself
+    if (updates.length > 0) {
+      batchUpdateItems(updates);
+    }
+
     deleteCategory(categoryId);
   };
 
@@ -174,81 +177,80 @@ function App() {
   // Find the selected image (or null if it doesn't exist)
   const selectedImage = selectedImageId ? images.find(img => img.id === selectedImageId) ?? null : null;
 
-  // Keyboard shortcuts for reference images
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Don't fire shortcuts when user is typing in an input element
-      const activeElement = document.activeElement;
-      const isTyping = activeElement?.tagName === 'INPUT' ||
-                       activeElement?.tagName === 'TEXTAREA' ||
-                       activeElement?.tagName === 'SELECT';
+  // Keyboard shortcuts — use ref to avoid re-registering listener on every state change
+  const keyDownHandlerRef = useRef<(event: KeyboardEvent) => void>();
 
-      if (isTyping) {
-        return;
-      }
+  keyDownHandlerRef.current = (event: KeyboardEvent) => {
+    // Don't fire shortcuts when user is typing in an input element
+    const activeElement = document.activeElement;
+    const isTyping = activeElement?.tagName === 'INPUT' ||
+                     activeElement?.tagName === 'TEXTAREA' ||
+                     activeElement?.tagName === 'SELECT';
 
-      // Tab or M: Toggle interaction mode (only when images exist)
-      if ((event.key === 'Tab' || event.key === 'm' || event.key === 'M') && images.length > 0) {
-        event.preventDefault();
-        setInteractionMode(interactionMode === 'items' ? 'images' : 'items');
-        // Clear selection when switching to items mode
-        if (interactionMode === 'images') {
-          setSelectedImageId(null);
-        }
-        return;
-      }
+    if (isTyping) {
+      return;
+    }
 
-      // Delete or Backspace: Remove selected image (images mode) or selected item (items mode)
-      if ((event.key === 'Delete' || event.key === 'Backspace')) {
-        if (interactionMode === 'images' && selectedImageId) {
-          event.preventDefault();
-          removeImage(selectedImageId);
-          setSelectedImageId(null);
-          return;
-        }
-        if (interactionMode === 'items' && selectedItemId) {
-          event.preventDefault();
-          handleDeleteSelected();
-          return;
-        }
-      }
-
-      // R: Rotate selected item (items mode only)
-      if ((event.key === 'r' || event.key === 'R') &&
-          interactionMode === 'items' &&
-          selectedItemId) {
-        event.preventDefault();
-        handleRotateSelected();
-        return;
-      }
-
-      // Escape: Deselect current selection
-      if (event.key === 'Escape') {
-        if (interactionMode === 'items' && selectedItemId) {
-          selectItem(null);
-          return;
-        }
+    // Tab or M: Toggle interaction mode (only when images exist)
+    if ((event.key === 'Tab' || event.key === 'm' || event.key === 'M') && images.length > 0) {
+      event.preventDefault();
+      setInteractionMode(interactionMode === 'items' ? 'images' : 'items');
+      if (interactionMode === 'images') {
         setSelectedImageId(null);
-        setInteractionMode('items');
-        return;
       }
+      return;
+    }
 
-      // L: Toggle lock on selected image (only in images mode with selection)
-      if ((event.key === 'l' || event.key === 'L') &&
-          interactionMode === 'images' &&
-          selectedImageId) {
+    // Delete or Backspace: Remove selected image (images mode) or selected item (items mode)
+    if ((event.key === 'Delete' || event.key === 'Backspace')) {
+      if (interactionMode === 'images' && selectedImageId) {
         event.preventDefault();
-        toggleImageLock(selectedImageId);
+        removeImage(selectedImageId);
+        setSelectedImageId(null);
         return;
       }
-    };
+      if (interactionMode === 'items' && selectedItemId) {
+        event.preventDefault();
+        handleDeleteSelected();
+        return;
+      }
+    }
 
-    document.addEventListener('keydown', handleKeyDown);
+    // R: Rotate selected item (items mode only)
+    if ((event.key === 'r' || event.key === 'R') &&
+        interactionMode === 'items' &&
+        selectedItemId) {
+      event.preventDefault();
+      handleRotateSelected();
+      return;
+    }
 
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [images.length, interactionMode, selectedImageId, selectedItemId, setInteractionMode, toggleImageLock, removeImage, handleDeleteSelected, handleRotateSelected, selectItem]);
+    // Escape: Deselect current selection
+    if (event.key === 'Escape') {
+      if (interactionMode === 'items' && selectedItemId) {
+        selectItem(null);
+        return;
+      }
+      setSelectedImageId(null);
+      setInteractionMode('items');
+      return;
+    }
+
+    // L: Toggle lock on selected image (only in images mode with selection)
+    if ((event.key === 'l' || event.key === 'L') &&
+        interactionMode === 'images' &&
+        selectedImageId) {
+      event.preventDefault();
+      toggleImageLock(selectedImageId);
+      return;
+    }
+  };
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => keyDownHandlerRef.current?.(e);
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
 
   return (
     <div className="app">

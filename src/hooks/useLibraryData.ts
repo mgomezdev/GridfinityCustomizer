@@ -17,6 +17,7 @@ interface UseLibraryDataResult {
   deleteItem: (id: string) => void;
   resetToDefaults: () => void;
   updateItemCategories: (oldCategoryId: string, newCategoryId: string) => void;
+  batchUpdateItems: (updates: Array<{ id: string; updates: Partial<LibraryItem> }>) => void;
 }
 
 const STORAGE_KEY = 'gridfinity-library-custom';
@@ -199,6 +200,17 @@ export function useLibraryData(): UseLibraryDataResult {
     saveToLocalStorage(updatedItems);
   }, [items]);
 
+  const batchUpdateItems = useCallback((updates: Array<{ id: string; updates: Partial<LibraryItem> }>) => {
+    setItems(prev => {
+      const updated = prev.map(item => {
+        const update = updates.find(u => u.id === item.id);
+        return update ? { ...item, ...update.updates } : item;
+      });
+      saveToLocalStorage(updated);
+      return updated;
+    });
+  }, []);
+
   return {
     items,
     isLoading,
@@ -210,5 +222,6 @@ export function useLibraryData(): UseLibraryDataResult {
     deleteItem,
     resetToDefaults,
     updateItemCategories,
+    batchUpdateItems,
   };
 }
