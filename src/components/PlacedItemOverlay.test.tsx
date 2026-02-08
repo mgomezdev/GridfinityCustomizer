@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { PlacedItemOverlay } from './PlacedItemOverlay';
 import type { PlacedItemWithValidity, LibraryItem } from '../types/gridfinity';
@@ -615,6 +615,166 @@ describe('PlacedItemOverlay', () => {
         width: '2%',
         height: '3%',
       });
+    });
+  });
+
+  describe('Inline Delete Button', () => {
+    const mockOnDelete = vi.fn();
+
+    beforeEach(() => {
+      mockOnDelete.mockClear();
+    });
+
+    it('should render delete button when selected and onDelete provided', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onDelete={mockOnDelete}
+        />
+      );
+
+      const deleteBtn = screen.getByRole('button', { name: 'Remove item' });
+      expect(deleteBtn).toBeInTheDocument();
+    });
+
+    it('should NOT render delete button when not selected', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onDelete={mockOnDelete}
+        />
+      );
+
+      expect(screen.queryByRole('button', { name: 'Remove item' })).not.toBeInTheDocument();
+    });
+
+    it('should NOT render delete button when onDelete not provided', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      expect(screen.queryByRole('button', { name: 'Remove item' })).not.toBeInTheDocument();
+    });
+
+    it('should call onDelete with correct instanceId on click', () => {
+      const item = createMockItem({ instanceId: 'delete-me-123' });
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onDelete={mockOnDelete}
+        />
+      );
+
+      const deleteBtn = screen.getByRole('button', { name: 'Remove item' });
+      fireEvent.click(deleteBtn);
+
+      expect(mockOnDelete).toHaveBeenCalledWith('delete-me-123');
+      expect(mockOnDelete).toHaveBeenCalledTimes(1);
+    });
+
+    it('should NOT trigger onSelect when delete button is clicked', () => {
+      const item = createMockItem();
+      mockOnSelect.mockClear();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onDelete={mockOnDelete}
+        />
+      );
+
+      const deleteBtn = screen.getByRole('button', { name: 'Remove item' });
+      fireEvent.click(deleteBtn);
+
+      expect(mockOnSelect).not.toHaveBeenCalled();
+    });
+
+    it('should NOT propagate click to parent', () => {
+      const item = createMockItem();
+      const parentClickHandler = vi.fn();
+      render(
+        <div onClick={parentClickHandler}>
+          <PlacedItemOverlay
+            item={item}
+            gridX={4}
+            gridY={4}
+            isSelected={true}
+            onSelect={mockOnSelect}
+            getItemById={mockGetItemById}
+            onDelete={mockOnDelete}
+          />
+        </div>
+      );
+
+      const deleteBtn = screen.getByRole('button', { name: 'Remove item' });
+      fireEvent.click(deleteBtn);
+
+      expect(parentClickHandler).not.toHaveBeenCalled();
+    });
+
+    it('should have draggable="false" attribute', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onDelete={mockOnDelete}
+        />
+      );
+
+      const deleteBtn = screen.getByRole('button', { name: 'Remove item' });
+      expect(deleteBtn).toHaveAttribute('draggable', 'false');
+    });
+
+    it('should have aria-label="Remove item"', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onDelete={mockOnDelete}
+        />
+      );
+
+      const deleteBtn = screen.getByRole('button', { name: 'Remove item' });
+      expect(deleteBtn).toHaveAttribute('aria-label', 'Remove item');
     });
   });
 

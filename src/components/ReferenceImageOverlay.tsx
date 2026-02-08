@@ -40,12 +40,14 @@ export function ReferenceImageOverlay({
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!isInteractive || image.isLocked) return;
+    if (!isInteractive) return;
 
     e.preventDefault();
     e.stopPropagation();
 
     onSelect();
+
+    if (image.isLocked) return;
 
     setDragState({
       isDragging: true,

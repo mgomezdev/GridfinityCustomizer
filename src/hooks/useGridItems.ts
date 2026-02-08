@@ -102,6 +102,11 @@ export function useGridItems(
     }
   }, [selectedItemId]);
 
+  const clearAll = useCallback(() => {
+    setPlacedItems([]);
+    setSelectedItemId(null);
+  }, []);
+
   const selectItem = useCallback((instanceId: string | null) => {
     setSelectedItemId(instanceId);
   }, []);
@@ -121,6 +126,7 @@ export function useGridItems(
     moveItem,
     rotateItem,
     deleteItem,
+    clearAll,
     selectItem,
     handleDrop,
   };
