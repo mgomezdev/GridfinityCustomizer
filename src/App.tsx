@@ -183,55 +183,57 @@ function App() {
   };
 
   // Keyboard shortcuts — use ref to avoid re-registering listener on every state change
-  const keyDownHandlerRef = useRef<(event: KeyboardEvent) => void>();
+  const keyDownHandlerRef = useRef<((event: KeyboardEvent) => void) | undefined>(undefined);
 
-  keyDownHandlerRef.current = (event: KeyboardEvent) => {
-    // Don't fire shortcuts when user is typing in an input element
-    const activeElement = document.activeElement;
-    const isTyping = activeElement?.tagName === 'INPUT' ||
-                     activeElement?.tagName === 'TEXTAREA' ||
-                     activeElement?.tagName === 'SELECT';
+  useEffect(() => {
+    keyDownHandlerRef.current = (event: KeyboardEvent) => {
+      // Don't fire shortcuts when user is typing in an input element
+      const activeElement = document.activeElement;
+      const isTyping = activeElement?.tagName === 'INPUT' ||
+                       activeElement?.tagName === 'TEXTAREA' ||
+                       activeElement?.tagName === 'SELECT';
 
-    if (isTyping) {
-      return;
-    }
+      if (isTyping) {
+        return;
+      }
 
-    // Delete or Backspace: Remove selected image or selected item
-    if ((event.key === 'Delete' || event.key === 'Backspace')) {
-      if (selectedImageId) {
+      // Delete or Backspace: Remove selected image or selected item
+      if ((event.key === 'Delete' || event.key === 'Backspace')) {
+        if (selectedImageId) {
+          event.preventDefault();
+          removeImage(selectedImageId);
+          setSelectedImageId(null);
+          return;
+        }
+        if (selectedItemId) {
+          event.preventDefault();
+          handleDeleteSelected();
+          return;
+        }
+      }
+
+      // R: Rotate selected item
+      if ((event.key === 'r' || event.key === 'R') && selectedItemId) {
         event.preventDefault();
-        removeImage(selectedImageId);
+        handleRotateSelected();
+        return;
+      }
+
+      // Escape: Clear both selections
+      if (event.key === 'Escape') {
+        selectItem(null);
         setSelectedImageId(null);
         return;
       }
-      if (selectedItemId) {
+
+      // L: Toggle lock on selected image
+      if ((event.key === 'l' || event.key === 'L') && selectedImageId) {
         event.preventDefault();
-        handleDeleteSelected();
+        toggleImageLock(selectedImageId);
         return;
       }
-    }
-
-    // R: Rotate selected item
-    if ((event.key === 'r' || event.key === 'R') && selectedItemId) {
-      event.preventDefault();
-      handleRotateSelected();
-      return;
-    }
-
-    // Escape: Clear both selections
-    if (event.key === 'Escape') {
-      selectItem(null);
-      setSelectedImageId(null);
-      return;
-    }
-
-    // L: Toggle lock on selected image
-    if ((event.key === 'l' || event.key === 'L') && selectedImageId) {
-      event.preventDefault();
-      toggleImageLock(selectedImageId);
-      return;
-    }
-  };
+    };
+  });
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => keyDownHandlerRef.current?.(e);

@@ -1,8 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { useReferenceImages } from './useReferenceImages';
 import * as imageUtils from '../utils/imageUtils';
 import type { ReferenceImage } from '../types/gridfinity';
+
+declare global {
+  var crypto: Crypto;
+  var structuredClone: <T>(value: T) => T;
+}
 
 describe('useReferenceImages', () => {
   const mockDataUrl = 'data:image/png;base64,mockBase64String';
