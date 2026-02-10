@@ -1,12 +1,37 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useCategoryData } from './useCategoryData';
 import type { Category } from '../types/gridfinity';
 
 describe('useCategoryData', () => {
+  // Mock data matching categories.json structure
+  const mockCategoriesData = {
+    version: '1.0.0',
+    categories: [
+      { id: 'bin', name: 'Bins', color: '#3B82F6', order: 1 },
+      { id: 'utensil', name: 'Utensil Trays', color: '#EF4444', order: 2 },
+      { id: 'labeled', name: 'Labeled', color: '#8B5CF6', order: 2 },
+      { id: '1x', name: '1x Width', color: '#3B82F6', order: 3 },
+      { id: '2x', name: '2x Width', color: '#10B981', order: 4 },
+      { id: '3x', name: '3x Width', color: '#F59E0B', order: 5 },
+      { id: '4x', name: '4x Width', color: '#EF4444', order: 6 },
+      { id: '5x', name: '5x Width', color: '#EC4899', order: 7 },
+    ],
+  };
+
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
+
+    // Mock fetch globally - default to successful response
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockCategoriesData,
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('Initial State and Loading', () => {
@@ -27,10 +52,10 @@ describe('useCategoryData', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(result.current.categories).toHaveLength(3);
+      expect(result.current.categories).toHaveLength(8);
       expect(result.current.categories[0].id).toBe('bin');
-      expect(result.current.categories[1].id).toBe('divider');
-      expect(result.current.categories[2].id).toBe('organizer');
+      expect(result.current.categories[1].id).toBe('utensil');
+      expect(result.current.categories[2].id).toBe('labeled');
       expect(result.current.error).toBeNull();
     });
 
@@ -45,7 +70,7 @@ describe('useCategoryData', () => {
       expect(bins).toMatchObject({
         id: 'bin',
         name: 'Bins',
-        color: '#646cff',
+        color: '#3B82F6',
         order: 1,
       });
     });
@@ -69,7 +94,7 @@ describe('useCategoryData', () => {
     });
 
     it('should fallback to defaults if localStorage data is invalid JSON', async () => {
-      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       localStorage.setItem('gridfinity-categories', 'invalid json');
 
       const { result } = renderHook(() => useCategoryData());
@@ -78,13 +103,14 @@ describe('useCategoryData', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
+      // When localStorage JSON parse fails, falls back to DEFAULT_CATEGORIES (hardcoded)
       expect(result.current.categories).toHaveLength(3);
-      expect(consoleWarnSpy).toHaveBeenCalled();
-      consoleWarnSpy.mockRestore();
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      consoleErrorSpy.mockRestore();
     });
 
     it('should fallback to defaults if localStorage data is not an array', async () => {
-      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       localStorage.setItem('gridfinity-categories', JSON.stringify({ not: 'array' }));
 
       const { result } = renderHook(() => useCategoryData());
@@ -94,13 +120,13 @@ describe('useCategoryData', () => {
       });
 
       // Should load default categories when custom data is invalid
-      expect(result.current.categories).toHaveLength(3);
-      // console.warn may or may not be called depending on implementation
-      consoleWarnSpy.mockRestore();
+      expect(result.current.categories).toHaveLength(8);
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+      consoleErrorSpy.mockRestore();
     });
 
     it('should fallback to defaults if categories have missing required fields', async () => {
-      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const invalidCategories = [
         { id: 'missing-name', color: '#ff0000' }, // Missing name
       ];
@@ -112,9 +138,10 @@ describe('useCategoryData', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
+      // When validation fails, falls back to DEFAULT_CATEGORIES (hardcoded)
       expect(result.current.categories).toHaveLength(3);
-      expect(consoleWarnSpy).toHaveBeenCalled();
-      consoleWarnSpy.mockRestore();
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      consoleErrorSpy.mockRestore();
     });
   });
 
@@ -184,7 +211,7 @@ describe('useCategoryData', () => {
         result.current.addCategory(newCategory);
       });
 
-      expect(result.current.categories).toHaveLength(4);
+      expect(result.current.categories).toHaveLength(9);
       expect(result.current.getCategoryById('tool')).toEqual(newCategory);
     });
 
@@ -209,7 +236,7 @@ describe('useCategoryData', () => {
       const stored = localStorage.getItem('gridfinity-categories');
       expect(stored).toBeTruthy();
       const parsed = JSON.parse(stored!);
-      expect(parsed).toHaveLength(4);
+      expect(parsed).toHaveLength(9);
       expect(parsed.find((c: Category) => c.id === 'tool')).toEqual(newCategory);
     });
 
@@ -414,7 +441,7 @@ describe('useCategoryData', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(() => result.current.updateCategory('bin', { id: 'divider' })).toThrow('already exists');
+      expect(() => result.current.updateCategory('bin', { id: 'utensil' })).toThrow('already exists');
     });
 
     it('should throw error when updating name to duplicate (case-insensitive)', async () => {
@@ -424,7 +451,7 @@ describe('useCategoryData', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(() => result.current.updateCategory('bin', { name: 'dividers' })).toThrow('already exists');
+      expect(() => result.current.updateCategory('bin', { name: 'utensil trays' })).toThrow('already exists');
     });
 
     it('should throw error when removing required id field', async () => {
@@ -471,13 +498,13 @@ describe('useCategoryData', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(result.current.categories).toHaveLength(3);
+      expect(result.current.categories).toHaveLength(8);
 
       act(() => {
         result.current.deleteCategory('bin');
       });
 
-      expect(result.current.categories).toHaveLength(2);
+      expect(result.current.categories).toHaveLength(7);
       expect(result.current.getCategoryById('bin')).toBeUndefined();
     });
 
@@ -494,7 +521,7 @@ describe('useCategoryData', () => {
 
       const stored = localStorage.getItem('gridfinity-categories');
       const parsed = JSON.parse(stored!);
-      expect(parsed).toHaveLength(2);
+      expect(parsed).toHaveLength(7);
       expect(parsed.find((c: Category) => c.id === 'bin')).toBeUndefined();
     });
 
@@ -515,22 +542,37 @@ describe('useCategoryData', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      // First, delete two categories to get down to one
+      // First, delete 7 categories to get down to one
       let error: Error | undefined;
       act(() => {
         result.current.deleteCategory('bin');
       });
       act(() => {
-        result.current.deleteCategory('divider');
+        result.current.deleteCategory('utensil');
+      });
+      act(() => {
+        result.current.deleteCategory('labeled');
+      });
+      act(() => {
+        result.current.deleteCategory('1x');
+      });
+      act(() => {
+        result.current.deleteCategory('2x');
+      });
+      act(() => {
+        result.current.deleteCategory('3x');
+      });
+      act(() => {
+        result.current.deleteCategory('4x');
       });
 
-      // Now we should have only 1 category left
+      // Now we should have only 1 category left ('5x')
       expect(result.current.categories).toHaveLength(1);
 
       // Trying to delete the last one should throw
       try {
         act(() => {
-          result.current.deleteCategory('organizer');
+          result.current.deleteCategory('5x');
         });
       } catch (e) {
         error = e as Error;
@@ -540,6 +582,19 @@ describe('useCategoryData', () => {
     });
 
     it('should prevent deleting last category even if multiple attempts', async () => {
+      // Override fetch to return single category
+      const singleCategoryData = {
+        version: '1.0.0',
+        categories: [
+          { id: 'only-one', name: 'Only Category', color: '#000000', order: 1 },
+        ],
+      };
+
+      (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => singleCategoryData,
+      });
+
       localStorage.setItem('gridfinity-categories', JSON.stringify([
         { id: 'only-one', name: 'Only Category', color: '#000000', order: 1 },
       ]));
@@ -584,14 +639,14 @@ describe('useCategoryData', () => {
         result.current.addCategory(customCategory);
       });
 
-      expect(result.current.categories).toHaveLength(4);
+      expect(result.current.categories).toHaveLength(9);
 
       // Reset to defaults
       act(() => {
         result.current.resetToDefaults();
       });
 
-      expect(result.current.categories).toHaveLength(3);
+      expect(result.current.categories).toHaveLength(8);
       expect(result.current.getCategoryById('custom')).toBeUndefined();
       expect(result.current.getCategoryById('bin')).toBeDefined();
     });
@@ -642,7 +697,7 @@ describe('useCategoryData', () => {
 
       const bins = result.current.getCategoryById('bin');
       expect(bins?.name).toBe('Bins');
-      expect(bins?.color).toBe('#646cff');
+      expect(bins?.color).toBe('#3B82F6');
     });
   });
 
@@ -670,7 +725,7 @@ describe('useCategoryData', () => {
         });
       });
 
-      expect(result.current.categories).toHaveLength(4);
+      expect(result.current.categories).toHaveLength(9);
       expect(consoleErrorSpy).toHaveBeenCalled();
 
       Storage.prototype.setItem = originalSetItem;
@@ -695,7 +750,7 @@ describe('useCategoryData', () => {
         result.current.resetToDefaults();
       });
 
-      expect(result.current.categories).toHaveLength(3);
+      expect(result.current.categories).toHaveLength(8);
       expect(consoleErrorSpy).toHaveBeenCalled();
 
       Storage.prototype.removeItem = originalRemoveItem;
@@ -709,6 +764,18 @@ describe('useCategoryData', () => {
         { id: 'cat1', name: 'Category 1' },
         { id: 'cat2', name: 'Category 2' },
       ];
+
+      // Override fetch to return minimal categories
+      const minimalData = {
+        version: '1.0.0',
+        categories: minimalCategories,
+      };
+
+      (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => minimalData,
+      });
+
       localStorage.setItem('gridfinity-categories', JSON.stringify(minimalCategories));
 
       const { result } = renderHook(() => useCategoryData());
