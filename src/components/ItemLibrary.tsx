@@ -14,6 +14,7 @@ interface ItemLibraryProps {
   onUpdateItem: (id: string, updates: Partial<LibraryItem>) => void;
   onDeleteItem: (id: string) => void;
   onResetToDefaults: () => void;
+  onRefreshLibrary: () => Promise<void>;
   onExportLibrary: () => void;
   onAddCategory: (category: Category) => void;
   onUpdateCategory: (id: string, updates: Partial<Category>) => void;
@@ -32,6 +33,7 @@ export function ItemLibrary({
   onUpdateItem,
   onDeleteItem,
   onResetToDefaults,
+  onRefreshLibrary,
   onExportLibrary,
   onAddCategory,
   onUpdateCategory,
@@ -177,6 +179,18 @@ export function ItemLibrary({
         title="Export library to JSON file"
       >
         Export Library
+      </button>
+
+      <button
+        className="refresh-library-button"
+        onClick={() => {
+          if (window.confirm('Refresh library and categories from file? All custom changes will be lost.')) {
+            onRefreshLibrary();
+          }
+        }}
+        title="Re-fetch library and categories from file, discarding custom changes"
+      >
+        Refresh Library
       </button>
 
       <div className="library-search">
