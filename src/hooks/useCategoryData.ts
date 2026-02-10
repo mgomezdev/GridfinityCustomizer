@@ -3,6 +3,18 @@ import type { Category } from '../types/gridfinity';
 
 const STORAGE_KEY = 'gridfinity-categories';
 
+async function fetchCategories(): Promise<Category[]> {
+  const response = await fetch('/categories.json');
+  if (!response.ok) {
+    throw new Error(`Failed to load categories: ${response.statusText}`);
+  }
+  const data = await response.json();
+  if (!Array.isArray(data.categories)) {
+    throw new Error('Invalid categories data format');
+  }
+  return data.categories;
+}
+
 const DEFAULT_CATEGORIES: Category[] = [
   { id: 'bin', name: 'Bins', color: '#646cff', order: 1 },
   { id: 'divider', name: 'Dividers', color: '#22c55e', order: 2 },
@@ -18,20 +30,25 @@ export interface UseCategoryDataResult {
   updateCategory: (id: string, updates: Partial<Category>) => void;
   deleteCategory: (id: string) => void;
   resetToDefaults: () => void;
+  refreshCategories: () => Promise<void>;
 }
 
 export function useCategoryData(): UseCategoryDataResult {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [defaultCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
+  const [defaultCategories, setDefaultCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
 
-  useEffect(() => {
+  const loadCategories = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      // Try to load from localStorage
+      // Try to load from file
+      const fileCategories = await fetchCategories();
+      setDefaultCategories(fileCategories);
+
+      // Try to load custom from localStorage
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const customCategories: Category[] = JSON.parse(stored);
@@ -45,19 +62,24 @@ export function useCategoryData(): UseCategoryDataResult {
           }
           setCategories(customCategories);
         } else {
-          setCategories(defaultCategories);
+          setCategories(fileCategories);
         }
       } else {
-        setCategories(defaultCategories);
+        setCategories(fileCategories);
       }
 
       setIsLoading(false);
     } catch (err) {
-      console.warn('Failed to load custom categories from localStorage, using defaults', err);
-      setCategories(defaultCategories);
+      console.error('Failed to load categories from file:', err);
+      setError(err instanceof Error ? err : new Error('Unknown error'));
+      setCategories(DEFAULT_CATEGORIES);
       setIsLoading(false);
     }
-  }, [defaultCategories]);
+  }, []);
+
+  useEffect(() => {
+    loadCategories();
+  }, [loadCategories]);
 
   const saveToLocalStorage = (newCategories: Category[]) => {
     try {
@@ -152,6 +174,31 @@ export function useCategoryData(): UseCategoryDataResult {
     }
   };
 
+  const refreshCategories = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Reload from file
+      const fileCategories = await fetchCategories();
+      setDefaultCategories(fileCategories);
+      setCategories(fileCategories);
+
+      // Clear custom categories from localStorage
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (err) {
+        console.error('Failed to remove custom categories from localStorage', err);
+      }
+
+      setIsLoading(false);
+    } catch (err) {
+      console.error('Failed to refresh categories:', err);
+      setError(err instanceof Error ? err : new Error('Unknown error'));
+      setIsLoading(false);
+    }
+  };
+
   return {
     categories,
     isLoading,
@@ -161,5 +208,6 @@ export function useCategoryData(): UseCategoryDataResult {
     updateCategory,
     deleteCategory,
     resetToDefaults,
+    refreshCategories,
   };
 }

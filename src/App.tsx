@@ -37,6 +37,7 @@ function App() {
     updateCategory,
     deleteCategory,
     resetToDefaults: resetCategories,
+    refreshCategories,
   } = useCategoryData();
 
   const {
@@ -58,6 +59,7 @@ function App() {
     updateItem,
     deleteItem: deleteLibraryItem,
     resetToDefaults,
+    refreshLibrary,
     updateItemCategories,
     batchUpdateItems,
   } = useLibraryData();
@@ -77,6 +79,24 @@ function App() {
     }
 
     deleteCategory(categoryId);
+  };
+
+  const handleRefreshAll = async () => {
+    // Refresh library items
+    try {
+      await refreshLibrary();
+    } catch (err) {
+      // Error already logged and state set by useLibraryData hook
+      console.error('Library refresh failed:', err);
+    }
+
+    // Refresh categories
+    try {
+      await refreshCategories();
+    } catch (err) {
+      // Error already logged and state set by useCategoryData hook
+      console.error('Categories refresh failed:', err);
+    }
   };
 
   const handleExportLibrary = () => {
@@ -304,6 +324,7 @@ function App() {
             onUpdateItem={updateItem}
             onDeleteItem={deleteLibraryItem}
             onResetToDefaults={resetToDefaults}
+            onRefreshLibrary={handleRefreshAll}
             onExportLibrary={handleExportLibrary}
             onAddCategory={addCategory}
             onUpdateCategory={updateCategory}
