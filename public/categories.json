@@ -1,0 +1,47 @@
+{
+  "version": "1.0.0",
+  "categories": [
+    {
+      "id": "bin",
+      "name": "Bins",
+      "color": "#3B82F6",
+      "order": 1
+    },
+    {
+      "id": "labeled",
+      "name": "Labeled",
+      "color": "#8B5CF6",
+      "order": 2
+    },
+    {
+      "id": "1x",
+      "name": "1x Width",
+      "color": "#3B82F6",
+      "order": 3
+    },
+    {
+      "id": "2x",
+      "name": "2x Width",
+      "color": "#10B981",
+      "order": 4
+    },
+    {
+      "id": "3x",
+      "name": "3x Width",
+      "color": "#F59E0B",
+      "order": 5
+    },
+    {
+      "id": "4x",
+      "name": "4x Width",
+      "color": "#EF4444",
+      "order": 6
+    },
+    {
+      "id": "5x",
+      "name": "5x Width",
+      "color": "#EC4899",
+      "order": 7
+    }
+  ]
+}
