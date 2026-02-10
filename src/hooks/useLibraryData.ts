@@ -16,6 +16,7 @@ interface UseLibraryDataResult {
   updateItem: (id: string, updates: Partial<LibraryItem>) => void;
   deleteItem: (id: string) => void;
   resetToDefaults: () => void;
+  refreshLibrary: () => Promise<void>;
   updateItemCategories: (oldCategoryId: string, newCategoryId: string) => void;
   batchUpdateItems: (updates: Array<{ id: string; updates: Partial<LibraryItem> }>) => void;
 }
@@ -211,6 +212,39 @@ export function useLibraryData(): UseLibraryDataResult {
     });
   }, []);
 
+  const refreshLibrary = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Reload from file
+      const response = await fetch('/library.json');
+      if (!response.ok) {
+        throw new Error(`Failed to load library: ${response.statusText}`);
+      }
+      const data: LibraryData = await response.json();
+      if (!data.items || !Array.isArray(data.items)) {
+        throw new Error('Invalid library data format');
+      }
+
+      setDefaultItems(data.items);
+      setItems(data.items);
+
+      // Clear custom library from localStorage
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (err) {
+        console.error('Failed to remove custom library from localStorage', err);
+      }
+
+      setIsLoading(false);
+    } catch (err) {
+      console.error('Failed to refresh library:', err);
+      setError(err instanceof Error ? err : new Error('Unknown error'));
+      setIsLoading(false);
+    }
+  };
+
   return {
     items,
     isLoading,
@@ -221,6 +255,7 @@ export function useLibraryData(): UseLibraryDataResult {
     updateItem,
     deleteItem,
     resetToDefaults,
+    refreshLibrary,
     updateItemCategories,
     batchUpdateItems,
   };
