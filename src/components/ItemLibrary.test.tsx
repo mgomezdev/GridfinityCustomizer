@@ -21,6 +21,7 @@ const mockWriteOps = {
   onUpdateItem: vi.fn(),
   onDeleteItem: vi.fn(),
   onResetToDefaults: vi.fn(),
+  onRefreshLibrary: vi.fn().mockResolvedValue(undefined),
   onExportLibrary: vi.fn(),
   onAddCategory: vi.fn(),
   onUpdateCategory: vi.fn(),
@@ -306,6 +307,41 @@ describe('ItemLibrary', () => {
     fireEvent.click(exportButton);
 
     expect(mockWriteOps.onExportLibrary).toHaveBeenCalledTimes(1);
+  });
+
+  it('should render refresh library button', () => {
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+
+    const refreshButton = screen.getByText('Refresh Library');
+    expect(refreshButton).toBeInTheDocument();
+  });
+
+  it('should call onRefreshLibrary when refresh button is clicked and confirmed', () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+
+    const refreshButton = screen.getByText('Refresh Library');
+    fireEvent.click(refreshButton);
+
+    expect(window.confirm).toHaveBeenCalledWith('Refresh library and categories from file? All custom changes will be lost.');
+    expect(mockWriteOps.onRefreshLibrary).toHaveBeenCalledTimes(1);
+
+    vi.restoreAllMocks();
+  });
+
+  it('should not call onRefreshLibrary when refresh is cancelled', () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+
+    const refreshButton = screen.getByText('Refresh Library');
+    fireEvent.click(refreshButton);
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(mockWriteOps.onRefreshLibrary).not.toHaveBeenCalled();
+
+    vi.restoreAllMocks();
   });
 
   describe('Category Grouping', () => {
