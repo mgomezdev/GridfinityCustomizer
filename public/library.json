@@ -6,80 +6,320 @@
       "name": "1x1 Bin",
       "widthUnits": 1,
       "heightUnits": 1,
-      "color": "#646cff",
-      "categories": ["bin"]
+      "color": "#3B82F6",
+      "categories": ["bin", "1x"]
     },
     {
       "id": "bin-1x2",
       "name": "1x2 Bin",
       "widthUnits": 1,
       "heightUnits": 2,
-      "color": "#646cff",
-      "categories": ["bin"]
+      "color": "#3B82F6",
+      "categories": ["bin", "1x"]
+    },
+    {
+      "id": "bin-1x3",
+      "name": "1x3 Bin",
+      "widthUnits": 1,
+      "heightUnits": 3,
+      "color": "#3B82F6",
+      "categories": ["bin", "1x"]
+    },
+    {
+      "id": "bin-1x4",
+      "name": "1x4 Bin",
+      "widthUnits": 1,
+      "heightUnits": 4,
+      "color": "#3B82F6",
+      "categories": ["bin", "1x"]
+    },
+    {
+      "id": "bin-1x5",
+      "name": "1x5 Bin",
+      "widthUnits": 1,
+      "heightUnits": 5,
+      "color": "#3B82F6",
+      "categories": ["bin", "1x"]
     },
     {
       "id": "bin-2x1",
       "name": "2x1 Bin",
       "widthUnits": 2,
       "heightUnits": 1,
-      "color": "#646cff",
-      "categories": ["bin"]
+      "color": "#3B82F6",
+      "categories": ["bin", "2x"]
     },
     {
       "id": "bin-2x2",
       "name": "2x2 Bin",
       "widthUnits": 2,
       "heightUnits": 2,
-      "color": "#646cff",
-      "categories": ["bin"]
+      "color": "#3B82F6",
+      "categories": ["bin", "2x"]
+    },
+    {
+      "id": "bin-2x3",
+      "name": "2x3 Bin",
+      "widthUnits": 2,
+      "heightUnits": 3,
+      "color": "#3B82F6",
+      "categories": ["bin", "2x"]
+    },
+    {
+      "id": "bin-2x4",
+      "name": "2x4 Bin",
+      "widthUnits": 2,
+      "heightUnits": 4,
+      "color": "#3B82F6",
+      "categories": ["bin", "2x"]
+    },
+    {
+      "id": "bin-2x5",
+      "name": "2x5 Bin",
+      "widthUnits": 2,
+      "heightUnits": 5,
+      "color": "#3B82F6",
+      "categories": ["bin", "2x"]
+    },
+    {
+      "id": "bin-3x1",
+      "name": "3x1 Bin",
+      "widthUnits": 3,
+      "heightUnits": 1,
+      "color": "#3B82F6",
+      "categories": ["bin", "3x"]
     },
     {
       "id": "bin-3x2",
       "name": "3x2 Bin",
       "widthUnits": 3,
       "heightUnits": 2,
-      "color": "#646cff",
-      "categories": ["bin"]
+      "color": "#3B82F6",
+      "categories": ["bin", "3x"]
     },
     {
-      "id": "divider-1x1",
-      "name": "1x1 Divider",
+      "id": "bin-3x3",
+      "name": "3x3 Bin",
+      "widthUnits": 3,
+      "heightUnits": 3,
+      "color": "#3B82F6",
+      "categories": ["bin", "3x"]
+    },
+    {
+      "id": "bin-3x4",
+      "name": "3x4 Bin",
+      "widthUnits": 3,
+      "heightUnits": 4,
+      "color": "#3B82F6",
+      "categories": ["bin", "3x"]
+    },
+    {
+      "id": "bin-3x5",
+      "name": "3x5 Bin",
+      "widthUnits": 3,
+      "heightUnits": 5,
+      "color": "#3B82F6",
+      "categories": ["bin", "3x"]
+    },
+    {
+      "id": "bin-labeled-1x1",
+      "name": "1x1 Bin (w label)",
       "widthUnits": 1,
       "heightUnits": 1,
-      "color": "#22c55e",
-      "categories": ["divider"]
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "1x"]
     },
     {
-      "id": "divider-2x1",
-      "name": "2x1 Divider",
+      "id": "bin-labeled-1x2",
+      "name": "1x2 Bin (w label)",
+      "widthUnits": 1,
+      "heightUnits": 2,
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "1x"]
+    },
+    {
+      "id": "bin-labeled-1x3",
+      "name": "1x3 Bin (w label)",
+      "widthUnits": 1,
+      "heightUnits": 3,
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "1x"]
+    },
+    {
+      "id": "bin-labeled-1x4",
+      "name": "1x4 Bin (w label)",
+      "widthUnits": 1,
+      "heightUnits": 4,
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "1x"]
+    },
+    {
+      "id": "bin-labeled-1x5",
+      "name": "1x5 Bin (w label)",
+      "widthUnits": 1,
+      "heightUnits": 5,
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "1x"]
+    },
+    {
+      "id": "bin-labeled-2x1",
+      "name": "2x1 Bin (w label)",
       "widthUnits": 2,
       "heightUnits": 1,
-      "color": "#22c55e",
-      "categories": ["divider"]
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "2x"]
     },
     {
-      "id": "divider-3x1",
-      "name": "3x1 Divider",
+      "id": "bin-labeled-2x2",
+      "name": "2x2 Bin (w label)",
+      "widthUnits": 2,
+      "heightUnits": 2,
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "2x"]
+    },
+    {
+      "id": "bin-labeled-2x3",
+      "name": "2x3 Bin (w label)",
+      "widthUnits": 2,
+      "heightUnits": 3,
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "2x"]
+    },
+    {
+      "id": "bin-labeled-2x4",
+      "name": "2x4 Bin (w label)",
+      "widthUnits": 2,
+      "heightUnits": 4,
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "2x"]
+    },
+    {
+      "id": "bin-labeled-2x5",
+      "name": "2x5 Bin (w label)",
+      "widthUnits": 2,
+      "heightUnits": 5,
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "2x"]
+    },
+    {
+      "id": "bin-labeled-3x1",
+      "name": "3x1 Bin (w label)",
       "widthUnits": 3,
       "heightUnits": 1,
-      "color": "#22c55e",
-      "categories": ["divider"]
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "3x"]
     },
     {
-      "id": "organizer-1x3",
-      "name": "1x3 Organizer",
-      "widthUnits": 1,
-      "heightUnits": 3,
-      "color": "#f59e0b",
-      "categories": ["organizer"]
+      "id": "bin-labeled-3x2",
+      "name": "3x2 Bin (w label)",
+      "widthUnits": 3,
+      "heightUnits": 2,
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "3x"]
     },
     {
-      "id": "organizer-2x3",
-      "name": "2x3 Organizer",
-      "widthUnits": 2,
+      "id": "bin-labeled-3x3",
+      "name": "3x3 Bin (w label)",
+      "widthUnits": 3,
       "heightUnits": 3,
-      "color": "#f59e0b",
-      "categories": ["organizer"]
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "3x"]
+    },
+    {
+      "id": "bin-labeled-3x4",
+      "name": "3x4 Bin (w label)",
+      "widthUnits": 3,
+      "heightUnits": 4,
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "3x"]
+    },
+    {
+      "id": "bin-labeled-3x5",
+      "name": "3x5 Bin (w label)",
+      "widthUnits": 3,
+      "heightUnits": 5,
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "3x"]
+    },
+    {
+      "id": "bin-labeled-4x1",
+      "name": "4x1 Bin (w label)",
+      "widthUnits": 4,
+      "heightUnits": 1,
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "4x"]
+    },
+    {
+      "id": "bin-labeled-4x2",
+      "name": "4x2 Bin (w label)",
+      "widthUnits": 4,
+      "heightUnits": 2,
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "4x"]
+    },
+    {
+      "id": "bin-labeled-4x3",
+      "name": "4x3 Bin (w label)",
+      "widthUnits": 4,
+      "heightUnits": 3,
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "4x"]
+    },
+    {
+      "id": "bin-labeled-4x4",
+      "name": "4x4 Bin (w label)",
+      "widthUnits": 4,
+      "heightUnits": 4,
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "4x"]
+    },
+    {
+      "id": "bin-labeled-4x5",
+      "name": "4x5 Bin (w label)",
+      "widthUnits": 4,
+      "heightUnits": 5,
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "4x"]
+    },
+    {
+      "id": "bin-labeled-5x1",
+      "name": "5x1 Bin (w label)",
+      "widthUnits": 5,
+      "heightUnits": 1,
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "5x"]
+    },
+    {
+      "id": "bin-labeled-5x2",
+      "name": "5x2 Bin (w label)",
+      "widthUnits": 5,
+      "heightUnits": 2,
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "5x"]
+    },
+    {
+      "id": "bin-labeled-5x3",
+      "name": "5x3 Bin (w label)",
+      "widthUnits": 5,
+      "heightUnits": 3,
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "5x"]
+    },
+    {
+      "id": "bin-labeled-5x4",
+      "name": "5x4 Bin (w label)",
+      "widthUnits": 5,
+      "heightUnits": 4,
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "5x"]
+    },
+    {
+      "id": "bin-labeled-5x5",
+      "name": "5x5 Bin (w label)",
+      "widthUnits": 5,
+      "heightUnits": 5,
+      "color": "#3B82F6",
+      "categories": ["bin", "labeled", "5x"]
     }
   ]
 }
