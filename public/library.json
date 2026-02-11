@@ -320,6 +320,15 @@
       "heightUnits": 5,
       "color": "#3B82F6",
       "categories": ["bin", "labeled", "5x"]
+    },
+    {
+      "id": "utensil-simple-1x3",
+      "name": "1x3 Utensil Tray (simple)",
+      "widthUnits": 1,
+      "heightUnits": 3,
+      "color": "#EF4444",
+      "categories": ["utensil", "1x"],
+      "imgUrl": "public/images/utensil-simple-1x3.png"
     }
   ]
 }
