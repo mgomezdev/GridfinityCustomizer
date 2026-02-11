@@ -1,5 +1,23 @@
 {
   "version": "1.0.0",
+  "_template": {
+    "id": "unique-kebab-case-id",
+    "name": "Display Name",
+    "widthUnits": 1,
+    "heightUnits": 1,
+    "color": "#3B82F6",
+    "categories": ["category1", "category2"],
+    "imageUrl": "/images/filename.png",
+    "_comments": {
+      "id": "Required. Unique identifier in kebab-case",
+      "name": "Required. Human-readable display name",
+      "widthUnits": "Required. Width in Gridfinity units (positive integer)",
+      "heightUnits": "Required. Height in Gridfinity units (positive integer)",
+      "color": "Required. Hex color code for visual representation",
+      "categories": "Required. Array of category IDs this item belongs to",
+      "imageUrl": "Optional. Path to preview image (served from public/ directory). Use '/images/filename.png' format, NOT 'public/images/...'"
+    }
+  },
   "items": [
     {
       "id": "bin-1x1",
@@ -326,9 +344,9 @@
       "name": "1x3 Utensil Tray (simple)",
       "widthUnits": 1,
       "heightUnits": 3,
-      "color": "#EF4444",
+      "color": "#FDFBD4",
       "categories": ["utensil", "1x"],
-      "imgUrl": "public/images/utensil-simple-1x3.png"
+      "imageUrl": "/images/utensil-simple-1x3.png"
     }
   ]
 }
