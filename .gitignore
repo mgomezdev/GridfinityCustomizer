@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Local configuration
+settings.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -28,3 +31,7 @@ dist-ssr
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Internal planning and development artifacts
+plans/
+TODOs.txt
