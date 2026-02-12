@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Library, LibraryManifest } from '../types/gridfinity';
+import type { Library, LibraryManifest, LibraryIndex } from '../types/gridfinity';
 
 const SELECTED_LIBRARIES_KEY = 'gridfinity-selected-libraries';
 const MANIFEST_PATH = '/libraries/manifest.json';
@@ -49,13 +49,29 @@ export function useLibraries(): UseLibrariesResult {
 
       const manifest: LibraryManifest = await response.json();
 
-      // Build library objects with enabled state
-      const libraries: Library[] = manifest.libraries.map(lib => ({
-        ...lib,
-        isEnabled: selectedLibraryIds.includes(lib.id),
-      }));
+      // Fetch item counts for each library in parallel
+      const librariesWithCounts = await Promise.all(
+        manifest.libraries.map(async (lib) => {
+          try {
+            const libResponse = await fetch(lib.path);
+            const data: LibraryIndex = await libResponse.json();
+            return {
+              ...lib,
+              isEnabled: selectedLibraryIds.includes(lib.id),
+              itemCount: data.items?.length ?? 0,
+            };
+          } catch (err) {
+            console.error(`Failed to load item count for ${lib.id}:`, err);
+            return {
+              ...lib,
+              isEnabled: selectedLibraryIds.includes(lib.id),
+              itemCount: undefined,
+            };
+          }
+        })
+      );
 
-      setAvailableLibraries(libraries);
+      setAvailableLibraries(librariesWithCounts);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Unknown error loading libraries'));
       console.error('Failed to load library manifest:', err);

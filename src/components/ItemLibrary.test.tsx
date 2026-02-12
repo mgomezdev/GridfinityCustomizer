@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ItemLibrary } from './ItemLibrary';
-import type { LibraryItem, Category } from '../types/gridfinity';
+import type { LibraryItem, Category, Library } from '../types/gridfinity';
 
 const mockCategories: Category[] = [
   { id: 'bin', name: 'Bins', color: '#646cff', order: 1 },
@@ -16,8 +16,22 @@ const mockLibraryItems: LibraryItem[] = [
   { id: 'organizer-1x3', name: '1x3 Organizer', widthUnits: 1, heightUnits: 3, color: '#f59e0b', categories: ['organizer'] },
 ];
 
+const mockLibraries: Library[] = [
+  {
+    id: 'default',
+    name: 'Default Library',
+    path: '/libraries/default/index.json',
+    isEnabled: true,
+    itemCount: 40,
+  },
+];
+
 const mockProps = {
   onRefreshLibrary: vi.fn().mockResolvedValue(undefined),
+  availableLibraries: mockLibraries,
+  selectedLibraryIds: ['default'],
+  onToggleLibrary: vi.fn(),
+  isLibrariesLoading: false,
 };
 
 describe('ItemLibrary', () => {

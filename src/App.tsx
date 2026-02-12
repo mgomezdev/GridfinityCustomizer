@@ -8,7 +8,7 @@ import { useLibraries } from './hooks/useLibraries';
 import { useLibraryData } from './hooks/useLibraryData';
 import { useCategoryData } from './hooks/useCategoryData';
 import { useReferenceImages } from './hooks/useReferenceImages';
-import { migrateStoredItems } from './utils/migration';
+import { migrateStoredItems, migrateLibrarySelection } from './utils/migration';
 import { DimensionInput } from './components/DimensionInput';
 import { GridPreview } from './components/GridPreview';
 import { GridSummary } from './components/GridSummary';
@@ -30,15 +30,17 @@ function App() {
   });
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
 
-  // Run migration on mount
+  // Run migrations on mount
   useEffect(() => {
     migrateStoredItems();
+    migrateLibrarySelection();
   }, []);
 
   // Library selection and discovery
   const {
     availableLibraries,
     selectedLibraryIds,
+    toggleLibrary,
     isLoading: isLibrariesLoading,
     error: librariesError,
     refreshLibraries,
@@ -310,6 +312,10 @@ function App() {
             isLoading={isLibraryLoading || isLibrariesLoading}
             error={libraryError || librariesError}
             onRefreshLibrary={handleRefreshAll}
+            availableLibraries={availableLibraries}
+            selectedLibraryIds={selectedLibraryIds}
+            onToggleLibrary={toggleLibrary}
+            isLibrariesLoading={isLibrariesLoading}
           />
 
           {selectedItemId && (

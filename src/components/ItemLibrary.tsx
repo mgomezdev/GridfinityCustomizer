@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import type { LibraryItem, Category } from '../types/gridfinity';
+import type { LibraryItem, Category, Library } from '../types/gridfinity';
 import { LibraryItemCard } from './LibraryItemCard';
+import { LibrarySelector } from './LibrarySelector';
 
 const STORAGE_KEY = 'gridfinity-collapsed-categories';
 
@@ -10,6 +11,10 @@ interface ItemLibraryProps {
   isLoading: boolean;
   error: Error | null;
   onRefreshLibrary: () => Promise<void>;
+  availableLibraries: Library[];
+  selectedLibraryIds: string[];
+  onToggleLibrary: (libraryId: string) => void;
+  isLibrariesLoading: boolean;
 }
 
 export function ItemLibrary({
@@ -18,6 +23,10 @@ export function ItemLibrary({
   isLoading,
   error,
   onRefreshLibrary,
+  availableLibraries,
+  selectedLibraryIds,
+  onToggleLibrary,
+  isLibrariesLoading,
 }: ItemLibraryProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedWidths, setSelectedWidths] = useState<Set<number>>(new Set());
@@ -160,6 +169,13 @@ export function ItemLibrary({
     <div className="item-library">
       <h3 className="item-library-title">Item Library</h3>
       <p className="item-library-hint">Drag items onto the grid</p>
+
+      <LibrarySelector
+        availableLibraries={availableLibraries}
+        selectedLibraryIds={selectedLibraryIds}
+        onToggleLibrary={onToggleLibrary}
+        isLoading={isLibrariesLoading}
+      />
 
       <button
         className="refresh-library-button"

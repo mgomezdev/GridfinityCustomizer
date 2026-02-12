@@ -1,0 +1,27 @@
+{
+  "version": "1.0.0",
+  "_template": {
+    "id": "unique-kebab-case-id",
+    "name": "Display Name",
+    "widthUnits": 1,
+    "heightUnits": 1,
+    "color": "#3B82F6",
+    "categories": [
+      "category1"
+    ],
+    "imageUrl": "/images/filename.png"
+  },
+  "items": [
+    {
+      "id": "utensil-simple-1x3",
+      "name": "1x3 Utensil Tray (simple)",
+      "widthUnits": 1,
+      "heightUnits": 3,
+      "color": "#FDFBD4",
+      "categories": [
+        "utensil"
+      ],
+      "imageUrl": "/images/utensil-simple-1x3.png"
+    }
+  ]
+}

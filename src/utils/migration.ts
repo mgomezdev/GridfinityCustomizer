@@ -54,6 +54,34 @@ export function migrateStoredItems(): void {
 }
 
 /**
+ * Migrate library selection to include simple-utensils for existing users
+ * If user only has 'default' selected, add 'simple-utensils' to maintain access to utensil items
+ */
+export function migrateLibrarySelection(): void {
+  const STORAGE_KEY = 'gridfinity-selected-libraries';
+  const MIGRATION_KEY = 'gridfinity-migration-library-selection';
+
+  const migrated = localStorage.getItem(MIGRATION_KEY);
+  if (migrated === 'v1') return;
+
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    const selectedLibraries: string[] = stored ? JSON.parse(stored) : ['default'];
+
+    // If user only has 'default', add 'simple-utensils'
+    if (selectedLibraries.length === 1 && selectedLibraries[0] === 'default') {
+      selectedLibraries.push('simple-utensils');
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedLibraries));
+      console.log('✓ Auto-selected simple-utensils library for existing user');
+    }
+
+    localStorage.setItem(MIGRATION_KEY, 'v1');
+  } catch (err) {
+    console.warn('Failed to migrate library selection:', err);
+  }
+}
+
+/**
  * Clean up old localStorage keys that are no longer used
  * Safe to call even if keys don't exist
  */
