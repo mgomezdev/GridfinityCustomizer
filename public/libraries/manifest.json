@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "libraries": [
+    {
+      "id": "default",
+      "name": "Default Library",
+      "path": "/libraries/default/index.json"
+    }
+  ]
+}

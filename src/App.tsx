@@ -4,9 +4,11 @@ import { calculateGrid, mmToInches, inchesToMm } from './utils/conversions';
 import { useGridItems } from './hooks/useGridItems';
 import { useSpacerCalculation } from './hooks/useSpacerCalculation';
 import { useBillOfMaterials } from './hooks/useBillOfMaterials';
+import { useLibraries } from './hooks/useLibraries';
 import { useLibraryData } from './hooks/useLibraryData';
 import { useCategoryData } from './hooks/useCategoryData';
 import { useReferenceImages } from './hooks/useReferenceImages';
+import { migrateStoredItems } from './utils/migration';
 import { DimensionInput } from './components/DimensionInput';
 import { GridPreview } from './components/GridPreview';
 import { GridSummary } from './components/GridSummary';
@@ -28,18 +30,39 @@ function App() {
   });
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
 
+  // Run migration on mount
+  useEffect(() => {
+    migrateStoredItems();
+  }, []);
+
+  // Library selection and discovery
+  const {
+    availableLibraries,
+    selectedLibraryIds,
+    isLoading: isLibrariesLoading,
+    error: librariesError,
+    refreshLibraries,
+  } = useLibraries();
+
+  // Library data loading (multi-library)
+  const {
+    items: libraryItems,
+    isLoading: isLibraryLoading,
+    error: libraryError,
+    getItemById,
+    refreshLibrary,
+  } = useLibraryData(
+    selectedLibraryIds,
+    availableLibraries.map(lib => ({ id: lib.id, path: lib.path }))
+  );
+
+  // Category discovery from items
   const {
     categories,
-    isLoading: isCategoriesLoading,
-    error: categoriesError,
     getCategoryById,
-    addCategory,
-    updateCategory,
-    deleteCategory,
-    resetToDefaults: resetCategories,
-    refreshCategories,
-  } = useCategoryData();
+  } = useCategoryData(libraryItems);
 
+  // Reference images
   const {
     images,
     addImage,
@@ -51,71 +74,15 @@ function App() {
     toggleImageLock,
   } = useReferenceImages();
 
-  const {
-    items: libraryItems,
-    isLoading: isLibraryLoading,
-    error: libraryError,
-    getItemById,
-    addItem,
-    updateItem,
-    deleteItem: deleteLibraryItem,
-    resetToDefaults,
-    refreshLibrary,
-    updateItemCategories,
-    batchUpdateItems,
-  } = useLibraryData();
-
-  const handleDeleteCategory = (categoryId: string) => {
-    // Batch-remove the category from all items in a single state update
-    const updates = libraryItems
-      .filter(item => item.categories.includes(categoryId))
-      .map(item => ({
-        id: item.id,
-        updates: { categories: item.categories.filter(id => id !== categoryId) },
-      }))
-      .filter(u => u.updates.categories.length > 0);
-
-    if (updates.length > 0) {
-      batchUpdateItems(updates);
-    }
-
-    deleteCategory(categoryId);
-  };
-
   const handleRefreshAll = async () => {
-    // Refresh library items
+    // Refresh library manifest and all selected libraries
+    // Categories will be auto-derived from refreshed items
     try {
+      await refreshLibraries();
       await refreshLibrary();
     } catch (err) {
-      // Error already logged and state set by useLibraryData hook
       console.error('Library refresh failed:', err);
     }
-
-    // Refresh categories
-    try {
-      await refreshCategories();
-    } catch (err) {
-      // Error already logged and state set by useCategoryData hook
-      console.error('Categories refresh failed:', err);
-    }
-  };
-
-  const handleExportLibrary = () => {
-    const libraryData = {
-      version: '1.0.0',
-      items: libraryItems,
-    };
-
-    const jsonString = JSON.stringify(libraryData, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `gridfinity-library-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   };
 
   const handleUnitChange = (newUnit: UnitSystem) => {
@@ -338,19 +305,9 @@ function App() {
           <ItemLibrary
             items={libraryItems}
             categories={categories}
-            isLoading={isLibraryLoading || isCategoriesLoading}
-            error={libraryError || categoriesError}
-            onAddItem={addItem}
-            onUpdateItem={updateItem}
-            onDeleteItem={deleteLibraryItem}
-            onResetToDefaults={resetToDefaults}
+            isLoading={isLibraryLoading || isLibrariesLoading}
+            error={libraryError || librariesError}
             onRefreshLibrary={handleRefreshAll}
-            onExportLibrary={handleExportLibrary}
-            onAddCategory={addCategory}
-            onUpdateCategory={updateCategory}
-            onDeleteCategory={handleDeleteCategory}
-            onResetCategories={resetCategories}
-            onUpdateItemCategories={updateItemCategories}
             getCategoryById={getCategoryById}
           />
 
