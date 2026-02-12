@@ -58,6 +58,7 @@ describe('useReferenceImages', () => {
         opacity: 0.5,
         scale: 1,
         isLocked: false,
+        rotation: 0,
       });
       expect(result.current.images[0].id).toBeTruthy();
     });
@@ -529,6 +530,85 @@ describe('useReferenceImages', () => {
     });
   });
 
+  describe('updateImageRotation', () => {
+    it('should rotate image CW: 0 -> 90 -> 180 -> 270 -> 0', async () => {
+      const { result } = renderHook(() => useReferenceImages());
+
+      await act(async () => {
+        await result.current.addImage(mockFile);
+      });
+
+      const imageId = result.current.images[0].id;
+      expect(result.current.images[0].rotation).toBe(0);
+
+      act(() => { result.current.updateImageRotation(imageId, 'cw'); });
+      expect(result.current.images[0].rotation).toBe(90);
+
+      act(() => { result.current.updateImageRotation(imageId, 'cw'); });
+      expect(result.current.images[0].rotation).toBe(180);
+
+      act(() => { result.current.updateImageRotation(imageId, 'cw'); });
+      expect(result.current.images[0].rotation).toBe(270);
+
+      act(() => { result.current.updateImageRotation(imageId, 'cw'); });
+      expect(result.current.images[0].rotation).toBe(0);
+    });
+
+    it('should rotate image CCW: 0 -> 270 -> 180 -> 90 -> 0', async () => {
+      const { result } = renderHook(() => useReferenceImages());
+
+      await act(async () => {
+        await result.current.addImage(mockFile);
+      });
+
+      const imageId = result.current.images[0].id;
+
+      act(() => { result.current.updateImageRotation(imageId, 'ccw'); });
+      expect(result.current.images[0].rotation).toBe(270);
+
+      act(() => { result.current.updateImageRotation(imageId, 'ccw'); });
+      expect(result.current.images[0].rotation).toBe(180);
+
+      act(() => { result.current.updateImageRotation(imageId, 'ccw'); });
+      expect(result.current.images[0].rotation).toBe(90);
+
+      act(() => { result.current.updateImageRotation(imageId, 'ccw'); });
+      expect(result.current.images[0].rotation).toBe(0);
+    });
+
+    it('should save rotation to localStorage', async () => {
+      const { result } = renderHook(() => useReferenceImages());
+
+      await act(async () => {
+        await result.current.addImage(mockFile);
+      });
+
+      const imageId = result.current.images[0].id;
+
+      act(() => {
+        result.current.updateImageRotation(imageId, 'cw');
+      });
+
+      const stored = localStorage.getItem('gridfinity-reference-images');
+      const parsed: ReferenceImage[] = JSON.parse(stored!);
+      expect(parsed[0].rotation).toBe(90);
+    });
+
+    it('should handle rotating non-existent image gracefully', async () => {
+      const { result } = renderHook(() => useReferenceImages());
+
+      await act(async () => {
+        await result.current.addImage(mockFile);
+      });
+
+      act(() => {
+        result.current.updateImageRotation('non-existent-id', 'cw');
+      });
+
+      expect(result.current.images[0].rotation).toBe(0);
+    });
+  });
+
   describe('setInteractionMode', () => {
     it('should switch from items to images mode', () => {
       const { result } = renderHook(() => useReferenceImages());
@@ -579,6 +659,7 @@ describe('useReferenceImages', () => {
           opacity: 0.7,
           scale: 1.2,
           isLocked: true,
+          rotation: 90,
         },
       ];
 
@@ -594,6 +675,31 @@ describe('useReferenceImages', () => {
       const { result } = renderHook(() => useReferenceImages());
 
       expect(result.current.images).toEqual([]);
+    });
+
+    it('should default missing rotation field to 0 for legacy data', () => {
+      const legacyImages = [
+        {
+          id: 'legacy-image-1',
+          name: 'legacy.png',
+          dataUrl: 'data:image/png;base64,legacyData',
+          x: 20,
+          y: 30,
+          width: 60,
+          height: 40,
+          opacity: 0.7,
+          scale: 1.2,
+          isLocked: false,
+          // no rotation field - legacy data
+        },
+      ];
+
+      localStorage.setItem('gridfinity-reference-images', JSON.stringify(legacyImages));
+
+      const { result } = renderHook(() => useReferenceImages());
+
+      expect(result.current.images).toHaveLength(1);
+      expect(result.current.images[0].rotation).toBe(0);
     });
 
     it('should handle corrupted localStorage data gracefully', () => {

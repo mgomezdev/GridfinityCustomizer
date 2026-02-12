@@ -7,6 +7,8 @@ export interface Dimensions {
   unit: UnitSystem;
 }
 
+export type Rotation = 0 | 90 | 180 | 270;
+
 export type SpacerMode = 'none' | 'one-sided' | 'symmetrical';
 
 export interface GridSpacerConfig {
@@ -58,7 +60,7 @@ export interface PlacedItem {
   y: number;
   width: number;
   height: number;
-  isRotated: boolean;
+  rotation: Rotation;
 }
 
 export interface PlacedItemWithValidity extends PlacedItem {
@@ -92,6 +94,7 @@ export interface ReferenceImage {
   opacity: number;
   scale: number;
   isLocked: boolean;
+  rotation: Rotation;
 }
 
 export type InteractionMode = 'items' | 'images';

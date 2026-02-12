@@ -42,7 +42,7 @@ describe('useGridItems', () => {
         y: 0,
         width: 1,
         height: 1,
-        isRotated: false,
+        rotation: 0,
         isValid: true,
       });
     });
@@ -137,7 +137,108 @@ describe('useGridItems', () => {
   });
 
   describe('rotateItem', () => {
-    it('should swap width and height when rotating', () => {
+    it('should swap width and height when rotating CW from 0 to 90', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x2', 0, 0);
+      });
+
+      const instanceId = result.current.placedItems[0].instanceId;
+
+      act(() => {
+        result.current.rotateItem(instanceId, 'cw');
+      });
+
+      expect(result.current.placedItems[0]).toMatchObject({
+        width: 2,
+        height: 1,
+        rotation: 90,
+      });
+    });
+
+    it('should cycle CW through all four rotation states', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x2', 0, 0);
+      });
+
+      const instanceId = result.current.placedItems[0].instanceId;
+
+      // 0 -> 90
+      act(() => { result.current.rotateItem(instanceId, 'cw'); });
+      expect(result.current.placedItems[0].rotation).toBe(90);
+      expect(result.current.placedItems[0]).toMatchObject({ width: 2, height: 1 });
+
+      // 90 -> 180
+      act(() => { result.current.rotateItem(instanceId, 'cw'); });
+      expect(result.current.placedItems[0].rotation).toBe(180);
+      expect(result.current.placedItems[0]).toMatchObject({ width: 1, height: 2 });
+
+      // 180 -> 270
+      act(() => { result.current.rotateItem(instanceId, 'cw'); });
+      expect(result.current.placedItems[0].rotation).toBe(270);
+      expect(result.current.placedItems[0]).toMatchObject({ width: 2, height: 1 });
+
+      // 270 -> 0
+      act(() => { result.current.rotateItem(instanceId, 'cw'); });
+      expect(result.current.placedItems[0].rotation).toBe(0);
+      expect(result.current.placedItems[0]).toMatchObject({ width: 1, height: 2 });
+    });
+
+    it('should cycle CCW through all four rotation states', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x2', 0, 0);
+      });
+
+      const instanceId = result.current.placedItems[0].instanceId;
+
+      // 0 -> 270
+      act(() => { result.current.rotateItem(instanceId, 'ccw'); });
+      expect(result.current.placedItems[0].rotation).toBe(270);
+      expect(result.current.placedItems[0]).toMatchObject({ width: 2, height: 1 });
+
+      // 270 -> 180
+      act(() => { result.current.rotateItem(instanceId, 'ccw'); });
+      expect(result.current.placedItems[0].rotation).toBe(180);
+      expect(result.current.placedItems[0]).toMatchObject({ width: 1, height: 2 });
+
+      // 180 -> 90
+      act(() => { result.current.rotateItem(instanceId, 'ccw'); });
+      expect(result.current.placedItems[0].rotation).toBe(90);
+      expect(result.current.placedItems[0]).toMatchObject({ width: 2, height: 1 });
+
+      // 90 -> 0
+      act(() => { result.current.rotateItem(instanceId, 'ccw'); });
+      expect(result.current.placedItems[0].rotation).toBe(0);
+      expect(result.current.placedItems[0]).toMatchObject({ width: 1, height: 2 });
+    });
+
+    it('should restore original dimensions after two CW rotations', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x2', 0, 0);
+      });
+
+      const instanceId = result.current.placedItems[0].instanceId;
+
+      act(() => {
+        result.current.rotateItem(instanceId, 'cw');
+        result.current.rotateItem(instanceId, 'cw');
+      });
+
+      expect(result.current.placedItems[0]).toMatchObject({
+        width: 1,
+        height: 2,
+        rotation: 180,
+      });
+    });
+
+    it('should default to CW rotation when no direction specified', () => {
       const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
@@ -153,48 +254,7 @@ describe('useGridItems', () => {
       expect(result.current.placedItems[0]).toMatchObject({
         width: 2,
         height: 1,
-        isRotated: true,
-      });
-    });
-
-    it('should toggle isRotated flag', () => {
-      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
-
-      act(() => {
-        result.current.addItem('bin-1x2', 0, 0);
-      });
-
-      const instanceId = result.current.placedItems[0].instanceId;
-
-      act(() => {
-        result.current.rotateItem(instanceId);
-      });
-      expect(result.current.placedItems[0].isRotated).toBe(true);
-
-      act(() => {
-        result.current.rotateItem(instanceId);
-      });
-      expect(result.current.placedItems[0].isRotated).toBe(false);
-    });
-
-    it('should restore original dimensions after double rotation', () => {
-      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
-
-      act(() => {
-        result.current.addItem('bin-1x2', 0, 0);
-      });
-
-      const instanceId = result.current.placedItems[0].instanceId;
-
-      act(() => {
-        result.current.rotateItem(instanceId);
-        result.current.rotateItem(instanceId);
-      });
-
-      expect(result.current.placedItems[0]).toMatchObject({
-        width: 1,
-        height: 2,
-        isRotated: false,
+        rotation: 90,
       });
     });
   });
@@ -411,7 +471,7 @@ describe('useGridItems', () => {
       expect(result.current.placedItems[0].isValid).toBe(true);
 
       act(() => {
-        result.current.rotateItem(instanceId);
+        result.current.rotateItem(instanceId, 'cw');
       });
 
       expect(result.current.placedItems[0].isValid).toBe(false);
@@ -568,7 +628,7 @@ describe('useGridItems', () => {
       expect(result.current.placedItems[0].isValid).toBe(true);
     });
 
-    it('should handle rotation on 1x1 item (no effect)', () => {
+    it('should handle rotation on 1x1 item (dimensions unchanged)', () => {
       const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
 
       act(() => {
@@ -578,13 +638,13 @@ describe('useGridItems', () => {
       const instanceId = result.current.placedItems[0].instanceId;
 
       act(() => {
-        result.current.rotateItem(instanceId);
+        result.current.rotateItem(instanceId, 'cw');
       });
 
       expect(result.current.placedItems[0]).toMatchObject({
         width: 1,
         height: 1,
-        isRotated: true,
+        rotation: 90,
       });
     });
 
@@ -630,7 +690,7 @@ describe('useGridItems', () => {
       });
 
       // Should not crash, item rotation unchanged
-      expect(result.current.placedItems[0].isRotated).toBe(false);
+      expect(result.current.placedItems[0].rotation).toBe(0);
     });
   });
 });

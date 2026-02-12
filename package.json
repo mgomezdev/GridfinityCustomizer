@@ -2,6 +2,23 @@
   "name": "gridfinity-customizer",
   "private": true,
   "version": "0.8.1",
+  "description": "Web-based visual design tool for creating custom Gridfinity modular storage layouts with drag-and-drop, reference images, and bill of materials generation",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mgomezdev/GridfinityCustomizer"
+  },
+  "homepage": "https://github.com/mgomezdev/GridfinityCustomizer#readme",
+  "keywords": [
+    "gridfinity",
+    "3d-printing",
+    "modular-storage",
+    "organizer",
+    "layout-tool",
+    "react",
+    "typescript",
+    "vite"
+  ],
+  "author": "mgomezdev",
   "type": "module",
   "scripts": {
     "dev": "vite",

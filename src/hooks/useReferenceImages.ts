@@ -1,9 +1,12 @@
 import { useState, useCallback } from 'react';
-import type { ReferenceImage, InteractionMode } from '../types/gridfinity';
+import type { ReferenceImage, InteractionMode, Rotation } from '../types/gridfinity';
 import { fileToDataUrl } from '../utils/imageUtils';
 
 const STORAGE_KEY = 'gridfinity-reference-images';
 const DEFAULT_INTERACTION_MODE: InteractionMode = 'items';
+
+const ROTATION_CW: Record<Rotation, Rotation> = { 0: 90, 90: 180, 180: 270, 270: 0 };
+const ROTATION_CCW: Record<Rotation, Rotation> = { 0: 270, 90: 0, 180: 90, 270: 180 };
 
 export interface UseReferenceImagesReturn {
   images: ReferenceImage[];
@@ -17,6 +20,7 @@ export interface UseReferenceImagesReturn {
   updateImagePosition: (id: string, x: number, y: number) => void;
   updateImageScale: (id: string, scale: number) => void;
   updateImageOpacity: (id: string, opacity: number) => void;
+  updateImageRotation: (id: string, direction: 'cw' | 'ccw') => void;
   toggleImageLock: (id: string) => void;
 
   // Mode toggle
@@ -58,6 +62,10 @@ function loadImagesFromStorage(): ReferenceImage[] {
         console.warn('Invalid image data found in localStorage, skipping');
         return [];
       }
+      // Migrate legacy data: default missing rotation to 0
+      if (typeof img.rotation !== 'number') {
+        img.rotation = 0;
+      }
     }
 
     return images;
@@ -96,6 +104,7 @@ export function useReferenceImages(): UseReferenceImagesReturn {
         opacity: 0.5,
         scale: 1,
         isLocked: false,
+        rotation: 0,
       };
 
       setImages(prev => {
@@ -168,6 +177,24 @@ export function useReferenceImages(): UseReferenceImagesReturn {
     });
   }, []);
 
+  const updateImageRotation = useCallback((id: string, direction: 'cw' | 'ccw'): void => {
+    setImages(prev => {
+      const imageIndex = prev.findIndex(img => img.id === id);
+      if (imageIndex === -1) {
+        console.warn(`Image with id "${id}" not found`);
+        return prev;
+      }
+      const currentRotation = prev[imageIndex].rotation;
+      const newRotation = direction === 'cw'
+        ? ROTATION_CW[currentRotation]
+        : ROTATION_CCW[currentRotation];
+      const updatedImages = [...prev];
+      updatedImages[imageIndex] = { ...updatedImages[imageIndex], rotation: newRotation };
+      saveImagesToStorage(updatedImages);
+      return updatedImages;
+    });
+  }, []);
+
   const toggleImageLock = useCallback((id: string): void => {
     setImages(prev => {
       const imageIndex = prev.findIndex(img => img.id === id);
@@ -193,6 +220,7 @@ export function useReferenceImages(): UseReferenceImagesReturn {
     updateImagePosition,
     updateImageScale,
     updateImageOpacity,
+    updateImageRotation,
     toggleImageLock,
     setInteractionMode,
   };

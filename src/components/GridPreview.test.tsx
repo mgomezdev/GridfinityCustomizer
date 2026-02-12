@@ -50,7 +50,7 @@ describe('GridPreview', () => {
     y: 0,
     width: 1,
     height: 1,
-    isRotated: false,
+    rotation: 0,
     isValid: true,
     ...overrides,
   });
