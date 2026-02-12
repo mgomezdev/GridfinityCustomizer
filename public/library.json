@@ -6,7 +6,10 @@
     "widthUnits": 1,
     "heightUnits": 1,
     "color": "#3B82F6",
-    "categories": ["category1", "category2"],
+    "categories": [
+      "category1",
+      "category2"
+    ],
     "imageUrl": "/images/filename.png",
     "_comments": {
       "id": "Required. Unique identifier in kebab-case",
@@ -25,7 +28,9 @@
       "widthUnits": 1,
       "heightUnits": 1,
       "color": "#3B82F6",
-      "categories": ["bin", "1x"]
+      "categories": [
+        "bin"
+      ]
     },
     {
       "id": "bin-1x2",
@@ -33,7 +38,9 @@
       "widthUnits": 1,
       "heightUnits": 2,
       "color": "#3B82F6",
-      "categories": ["bin", "1x"]
+      "categories": [
+        "bin"
+      ]
     },
     {
       "id": "bin-1x3",
@@ -41,7 +48,9 @@
       "widthUnits": 1,
       "heightUnits": 3,
       "color": "#3B82F6",
-      "categories": ["bin", "1x"]
+      "categories": [
+        "bin"
+      ]
     },
     {
       "id": "bin-1x4",
@@ -49,7 +58,9 @@
       "widthUnits": 1,
       "heightUnits": 4,
       "color": "#3B82F6",
-      "categories": ["bin", "1x"]
+      "categories": [
+        "bin"
+      ]
     },
     {
       "id": "bin-1x5",
@@ -57,7 +68,9 @@
       "widthUnits": 1,
       "heightUnits": 5,
       "color": "#3B82F6",
-      "categories": ["bin", "1x"]
+      "categories": [
+        "bin"
+      ]
     },
     {
       "id": "bin-2x1",
@@ -65,7 +78,9 @@
       "widthUnits": 2,
       "heightUnits": 1,
       "color": "#3B82F6",
-      "categories": ["bin", "2x"]
+      "categories": [
+        "bin"
+      ]
     },
     {
       "id": "bin-2x2",
@@ -73,7 +88,9 @@
       "widthUnits": 2,
       "heightUnits": 2,
       "color": "#3B82F6",
-      "categories": ["bin", "2x"]
+      "categories": [
+        "bin"
+      ]
     },
     {
       "id": "bin-2x3",
@@ -81,7 +98,9 @@
       "widthUnits": 2,
       "heightUnits": 3,
       "color": "#3B82F6",
-      "categories": ["bin", "2x"]
+      "categories": [
+        "bin"
+      ]
     },
     {
       "id": "bin-2x4",
@@ -89,7 +108,9 @@
       "widthUnits": 2,
       "heightUnits": 4,
       "color": "#3B82F6",
-      "categories": ["bin", "2x"]
+      "categories": [
+        "bin"
+      ]
     },
     {
       "id": "bin-2x5",
@@ -97,7 +118,9 @@
       "widthUnits": 2,
       "heightUnits": 5,
       "color": "#3B82F6",
-      "categories": ["bin", "2x"]
+      "categories": [
+        "bin"
+      ]
     },
     {
       "id": "bin-3x1",
@@ -105,7 +128,9 @@
       "widthUnits": 3,
       "heightUnits": 1,
       "color": "#3B82F6",
-      "categories": ["bin", "3x"]
+      "categories": [
+        "bin"
+      ]
     },
     {
       "id": "bin-3x2",
@@ -113,7 +138,9 @@
       "widthUnits": 3,
       "heightUnits": 2,
       "color": "#3B82F6",
-      "categories": ["bin", "3x"]
+      "categories": [
+        "bin"
+      ]
     },
     {
       "id": "bin-3x3",
@@ -121,7 +148,9 @@
       "widthUnits": 3,
       "heightUnits": 3,
       "color": "#3B82F6",
-      "categories": ["bin", "3x"]
+      "categories": [
+        "bin"
+      ]
     },
     {
       "id": "bin-3x4",
@@ -129,7 +158,9 @@
       "widthUnits": 3,
       "heightUnits": 4,
       "color": "#3B82F6",
-      "categories": ["bin", "3x"]
+      "categories": [
+        "bin"
+      ]
     },
     {
       "id": "bin-3x5",
@@ -137,7 +168,9 @@
       "widthUnits": 3,
       "heightUnits": 5,
       "color": "#3B82F6",
-      "categories": ["bin", "3x"]
+      "categories": [
+        "bin"
+      ]
     },
     {
       "id": "bin-labeled-1x1",
@@ -145,7 +178,10 @@
       "widthUnits": 1,
       "heightUnits": 1,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "1x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-1x2",
@@ -153,7 +189,10 @@
       "widthUnits": 1,
       "heightUnits": 2,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "1x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-1x3",
@@ -161,7 +200,10 @@
       "widthUnits": 1,
       "heightUnits": 3,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "1x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-1x4",
@@ -169,7 +211,10 @@
       "widthUnits": 1,
       "heightUnits": 4,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "1x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-1x5",
@@ -177,7 +222,10 @@
       "widthUnits": 1,
       "heightUnits": 5,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "1x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-2x1",
@@ -185,7 +233,10 @@
       "widthUnits": 2,
       "heightUnits": 1,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "2x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-2x2",
@@ -193,7 +244,10 @@
       "widthUnits": 2,
       "heightUnits": 2,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "2x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-2x3",
@@ -201,7 +255,10 @@
       "widthUnits": 2,
       "heightUnits": 3,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "2x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-2x4",
@@ -209,7 +266,10 @@
       "widthUnits": 2,
       "heightUnits": 4,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "2x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-2x5",
@@ -217,7 +277,10 @@
       "widthUnits": 2,
       "heightUnits": 5,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "2x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-3x1",
@@ -225,7 +288,10 @@
       "widthUnits": 3,
       "heightUnits": 1,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "3x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-3x2",
@@ -233,7 +299,10 @@
       "widthUnits": 3,
       "heightUnits": 2,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "3x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-3x3",
@@ -241,7 +310,10 @@
       "widthUnits": 3,
       "heightUnits": 3,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "3x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-3x4",
@@ -249,7 +321,10 @@
       "widthUnits": 3,
       "heightUnits": 4,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "3x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-3x5",
@@ -257,7 +332,10 @@
       "widthUnits": 3,
       "heightUnits": 5,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "3x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-4x1",
@@ -265,7 +343,10 @@
       "widthUnits": 4,
       "heightUnits": 1,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "4x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-4x2",
@@ -273,7 +354,10 @@
       "widthUnits": 4,
       "heightUnits": 2,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "4x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-4x3",
@@ -281,7 +365,10 @@
       "widthUnits": 4,
       "heightUnits": 3,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "4x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-4x4",
@@ -289,7 +376,10 @@
       "widthUnits": 4,
       "heightUnits": 4,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "4x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-4x5",
@@ -297,7 +387,10 @@
       "widthUnits": 4,
       "heightUnits": 5,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "4x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-5x1",
@@ -305,7 +398,10 @@
       "widthUnits": 5,
       "heightUnits": 1,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "5x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-5x2",
@@ -313,7 +409,10 @@
       "widthUnits": 5,
       "heightUnits": 2,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "5x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-5x3",
@@ -321,7 +420,10 @@
       "widthUnits": 5,
       "heightUnits": 3,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "5x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-5x4",
@@ -329,7 +431,10 @@
       "widthUnits": 5,
       "heightUnits": 4,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "5x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "bin-labeled-5x5",
@@ -337,7 +442,10 @@
       "widthUnits": 5,
       "heightUnits": 5,
       "color": "#3B82F6",
-      "categories": ["bin", "labeled", "5x"]
+      "categories": [
+        "bin",
+        "labeled"
+      ]
     },
     {
       "id": "utensil-simple-1x3",
@@ -345,7 +453,9 @@
       "widthUnits": 1,
       "heightUnits": 3,
       "color": "#FDFBD4",
-      "categories": ["utensil", "1x"],
+      "categories": [
+        "utensil"
+      ],
       "imageUrl": "/images/utensil-simple-1x3.png"
     }
   ]
