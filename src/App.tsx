@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { UnitSystem, ImperialFormat, GridSpacerConfig } from './types/gridfinity';
 import { calculateGrid, mmToInches, inchesToMm } from './utils/conversions';
 import { useGridItems } from './hooks/useGridItems';
@@ -44,6 +44,12 @@ function App() {
     refreshLibraries,
   } = useLibraries();
 
+  // Memoize library metadata to prevent infinite re-renders
+  const manifestLibraries = useMemo(
+    () => availableLibraries.map(lib => ({ id: lib.id, path: lib.path })),
+    [availableLibraries]
+  );
+
   // Library data loading (multi-library)
   const {
     items: libraryItems,
@@ -51,10 +57,7 @@ function App() {
     error: libraryError,
     getItemById,
     refreshLibrary,
-  } = useLibraryData(
-    selectedLibraryIds,
-    availableLibraries.map(lib => ({ id: lib.id, path: lib.path }))
-  );
+  } = useLibraryData(selectedLibraryIds, manifestLibraries);
 
   // Category discovery from items
   const {
