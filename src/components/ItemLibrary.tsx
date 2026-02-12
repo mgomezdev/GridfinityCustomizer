@@ -10,7 +10,6 @@ interface ItemLibraryProps {
   isLoading: boolean;
   error: Error | null;
   onRefreshLibrary: () => Promise<void>;
-  getCategoryById: (id: string) => Category | undefined;
 }
 
 export function ItemLibrary({
@@ -19,7 +18,6 @@ export function ItemLibrary({
   isLoading,
   error,
   onRefreshLibrary,
-  getCategoryById,
 }: ItemLibraryProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedWidths, setSelectedWidths] = useState<Set<number>>(new Set());

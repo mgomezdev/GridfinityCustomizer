@@ -59,7 +59,6 @@ function App() {
   // Category discovery from items
   const {
     categories,
-    getCategoryById,
   } = useCategoryData(libraryItems);
 
   // Reference images
@@ -308,7 +307,6 @@ function App() {
             isLoading={isLibraryLoading || isLibrariesLoading}
             error={libraryError || librariesError}
             onRefreshLibrary={handleRefreshAll}
-            getCategoryById={getCategoryById}
           />
 
           {selectedItemId && (

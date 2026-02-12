@@ -18,7 +18,6 @@ const mockLibraryItems: LibraryItem[] = [
 
 const mockProps = {
   onRefreshLibrary: vi.fn().mockResolvedValue(undefined),
-  getCategoryById: (id: string) => mockCategories.find(c => c.id === id),
 };
 
 describe('ItemLibrary', () => {
@@ -283,22 +282,6 @@ describe('ItemLibrary', () => {
     expect(screen.getByText(/Dividers \(1\)/)).toBeInTheDocument();
   });
 
-  it('should render export library button', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
-
-    const exportButton = screen.getByText('Export Library');
-    expect(exportButton).toBeInTheDocument();
-  });
-
-  it('should call onExportLibrary when export button is clicked', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
-
-    const exportButton = screen.getByText('Export Library');
-    fireEvent.click(exportButton);
-
-    expect(mockProps.onExportLibrary).toHaveBeenCalledTimes(1);
-  });
-
   it('should render refresh library button', () => {
     render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
@@ -314,7 +297,7 @@ describe('ItemLibrary', () => {
     const refreshButton = screen.getByText('Refresh Library');
     fireEvent.click(refreshButton);
 
-    expect(window.confirm).toHaveBeenCalledWith('Refresh library and categories from file? All custom changes will be lost.');
+    expect(window.confirm).toHaveBeenCalledWith('Refresh all libraries from files?');
     expect(mockProps.onRefreshLibrary).toHaveBeenCalledTimes(1);
 
     vi.restoreAllMocks();

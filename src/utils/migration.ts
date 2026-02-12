@@ -66,7 +66,7 @@ export function cleanupOldStorage(): void {
   for (const key of keysToRemove) {
     try {
       localStorage.removeItem(key);
-    } catch (err) {
+    } catch {
       // Ignore errors - not critical
     }
   }

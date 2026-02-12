@@ -23,9 +23,16 @@ describe('useLibraryData', () => {
     { id: 'community', path: '/libraries/community/index.json' },
   ];
 
+  let mockFetch: ReturnType<typeof vi.fn>;
+
   beforeEach(() => {
-    globalThis.fetch = vi.fn();
+    // Create mock function and assign directly to globalThis
+    mockFetch = vi.fn();
+    globalThis.fetch = mockFetch as unknown as typeof fetch;
   });
+
+  // Helper to get the mocked fetch function
+  const getMockFetch = () => mockFetch;
 
   afterEach(() => {
     vi.restoreAllMocks();
@@ -33,10 +40,10 @@ describe('useLibraryData', () => {
 
   describe('Multi-Library Loading', () => {
     it('should load single library', async () => {
-      (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      getMockFetch().mockResolvedValueOnce({
         ok: true,
         json: async () => mockDefaultLibrary,
-      });
+      } as Response);
 
       const { result } = renderHook(() =>
         useLibraryData(['default'], manifestLibraries)
@@ -52,15 +59,15 @@ describe('useLibraryData', () => {
     });
 
     it('should load multiple libraries in parallel', async () => {
-      (globalThis.fetch as ReturnType<typeof vi.fn>)
+      getMockFetch()
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockDefaultLibrary,
-        })
+        } as Response)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockCommunityLibrary,
-        });
+        } as Response);
 
       const { result } = renderHook(() =>
         useLibraryData(['default', 'community'], manifestLibraries)
@@ -76,10 +83,10 @@ describe('useLibraryData', () => {
     });
 
     it('should prefix item IDs with library name', async () => {
-      (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      getMockFetch().mockResolvedValueOnce({
         ok: true,
         json: async () => mockDefaultLibrary,
-      });
+      } as Response);
 
       const { result } = renderHook(() =>
         useLibraryData(['default'], manifestLibraries)
@@ -110,10 +117,10 @@ describe('useLibraryData', () => {
         ],
       };
 
-      (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      getMockFetch().mockResolvedValueOnce({
         ok: true,
         json: async () => libraryWithImages,
-      });
+      } as Response);
 
       const { result } = renderHook(() =>
         useLibraryData(['default'], manifestLibraries)
@@ -141,10 +148,10 @@ describe('useLibraryData', () => {
 
   describe('Error Handling', () => {
     it('should handle fetch errors gracefully', async () => {
-      (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      getMockFetch().mockResolvedValueOnce({
         ok: false,
         statusText: 'Not Found',
-      });
+      } as Response);
 
       const { result } = renderHook(() =>
         useLibraryData(['default'], manifestLibraries)
@@ -178,15 +185,15 @@ describe('useLibraryData', () => {
     });
 
     it('should handle partial failures (some libraries load, others fail)', async () => {
-      (globalThis.fetch as ReturnType<typeof vi.fn>)
+      getMockFetch()
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockDefaultLibrary,
-        })
+        } as Response)
         .mockResolvedValueOnce({
           ok: false,
           statusText: 'Server Error',
-        });
+        } as Response);
 
       const { result } = renderHook(() =>
         useLibraryData(['default', 'community'], manifestLibraries)
@@ -204,10 +211,10 @@ describe('useLibraryData', () => {
 
   describe('Helper Methods', () => {
     beforeEach(() => {
-      (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      getMockFetch().mockResolvedValue({
         ok: true,
         json: async () => mockDefaultLibrary,
-      });
+      } as Response);
     });
 
     it('getItemById should find item by prefixed ID', async () => {
@@ -252,15 +259,15 @@ describe('useLibraryData', () => {
     });
 
     it('getItemsByLibrary should filter by library ID', async () => {
-      (globalThis.fetch as ReturnType<typeof vi.fn>)
+      getMockFetch()
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockDefaultLibrary,
-        })
+        } as Response)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockCommunityLibrary,
-        });
+        } as Response);
 
       const { result } = renderHook(() =>
         useLibraryData(['default', 'community'], manifestLibraries)
@@ -282,10 +289,10 @@ describe('useLibraryData', () => {
 
   describe('Refresh', () => {
     it('should reload libraries when refreshLibrary is called', async () => {
-      (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      getMockFetch().mockResolvedValue({
         ok: true,
         json: async () => mockDefaultLibrary,
-      });
+      } as Response);
 
       const { result } = renderHook(() =>
         useLibraryData(['default'], manifestLibraries)
@@ -307,15 +314,15 @@ describe('useLibraryData', () => {
 
   describe('Library Selection Changes', () => {
     it('should reload when selected libraries change', async () => {
-      (globalThis.fetch as ReturnType<typeof vi.fn>)
+      getMockFetch()
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockDefaultLibrary,
-        })
+        } as Response)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockCommunityLibrary,
-        });
+        } as Response);
 
       const { result, rerender } = renderHook(
         ({ libs }) => useLibraryData(libs, manifestLibraries),

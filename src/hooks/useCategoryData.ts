@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { Category, LibraryItem } from '../types/gridfinity';
 import { discoverCategories } from '../utils/categoryDiscovery';
 
@@ -17,19 +17,20 @@ export interface UseCategoryDataResult {
  * @returns Discovered categories with auto-generated names and colors
  */
 export function useCategoryData(libraryItems: LibraryItem[]): UseCategoryDataResult {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-
-  // Derive categories from library items
-  const categories = useMemo(() => {
+  // Derive categories from library items (synchronous, no loading state needed)
+  const { categories, error } = useMemo(() => {
     try {
-      setError(null);
-      return discoverCategories(libraryItems);
+      return {
+        categories: discoverCategories(libraryItems),
+        error: null,
+      };
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to discover categories');
-      setError(error);
       console.error('Category discovery error:', error);
-      return [];
+      return {
+        categories: [],
+        error,
+      };
     }
   }, [libraryItems]);
 
@@ -39,7 +40,7 @@ export function useCategoryData(libraryItems: LibraryItem[]): UseCategoryDataRes
 
   return {
     categories,
-    isLoading,
+    isLoading: false, // Category discovery is synchronous, so never loading
     error,
     getCategoryById,
   };
