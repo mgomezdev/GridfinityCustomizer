@@ -44,11 +44,23 @@ export function ItemLibrary({
 }: ItemLibraryProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showManager, setShowManager] = useState(false);
+  const [selectedWidths, setSelectedWidths] = useState<Set<number>>(new Set());
+  const [selectedHeights, setSelectedHeights] = useState<Set<number>>(new Set());
+  const [showFilters, setShowFilters] = useState(false);
 
-  // Filter items by search query
-  const filteredItems = items.filter(item =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter items by search query and dimensions
+  const filteredItems = items.filter(item => {
+    // Text search filter
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // Width filter (if any widths selected, item must match one of them)
+    const matchesWidth = selectedWidths.size === 0 || selectedWidths.has(item.widthUnits);
+
+    // Height filter (if any heights selected, item must match one of them)
+    const matchesHeight = selectedHeights.size === 0 || selectedHeights.has(item.heightUnits);
+
+    return matchesSearch && matchesWidth && matchesHeight;
+  });
 
   // Group items by category using single-pass Map lookup
   const itemsByCategory = useMemo(() => {
@@ -213,15 +225,94 @@ export function ItemLibrary({
       </div>
 
       <button
+        className="toggle-filters-button"
+        onClick={() => setShowFilters(!showFilters)}
+        aria-expanded={showFilters}
+      >
+        {showFilters ? '▼' : '▶'} Filter by Size
+        {(selectedWidths.size > 0 || selectedHeights.size > 0) && (
+          <span className="filter-active-indicator">●</span>
+        )}
+      </button>
+
+      {showFilters && (
+        <div className="library-filters">
+        <div className="filter-group">
+          <label className="filter-label">Width:</label>
+          <div className="filter-options">
+            {[1, 2, 3, 4, 5].map(width => (
+              <button
+                key={width}
+                className={`filter-chip ${selectedWidths.has(width) ? 'active' : ''}`}
+                onClick={() => {
+                  setSelectedWidths(prev => {
+                    const next = new Set(prev);
+                    if (next.has(width)) {
+                      next.delete(width);
+                    } else {
+                      next.add(width);
+                    }
+                    return next;
+                  });
+                }}
+                aria-pressed={selectedWidths.has(width)}
+              >
+                {width}x
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="filter-group">
+          <label className="filter-label">Height:</label>
+          <div className="filter-options">
+            {[1, 2, 3, 4, 5].map(height => (
+              <button
+                key={height}
+                className={`filter-chip ${selectedHeights.has(height) ? 'active' : ''}`}
+                onClick={() => {
+                  setSelectedHeights(prev => {
+                    const next = new Set(prev);
+                    if (next.has(height)) {
+                      next.delete(height);
+                    } else {
+                      next.add(height);
+                    }
+                    return next;
+                  });
+                }}
+                aria-pressed={selectedHeights.has(height)}
+              >
+                {height}x
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {(selectedWidths.size > 0 || selectedHeights.size > 0) && (
+          <button
+            className="filter-clear-all"
+            onClick={() => {
+              setSelectedWidths(new Set());
+              setSelectedHeights(new Set());
+            }}
+          >
+            Clear Filters
+          </button>
+        )}
+        </div>
+      )}
+
+      <button
         className="manage-library-button"
         onClick={() => setShowManager(true)}
       >
         Manage Library
       </button>
 
-      {!hasResults && searchQuery && (
+      {!hasResults && (searchQuery || selectedWidths.size > 0 || selectedHeights.size > 0) && (
         <div className="library-no-results">
-          <p>No items found matching "{searchQuery}"</p>
+          <p>No items found{searchQuery && ` matching "${searchQuery}"`}</p>
         </div>
       )}
 

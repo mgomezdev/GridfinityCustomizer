@@ -422,6 +422,110 @@
   color: var(--invalid-primary);
 }
 
+.toggle-filters-button {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-md);
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-family: var(--font-body);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.toggle-filters-button:hover {
+  border-color: var(--grid-primary);
+  background: var(--bg-primary);
+}
+
+.filter-active-indicator {
+  margin-left: auto;
+  color: var(--grid-primary);
+  font-size: var(--text-lg);
+  line-height: 1;
+}
+
+.library-filters {
+  margin-bottom: var(--space-lg);
+  padding: var(--space-md);
+  border: 2px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+}
+
+.filter-group {
+  margin-bottom: var(--space-md);
+}
+
+.filter-group:last-of-type {
+  margin-bottom: 0;
+}
+
+.filter-label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
+  font-family: var(--font-body);
+}
+
+.filter-options {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  padding: var(--space-xs) var(--space-md);
+  border: 2px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-chip:hover {
+  border-color: var(--grid-primary);
+  color: var(--text-primary);
+}
+
+.filter-chip.active {
+  background: var(--grid-primary);
+  border-color: var(--grid-primary);
+  color: white;
+  font-weight: var(--font-semibold);
+}
+
+.filter-clear-all {
+  margin-top: var(--space-md);
+  padding: var(--space-xs) var(--space-md);
+  background: transparent;
+  border: 2px solid var(--invalid-primary);
+  border-radius: var(--radius-md);
+  color: var(--invalid-primary);
+  font-size: var(--text-sm);
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.filter-clear-all:hover {
+  background: var(--invalid-primary);
+  color: white;
+}
+
 .library-no-results {
   text-align: center;
   padding: var(--space-2xl) var(--space-lg);

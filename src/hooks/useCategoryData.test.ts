@@ -11,11 +11,6 @@ describe('useCategoryData', () => {
       { id: 'bin', name: 'Bins', color: '#3B82F6', order: 1 },
       { id: 'utensil', name: 'Utensil Trays', color: '#EF4444', order: 2 },
       { id: 'labeled', name: 'Labeled', color: '#8B5CF6', order: 2 },
-      { id: '1x', name: '1x Width', color: '#3B82F6', order: 3 },
-      { id: '2x', name: '2x Width', color: '#10B981', order: 4 },
-      { id: '3x', name: '3x Width', color: '#F59E0B', order: 5 },
-      { id: '4x', name: '4x Width', color: '#EF4444', order: 6 },
-      { id: '5x', name: '5x Width', color: '#EC4899', order: 7 },
     ],
   };
 
@@ -52,7 +47,7 @@ describe('useCategoryData', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(result.current.categories).toHaveLength(8);
+      expect(result.current.categories).toHaveLength(3);
       expect(result.current.categories[0].id).toBe('bin');
       expect(result.current.categories[1].id).toBe('utensil');
       expect(result.current.categories[2].id).toBe('labeled');
@@ -120,7 +115,7 @@ describe('useCategoryData', () => {
       });
 
       // Should load default categories when custom data is invalid
-      expect(result.current.categories).toHaveLength(8);
+      expect(result.current.categories).toHaveLength(3);
       expect(consoleErrorSpy).not.toHaveBeenCalled();
       consoleErrorSpy.mockRestore();
     });
@@ -211,7 +206,7 @@ describe('useCategoryData', () => {
         result.current.addCategory(newCategory);
       });
 
-      expect(result.current.categories).toHaveLength(9);
+      expect(result.current.categories).toHaveLength(4);
       expect(result.current.getCategoryById('tool')).toEqual(newCategory);
     });
 
@@ -236,7 +231,7 @@ describe('useCategoryData', () => {
       const stored = localStorage.getItem('gridfinity-categories');
       expect(stored).toBeTruthy();
       const parsed = JSON.parse(stored!);
-      expect(parsed).toHaveLength(9);
+      expect(parsed).toHaveLength(4);
       expect(parsed.find((c: Category) => c.id === 'tool')).toEqual(newCategory);
     });
 
@@ -498,13 +493,13 @@ describe('useCategoryData', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(result.current.categories).toHaveLength(8);
+      expect(result.current.categories).toHaveLength(3);
 
       act(() => {
         result.current.deleteCategory('bin');
       });
 
-      expect(result.current.categories).toHaveLength(7);
+      expect(result.current.categories).toHaveLength(2);
       expect(result.current.getCategoryById('bin')).toBeUndefined();
     });
 
@@ -521,7 +516,7 @@ describe('useCategoryData', () => {
 
       const stored = localStorage.getItem('gridfinity-categories');
       const parsed = JSON.parse(stored!);
-      expect(parsed).toHaveLength(7);
+      expect(parsed).toHaveLength(2);
       expect(parsed.find((c: Category) => c.id === 'bin')).toBeUndefined();
     });
 
@@ -542,7 +537,7 @@ describe('useCategoryData', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      // First, delete 7 categories to get down to one
+      // First, delete 2 categories to get down to one
       let error: Error | undefined;
       act(() => {
         result.current.deleteCategory('bin');
@@ -550,29 +545,14 @@ describe('useCategoryData', () => {
       act(() => {
         result.current.deleteCategory('utensil');
       });
-      act(() => {
-        result.current.deleteCategory('labeled');
-      });
-      act(() => {
-        result.current.deleteCategory('1x');
-      });
-      act(() => {
-        result.current.deleteCategory('2x');
-      });
-      act(() => {
-        result.current.deleteCategory('3x');
-      });
-      act(() => {
-        result.current.deleteCategory('4x');
-      });
 
-      // Now we should have only 1 category left ('5x')
+      // Now we should have only 1 category left ('labeled')
       expect(result.current.categories).toHaveLength(1);
 
       // Trying to delete the last one should throw
       try {
         act(() => {
-          result.current.deleteCategory('5x');
+          result.current.deleteCategory('labeled');
         });
       } catch (e) {
         error = e as Error;
@@ -639,14 +619,14 @@ describe('useCategoryData', () => {
         result.current.addCategory(customCategory);
       });
 
-      expect(result.current.categories).toHaveLength(9);
+      expect(result.current.categories).toHaveLength(4);
 
       // Reset to defaults
       act(() => {
         result.current.resetToDefaults();
       });
 
-      expect(result.current.categories).toHaveLength(8);
+      expect(result.current.categories).toHaveLength(3);
       expect(result.current.getCategoryById('custom')).toBeUndefined();
       expect(result.current.getCategoryById('bin')).toBeDefined();
     });
@@ -725,7 +705,7 @@ describe('useCategoryData', () => {
         });
       });
 
-      expect(result.current.categories).toHaveLength(9);
+      expect(result.current.categories).toHaveLength(4);
       expect(consoleErrorSpy).toHaveBeenCalled();
 
       Storage.prototype.setItem = originalSetItem;
@@ -750,7 +730,7 @@ describe('useCategoryData', () => {
         result.current.resetToDefaults();
       });
 
-      expect(result.current.categories).toHaveLength(8);
+      expect(result.current.categories).toHaveLength(3);
       expect(consoleErrorSpy).toHaveBeenCalled();
 
       Storage.prototype.removeItem = originalRemoveItem;
