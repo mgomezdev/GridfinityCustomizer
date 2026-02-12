@@ -27,7 +27,7 @@ describe('useBillOfMaterials', () => {
         y: 0,
         width: 1,
         height: 1,
-        isRotated: false,
+        rotation: 0,
       },
     ];
 
@@ -53,7 +53,7 @@ describe('useBillOfMaterials', () => {
         y: 0,
         width: 2,
         height: 2,
-        isRotated: false,
+        rotation: 0,
       },
       {
         instanceId: 'instance-2',
@@ -62,7 +62,7 @@ describe('useBillOfMaterials', () => {
         y: 0,
         width: 2,
         height: 2,
-        isRotated: false,
+        rotation: 0,
       },
       {
         instanceId: 'instance-3',
@@ -71,7 +71,7 @@ describe('useBillOfMaterials', () => {
         y: 2,
         width: 2,
         height: 2,
-        isRotated: false,
+        rotation: 0,
       },
     ];
 
@@ -91,7 +91,7 @@ describe('useBillOfMaterials', () => {
         y: 0,
         width: 1,
         height: 2,
-        isRotated: false,
+        rotation: 0,
       },
       {
         instanceId: 'instance-2',
@@ -100,7 +100,7 @@ describe('useBillOfMaterials', () => {
         y: 0,
         width: 2,
         height: 1,
-        isRotated: true,
+        rotation: 90,
       },
     ];
 
@@ -120,7 +120,7 @@ describe('useBillOfMaterials', () => {
         y: 0,
         width: 1,
         height: 1,
-        isRotated: false,
+        rotation: 0,
       },
       {
         instanceId: 'instance-2',
@@ -129,7 +129,7 @@ describe('useBillOfMaterials', () => {
         y: 0,
         width: 2,
         height: 2,
-        isRotated: false,
+        rotation: 0,
       },
       {
         instanceId: 'instance-3',
@@ -138,7 +138,7 @@ describe('useBillOfMaterials', () => {
         y: 0,
         width: 1,
         height: 1,
-        isRotated: false,
+        rotation: 0,
       },
       {
         instanceId: 'instance-4',
@@ -147,7 +147,7 @@ describe('useBillOfMaterials', () => {
         y: 1,
         width: 1,
         height: 1,
-        isRotated: false,
+        rotation: 0,
       },
     ];
 
@@ -174,7 +174,7 @@ describe('useBillOfMaterials', () => {
         y: 0,
         width: 1,
         height: 3,
-        isRotated: false,
+        rotation: 0,
       },
       {
         instanceId: 'instance-2',
@@ -183,7 +183,7 @@ describe('useBillOfMaterials', () => {
         y: 0,
         width: 1,
         height: 1,
-        isRotated: false,
+        rotation: 0,
       },
       {
         instanceId: 'instance-3',
@@ -192,7 +192,7 @@ describe('useBillOfMaterials', () => {
         y: 0,
         width: 1,
         height: 1,
-        isRotated: false,
+        rotation: 0,
       },
     ];
 
@@ -214,7 +214,7 @@ describe('useBillOfMaterials', () => {
         y: 0,
         width: 2,
         height: 2,
-        isRotated: false,
+        rotation: 0,
       },
       {
         instanceId: 'instance-2',
@@ -223,7 +223,7 @@ describe('useBillOfMaterials', () => {
         y: 0,
         width: 1,
         height: 1,
-        isRotated: false,
+        rotation: 0,
       },
       {
         instanceId: 'instance-3',
@@ -232,7 +232,7 @@ describe('useBillOfMaterials', () => {
         y: 0,
         width: 1,
         height: 2,
-        isRotated: false,
+        rotation: 0,
       },
     ];
 
@@ -253,7 +253,7 @@ describe('useBillOfMaterials', () => {
         y: 0,
         width: 1,
         height: 1,
-        isRotated: false,
+        rotation: 0,
       },
       {
         instanceId: 'instance-2',
@@ -262,7 +262,7 @@ describe('useBillOfMaterials', () => {
         y: 0,
         width: 1,
         height: 1,
-        isRotated: false,
+        rotation: 0,
       },
     ];
 
@@ -282,7 +282,7 @@ describe('useBillOfMaterials', () => {
         y: 0,
         width: 1,
         height: 1,
-        isRotated: false,
+        rotation: 0,
       },
     ];
 
@@ -303,7 +303,7 @@ describe('useBillOfMaterials', () => {
         y: 0,
         width: 1,
         height: 1,
-        isRotated: false,
+        rotation: 0,
       },
     ];
 

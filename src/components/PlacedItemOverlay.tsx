@@ -9,6 +9,8 @@ interface PlacedItemOverlayProps {
   onSelect: (instanceId: string) => void;
   getItemById: (id: string) => LibraryItem | undefined;
   onDelete?: (instanceId: string) => void;
+  onRotateCw?: (instanceId: string) => void;
+  onRotateCcw?: (instanceId: string) => void;
 }
 
 interface ImageLoadState {
@@ -20,7 +22,7 @@ interface ImageLoadState {
 const DEFAULT_VALID_COLOR = '#3B82F6';
 const INVALID_COLOR = '#EF4444';
 
-export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, getItemById, onDelete }: PlacedItemOverlayProps) {
+export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, getItemById, onDelete, onRotateCw, onRotateCcw }: PlacedItemOverlayProps) {
   const libraryItem = getItemById(item.itemId);
   const color = item.isValid ? (libraryItem?.color || DEFAULT_VALID_COLOR) : INVALID_COLOR;
 
@@ -35,6 +37,31 @@ export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, ge
   const imageLoaded = isCurrentUrl && loadState.loaded;
   const imageError = isCurrentUrl && loadState.error;
   const shouldShowImage = libraryItem?.imageUrl && imageLoaded && !imageError;
+
+  // Calculate image dimensions for rotation
+  // When rotated 90° or 270°, we need to swap dimensions to fill the container
+  const isSideways = item.rotation === 90 || item.rotation === 270;
+  const aspectRatio = item.width / item.height;
+
+  const getImageStyle = (): React.CSSProperties | undefined => {
+    if (!item.rotation) return undefined;
+
+    if (isSideways) {
+      // When sideways, the image box needs to be inversely proportioned
+      // so that after rotation it fills the swapped container
+      return {
+        transform: `translate(-50%, -50%) rotate(${item.rotation}deg)`,
+        transformOrigin: 'center center',
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        width: `${(1 / aspectRatio) * 100}%`,
+        height: `${aspectRatio * 100}%`,
+      };
+    }
+
+    return { transform: `rotate(${item.rotation}deg)` };
+  };
 
   const handleImageLoad = () => {
     setLoadState({ forUrl: libraryItem?.imageUrl ?? '', loaded: true, error: false });
@@ -65,6 +92,18 @@ export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, ge
     onDelete?.(item.instanceId);
   };
 
+  const handleRotateCwClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onRotateCw?.(item.instanceId);
+  };
+
+  const handleRotateCcwClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onRotateCcw?.(item.instanceId);
+  };
+
   return (
     <div
       className={`placed-item ${isSelected ? 'selected' : ''} ${!item.isValid ? 'invalid' : ''}`}
@@ -89,10 +128,41 @@ export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, ge
             loading="lazy"
             onLoad={handleImageLoad}
             onError={handleImageError}
+            style={getImageStyle()}
           />
         </div>
       )}
       <span className="placed-item-label">{libraryItem?.name}</span>
+      {isSelected && (onRotateCcw || onRotateCw) && (
+        <>
+          {onRotateCcw && (
+            <button
+              className="placed-item-rotate-btn placed-item-rotate-btn--ccw"
+              onClick={handleRotateCcwClick}
+              onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              draggable={false}
+              aria-label="Rotate counter-clockwise"
+              title="Rotate counter-clockwise"
+            >
+              &#8634;
+            </button>
+          )}
+          {onRotateCw && (
+            <button
+              className="placed-item-rotate-btn placed-item-rotate-btn--cw"
+              onClick={handleRotateCwClick}
+              onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              draggable={false}
+              aria-label="Rotate clockwise"
+              title="Rotate clockwise"
+            >
+              &#8635;
+            </button>
+          )}
+        </>
+      )}
       {isSelected && onDelete && (
         <button
           className="placed-item-delete-btn"

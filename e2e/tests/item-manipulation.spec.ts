@@ -15,7 +15,7 @@ test.describe('Item Manipulation', () => {
     await libraryPage.waitForLibraryReady();
   });
 
-  test('can rotate a selected item', async ({ page }) => {
+  test('can rotate a selected item CW', async ({ page }) => {
     // Place an item
     const firstItem = libraryPage.libraryItems.first();
     await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
@@ -28,10 +28,32 @@ test.describe('Item Manipulation', () => {
     const initialBox = await placedItem.boundingBox();
     expect(initialBox).not.toBeNull();
 
-    // Click rotate button (look for the button with "Rotate" text)
-    const rotateButton = page.locator('.rotate-btn');
-    await expect(rotateButton).toBeVisible();
-    await rotateButton.click();
+    // Click CW rotate button in sidebar
+    const cwButton = page.locator('.rotate-btn', { hasText: 'CW' });
+    await expect(cwButton.first()).toBeVisible();
+    await cwButton.first().click();
+
+    // Wait for rotation animation/state update
+    await page.waitForTimeout(100);
+
+    // Dimensions may have changed (width <-> height swap)
+    const newBox = await placedItem.boundingBox();
+    expect(newBox).not.toBeNull();
+  });
+
+  test('can rotate a selected item CCW', async ({ page }) => {
+    // Place an item
+    const firstItem = libraryPage.libraryItems.first();
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
+
+    // Item should be selected after placement
+    const placedItem = page.locator('.placed-item').first();
+    await expect(placedItem).toBeVisible();
+
+    // Click CCW rotate button in sidebar
+    const ccwButton = page.locator('.rotate-btn', { hasText: 'CCW' });
+    await expect(ccwButton).toBeVisible();
+    await ccwButton.click();
 
     // Wait for rotation animation/state update
     await page.waitForTimeout(100);

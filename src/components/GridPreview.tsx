@@ -14,6 +14,8 @@ interface GridPreviewProps {
   onSelectItem: (instanceId: string | null) => void;
   getItemById: (id: string) => LibraryItem | undefined;
   onDeleteItem?: (instanceId: string) => void;
+  onRotateItemCw?: (instanceId: string) => void;
+  onRotateItemCcw?: (instanceId: string) => void;
   referenceImages?: ReferenceImage[];
   selectedImageId?: string | null;
   onImagePositionChange?: (id: string, x: number, y: number) => void;
@@ -22,6 +24,8 @@ interface GridPreviewProps {
   onImageOpacityChange?: (id: string, opacity: number) => void;
   onImageRemove?: (id: string) => void;
   onImageToggleLock?: (id: string) => void;
+  onImageRotateCw?: (id: string) => void;
+  onImageRotateCcw?: (id: string) => void;
 }
 
 export function GridPreview({
@@ -34,6 +38,8 @@ export function GridPreview({
   onSelectItem,
   getItemById,
   onDeleteItem,
+  onRotateItemCw,
+  onRotateItemCcw,
   referenceImages = [],
   selectedImageId,
   onImagePositionChange,
@@ -42,6 +48,8 @@ export function GridPreview({
   onImageOpacityChange,
   onImageRemove,
   onImageToggleLock,
+  onImageRotateCw,
+  onImageRotateCcw,
 }: GridPreviewProps) {
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -150,6 +158,8 @@ export function GridPreview({
               onOpacityChange={(opacity) => onImageOpacityChange?.(image.id, opacity)}
               onRemove={() => onImageRemove?.(image.id)}
               onToggleLock={() => onImageToggleLock?.(image.id)}
+              onRotateCw={() => onImageRotateCw?.(image.id)}
+              onRotateCcw={() => onImageRotateCcw?.(image.id)}
             />
           ))}
           {placedItems.map(item => (
@@ -162,6 +172,8 @@ export function GridPreview({
               onSelect={onSelectItem}
               getItemById={getItemById}
               onDelete={onDeleteItem}
+              onRotateCw={onRotateItemCw}
+              onRotateCcw={onRotateItemCcw}
             />
           ))}
         </div>

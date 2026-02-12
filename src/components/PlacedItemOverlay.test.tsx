@@ -21,7 +21,7 @@ describe('PlacedItemOverlay', () => {
     y: 0,
     width: 1,
     height: 1,
-    isRotated: false,
+    rotation: 0,
     isValid: true,
     ...overrides,
   });
@@ -531,7 +531,7 @@ describe('PlacedItemOverlay', () => {
         y: 1,
         width: 2,
         height: 1,
-        isRotated: true,
+        rotation: 90,
       });
       const { container } = render(
         <PlacedItemOverlay
@@ -775,6 +775,120 @@ describe('PlacedItemOverlay', () => {
 
       const deleteBtn = screen.getByRole('button', { name: 'Remove item' });
       expect(deleteBtn).toHaveAttribute('aria-label', 'Remove item');
+    });
+  });
+
+  describe('Inline Rotate Buttons', () => {
+    const mockOnRotateCw = vi.fn();
+    const mockOnRotateCcw = vi.fn();
+
+    beforeEach(() => {
+      mockOnRotateCw.mockClear();
+      mockOnRotateCcw.mockClear();
+    });
+
+    it('should render CW and CCW rotate buttons when selected and handlers provided', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onRotateCw={mockOnRotateCw}
+          onRotateCcw={mockOnRotateCcw}
+        />
+      );
+
+      expect(screen.getByRole('button', { name: 'Rotate counter-clockwise' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Rotate clockwise' })).toBeInTheDocument();
+    });
+
+    it('should NOT render rotate buttons when not selected', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onRotateCw={mockOnRotateCw}
+          onRotateCcw={mockOnRotateCcw}
+        />
+      );
+
+      expect(screen.queryByRole('button', { name: 'Rotate counter-clockwise' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Rotate clockwise' })).not.toBeInTheDocument();
+    });
+
+    it('should call onRotateCw with instanceId on CW button click', () => {
+      const item = createMockItem({ instanceId: 'rotate-me-123' });
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onRotateCw={mockOnRotateCw}
+          onRotateCcw={mockOnRotateCcw}
+        />
+      );
+
+      const cwBtn = screen.getByRole('button', { name: 'Rotate clockwise' });
+      fireEvent.click(cwBtn);
+
+      expect(mockOnRotateCw).toHaveBeenCalledWith('rotate-me-123');
+    });
+
+    it('should call onRotateCcw with instanceId on CCW button click', () => {
+      const item = createMockItem({ instanceId: 'rotate-me-456' });
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onRotateCw={mockOnRotateCw}
+          onRotateCcw={mockOnRotateCcw}
+        />
+      );
+
+      const ccwBtn = screen.getByRole('button', { name: 'Rotate counter-clockwise' });
+      fireEvent.click(ccwBtn);
+
+      expect(mockOnRotateCcw).toHaveBeenCalledWith('rotate-me-456');
+    });
+
+    it('should NOT propagate click to parent', () => {
+      const item = createMockItem();
+      const parentClickHandler = vi.fn();
+      render(
+        <div onClick={parentClickHandler}>
+          <PlacedItemOverlay
+            item={item}
+            gridX={4}
+            gridY={4}
+            isSelected={true}
+            onSelect={mockOnSelect}
+            getItemById={mockGetItemById}
+            onRotateCw={mockOnRotateCw}
+            onRotateCcw={mockOnRotateCcw}
+          />
+        </div>
+      );
+
+      const cwBtn = screen.getByRole('button', { name: 'Rotate clockwise' });
+      fireEvent.click(cwBtn);
+
+      expect(parentClickHandler).not.toHaveBeenCalled();
     });
   });
 

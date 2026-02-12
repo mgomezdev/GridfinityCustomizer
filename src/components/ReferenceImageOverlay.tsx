@@ -10,6 +10,8 @@ interface ReferenceImageOverlayProps {
   onOpacityChange: (opacity: number) => void;
   onRemove: () => void;
   onToggleLock: () => void;
+  onRotateCw?: () => void;
+  onRotateCcw?: () => void;
 }
 
 interface DragState {
@@ -37,6 +39,8 @@ export function ReferenceImageOverlay({
   onOpacityChange,
   onRemove,
   onToggleLock,
+  onRotateCw,
+  onRotateCcw,
 }: ReferenceImageOverlayProps) {
   const [dragState, setDragState] = useState<DragState>(INITIAL_DRAG_STATE);
   const [imageLoadError, setImageLoadError] = useState(false);
@@ -147,7 +151,7 @@ export function ReferenceImageOverlay({
     width: '100%',
     height: '100%',
     opacity: image.opacity,
-    transform: `scale(${image.scale})`,
+    transform: `scale(${image.scale})${image.rotation ? ` rotate(${image.rotation}deg)` : ''}`,
     transformOrigin: 'top left',
   };
 
@@ -199,6 +203,24 @@ export function ReferenceImageOverlay({
           >
             {image.isLocked ? 'Unlock' : 'Lock'}
           </button>
+          {onRotateCcw && (
+            <button
+              className="reference-image-overlay__toolbar-btn reference-image-overlay__toolbar-btn--rotate"
+              onClick={onRotateCcw}
+              title="Rotate counter-clockwise"
+            >
+              &#8634;
+            </button>
+          )}
+          {onRotateCw && (
+            <button
+              className="reference-image-overlay__toolbar-btn reference-image-overlay__toolbar-btn--rotate"
+              onClick={onRotateCw}
+              title="Rotate clockwise"
+            >
+              &#8635;
+            </button>
+          )}
           <button
             className="reference-image-overlay__toolbar-btn reference-image-overlay__toolbar-btn--remove"
             onClick={onRemove}

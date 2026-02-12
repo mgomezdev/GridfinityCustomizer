@@ -47,6 +47,7 @@ function App() {
     updateImagePosition,
     updateImageScale,
     updateImageOpacity,
+    updateImageRotation,
     toggleImageLock,
   } = useReferenceImages();
 
@@ -156,9 +157,15 @@ function App() {
 
   const bomItems = useBillOfMaterials(placedItems, libraryItems);
 
-  const handleRotateSelected = useCallback(() => {
+  const handleRotateSelectedCw = useCallback(() => {
     if (selectedItemId) {
-      rotateItem(selectedItemId);
+      rotateItem(selectedItemId, 'cw');
+    }
+  }, [selectedItemId, rotateItem]);
+
+  const handleRotateSelectedCcw = useCallback(() => {
+    if (selectedItemId) {
+      rotateItem(selectedItemId, 'ccw');
     }
   }, [selectedItemId, rotateItem]);
 
@@ -212,11 +219,22 @@ function App() {
         }
       }
 
-      // R: Rotate selected item
-      if ((event.key === 'r' || event.key === 'R') && selectedItemId) {
-        event.preventDefault();
-        handleRotateSelected();
-        return;
+      // R: Rotate selected item CW, Shift+R: CCW
+      if (event.key === 'r' || event.key === 'R') {
+        if (selectedImageId) {
+          event.preventDefault();
+          updateImageRotation(selectedImageId, event.shiftKey ? 'ccw' : 'cw');
+          return;
+        }
+        if (selectedItemId) {
+          event.preventDefault();
+          if (event.shiftKey) {
+            handleRotateSelectedCcw();
+          } else {
+            handleRotateSelectedCw();
+          }
+          return;
+        }
       }
 
       // Escape: Clear both selections
@@ -338,7 +356,8 @@ function App() {
 
           {selectedItemId && (
             <ItemControls
-              onRotate={handleRotateSelected}
+              onRotateCw={handleRotateSelectedCw}
+              onRotateCcw={handleRotateSelectedCcw}
               onDelete={handleDeleteSelected}
             />
           )}
@@ -363,6 +382,8 @@ function App() {
             onSelectItem={(id) => { selectItem(id); if (id) setSelectedImageId(null); }}
             getItemById={getItemById}
             onDeleteItem={deleteItem}
+            onRotateItemCw={(id) => rotateItem(id, 'cw')}
+            onRotateItemCcw={(id) => rotateItem(id, 'ccw')}
             referenceImages={images}
             selectedImageId={selectedImageId}
             onImagePositionChange={updateImagePosition}
@@ -371,6 +392,8 @@ function App() {
             onImageOpacityChange={updateImageOpacity}
             onImageRemove={handleRemoveImage}
             onImageToggleLock={toggleImageLock}
+            onImageRotateCw={(id) => updateImageRotation(id, 'cw')}
+            onImageRotateCcw={(id) => updateImageRotation(id, 'ccw')}
           />
         </section>
 

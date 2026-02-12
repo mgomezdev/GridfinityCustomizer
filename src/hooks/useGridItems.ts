@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import type { PlacedItem, PlacedItemWithValidity, DragData, LibraryItem } from '../types/gridfinity';
+import type { PlacedItem, PlacedItemWithValidity, DragData, LibraryItem, Rotation } from '../types/gridfinity';
 
 function hasCollision(
   items: PlacedItem[],
@@ -32,6 +32,13 @@ function isOutOfBounds(
   gridY: number
 ): boolean {
   return x < 0 || y < 0 || x + width > gridX || y + height > gridY;
+}
+
+const ROTATION_CW: Record<Rotation, Rotation> = { 0: 90, 90: 180, 180: 270, 270: 0 };
+const ROTATION_CCW: Record<Rotation, Rotation> = { 0: 270, 90: 0, 180: 90, 270: 180 };
+
+function isSideways(rotation: Rotation): boolean {
+  return rotation === 90 || rotation === 270;
 }
 
 let instanceCounter = 0;
@@ -67,7 +74,7 @@ export function useGridItems(
       y,
       width: libraryItem.widthUnits,
       height: libraryItem.heightUnits,
-      isRotated: false,
+      rotation: 0,
     };
 
     setPlacedItems(prev => [...prev, newItem]);
@@ -82,15 +89,21 @@ export function useGridItems(
     ));
   }, []);
 
-  const rotateItem = useCallback((instanceId: string) => {
+  const rotateItem = useCallback((instanceId: string, direction: 'cw' | 'ccw' = 'cw') => {
     setPlacedItems(prev => prev.map(item => {
       if (item.instanceId !== instanceId) return item;
 
+      const newRotation = direction === 'cw'
+        ? ROTATION_CW[item.rotation]
+        : ROTATION_CCW[item.rotation];
+
+      const shouldSwap = isSideways(item.rotation) !== isSideways(newRotation);
+
       return {
         ...item,
-        width: item.height,
-        height: item.width,
-        isRotated: !item.isRotated,
+        width: shouldSwap ? item.height : item.width,
+        height: shouldSwap ? item.width : item.height,
+        rotation: newRotation,
       };
     }));
   }, []);
