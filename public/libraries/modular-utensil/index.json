@@ -1,0 +1,86 @@
+{
+  "version": "1.0.0",
+  "items": [
+    {
+      "id": "1x1-blank",
+      "name": "1x1 -blank",
+      "widthUnits": 1,
+      "heightUnits": 1,
+      "color": "#10B981",
+      "categories": ["modular", "utensil"],
+      "imageUrl": "-blank 1x1.png"
+    },
+    {
+      "id": "1x1-endcap",
+      "name": "1x1 -endcap",
+      "widthUnits": 1,
+      "heightUnits": 1,
+      "color": "#10B981",
+      "categories": ["modular", "utensil"],
+      "imageUrl": "-endcap 1x1.png"
+    },
+    {
+      "id": "1x2-endcap",
+      "name": "1x2 -endcap",
+      "widthUnits": 1,
+      "heightUnits": 2,
+      "color": "#10B981",
+      "categories": ["modular", "utensil"],
+      "imageUrl": "-endcap 1x2.png"
+    },
+    {
+      "id": "1x3-endcap",
+      "name": "1x3 -endcap",
+      "widthUnits": 1,
+      "heightUnits": 3,
+      "color": "#10B981",
+      "categories": ["modular", "utensil"],
+      "imageUrl": "-endcap 1x3.png"
+    },
+    {
+      "id": "2x1-blank",
+      "name": "2x1 -blank",
+      "widthUnits": 2,
+      "heightUnits": 1,
+      "color": "#10B981",
+      "categories": ["modular", "utensil"],
+      "imageUrl": "-blank 2x1.png"
+    },
+    {
+      "id": "2x2-blank",
+      "name": "2x2 -blank",
+      "widthUnits": 2,
+      "heightUnits": 2,
+      "color": "#10B981",
+      "categories": ["modular", "utensil"],
+      "imageUrl": "-blank 2x2.png"
+    },
+    {
+      "id": "2x2-endcap",
+      "name": "2x2 -endcap",
+      "widthUnits": 2,
+      "heightUnits": 2,
+      "color": "#10B981",
+      "categories": ["modular", "utensil"],
+      "imageUrl": "-endcap 2x2.png"
+    },
+    {
+      "id": "2x3-blank",
+      "name": "2x3 -blank",
+      "widthUnits": 2,
+      "heightUnits": 3,
+      "color": "#10B981",
+      "categories": ["modular", "utensil"],
+      "imageUrl": "-blank 2x3.png"
+    },
+    {
+      "id": "3x2-endcap",
+      "name": "3x2 -endcap",
+      "widthUnits": 3,
+      "heightUnits": 2,
+      "color": "#10B981",
+      "categories": ["modular", "utensil"],
+      "imageUrl": "-endcap 3x2.png"
+    }
+  ]
+}

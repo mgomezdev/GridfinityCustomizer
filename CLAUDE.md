@@ -98,13 +98,8 @@ e2e/
 - Use page objects for E2E tests
 - Mock external dependencies, not internal modules
 
-## Git Workflow (Gitflow)
-
-- No direct commits to `develop` or `main`
-- Use named branches: `feature/*`, `bug/*`, `chore/*`, etc.
-- Feature branches merge into `develop` (squash merge)
-- Only `develop` merges into `main`
-- No cherry-picking
+## Git Workflow
+Always follow gitflow conventions: never commit directly to main. Create feature branches, open PRs, and merge via PR. When committing, verify all changed files are staged before committing (run `git status` to check for unstaged changes). No cherry-picking
 
 ```bash
 # Create feature branch
@@ -121,6 +116,11 @@ feat(grid): add zoom controls
 fix(library): resolve drag-drop on touch devices
 refactor(hooks): simplify state management
 ```
+## Testing
+After any code change, run the full test suite before committing. When fixing test failures, avoid hardcoded mock data counts — use dynamic assertions where possible. After fixing tests, run them again to confirm no regressions.
+
+## Bug Fixes & Debugging
+When debugging rendering or visual issues, verify assumptions about the underlying data/model before implementing fixes. Ask clarifying questions about geometry, structure, or expected output rather than assuming. Don't dismiss differences as 'cosmetic' without verifying.
 
 ## Before Committing
 

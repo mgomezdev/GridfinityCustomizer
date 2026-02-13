@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "libraries": [
+    {
+      "id": "default",
+      "name": "Default Library",
+      "path": "/libraries/default/index.json"
+    },
+    {
+      "id": "simple-utensils",
+      "name": "Simple Utensils",
+      "path": "/libraries/simple-utensils/index.json"
+    },
+    {
+      "id": "modular-utensil",
+      "name": "Modular Utensil",
+      "path": "/libraries/modular-utensil/index.json"
+    }
+  ]
+}

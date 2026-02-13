@@ -107,11 +107,25 @@ export function useReferenceImages(): UseReferenceImagesReturn {
         rotation: 0,
       };
 
+      // Capture storage errors to re-throw asynchronously
+      let storageError: Error | null = null;
+
       setImages(prev => {
-        const updatedImages = [...prev, newImage];
-        saveImagesToStorage(updatedImages);
-        return updatedImages;
+        try {
+          const updatedImages = [...prev, newImage];
+          saveImagesToStorage(updatedImages);
+          return updatedImages;
+        } catch (err) {
+          // Capture error but don't update state on storage failure
+          storageError = err instanceof Error ? err : new Error('Storage failed');
+          return prev;
+        }
       });
+
+      // Re-throw after state setter completes to make error async
+      if (storageError) {
+        throw storageError;
+      }
     } catch (err) {
       console.error('Failed to add image', err);
       throw err;

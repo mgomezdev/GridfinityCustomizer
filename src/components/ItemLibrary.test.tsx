@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ItemLibrary } from './ItemLibrary';
-import type { LibraryItem, Category } from '../types/gridfinity';
+import type { LibraryItem, Category, Library } from '../types/gridfinity';
 
 const mockCategories: Category[] = [
   { id: 'bin', name: 'Bins', color: '#646cff', order: 1 },
@@ -16,19 +16,22 @@ const mockLibraryItems: LibraryItem[] = [
   { id: 'organizer-1x3', name: '1x3 Organizer', widthUnits: 1, heightUnits: 3, color: '#f59e0b', categories: ['organizer'] },
 ];
 
-const mockWriteOps = {
-  onAddItem: vi.fn(),
-  onUpdateItem: vi.fn(),
-  onDeleteItem: vi.fn(),
-  onResetToDefaults: vi.fn(),
+const mockLibraries: Library[] = [
+  {
+    id: 'default',
+    name: 'Default Library',
+    path: '/libraries/default/index.json',
+    isEnabled: true,
+    itemCount: 40,
+  },
+];
+
+const mockProps = {
   onRefreshLibrary: vi.fn().mockResolvedValue(undefined),
-  onExportLibrary: vi.fn(),
-  onAddCategory: vi.fn(),
-  onUpdateCategory: vi.fn(),
-  onDeleteCategory: vi.fn(),
-  onResetCategories: vi.fn(),
-  onUpdateItemCategories: vi.fn(),
-  getCategoryById: (id: string) => mockCategories.find(c => c.id === id),
+  availableLibraries: mockLibraries,
+  selectedLibraryIds: ['default'],
+  onToggleLibrary: vi.fn(),
+  isLibrariesLoading: false,
 };
 
 describe('ItemLibrary', () => {
@@ -40,7 +43,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should render all categories', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     expect(screen.getByText(/Bins/)).toBeInTheDocument();
     expect(screen.getByText(/Dividers/)).toBeInTheDocument();
@@ -48,7 +51,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should have all categories expanded by default', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const categoryItems = document.querySelectorAll('.category-items');
     categoryItems.forEach(items => {
@@ -58,7 +61,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should have all chevrons pointing down (expanded) by default', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const chevrons = document.querySelectorAll('.category-chevron');
     chevrons.forEach(chevron => {
@@ -68,7 +71,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should collapse category when clicked', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const binsTitle = screen.getByText(/Bins/);
     fireEvent.click(binsTitle);
@@ -79,7 +82,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should expand category when clicked again', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const binsTitle = screen.getByText(/Bins/);
 
@@ -95,7 +98,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should rotate chevron when category is collapsed', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const binsTitle = screen.getByText(/Bins/);
     const chevron = binsTitle.querySelector('.category-chevron');
@@ -109,7 +112,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should handle keyboard interaction (Enter key)', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const binsTitle = screen.getByText(/Bins/);
     fireEvent.keyDown(binsTitle, { key: 'Enter' });
@@ -119,7 +122,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should handle keyboard interaction (Space key)', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const binsTitle = screen.getByText(/Bins/);
     fireEvent.keyDown(binsTitle, { key: ' ' });
@@ -129,7 +132,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should collapse categories independently', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const binsTitle = screen.getByText(/Bins/);
     const dividersTitle = screen.getByText(/Dividers/);
@@ -144,7 +147,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should save collapsed state to localStorage', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const binsTitle = screen.getByText(/Bins/);
     fireEvent.click(binsTitle);
@@ -158,7 +161,7 @@ describe('ItemLibrary', () => {
     // Pre-populate localStorage
     localStorage.setItem('gridfinity-collapsed-categories', JSON.stringify(['divider']));
 
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const dividersTitle = screen.getByText(/Dividers/);
     const dividersItems = dividersTitle.nextElementSibling;
@@ -175,7 +178,7 @@ describe('ItemLibrary', () => {
       throw new Error('Storage error');
     });
 
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const binsTitle = screen.getByText(/Bins/);
     fireEvent.click(binsTitle);
@@ -191,7 +194,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should have correct accessibility attributes', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const binsTitle = screen.getByText(/Bins/);
 
@@ -200,7 +203,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should maintain state across multiple toggles', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const binsTitle = screen.getByText(/Bins/);
     const dividersTitle = screen.getByText(/Dividers/);
@@ -226,13 +229,13 @@ describe('ItemLibrary', () => {
   });
 
   it('should render search input', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
     const searchInput = screen.getByPlaceholderText('Search items...');
     expect(searchInput).toBeInTheDocument();
   });
 
   it('should filter items by search query', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
     const searchInput = screen.getByPlaceholderText('Search items...');
 
     fireEvent.change(searchInput, { target: { value: '2x2' } });
@@ -242,7 +245,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should show clear button when search has text', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
     const searchInput = screen.getByPlaceholderText('Search items...');
 
     expect(screen.queryByLabelText('Clear search')).not.toBeInTheDocument();
@@ -253,7 +256,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should clear search when clear button clicked', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
     const searchInput = screen.getByPlaceholderText('Search items...') as HTMLInputElement;
 
     fireEvent.change(searchInput, { target: { value: 'test' } });
@@ -266,7 +269,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should show no results message when search has no matches', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
     const searchInput = screen.getByPlaceholderText('Search items...');
 
     fireEvent.change(searchInput, { target: { value: 'nonexistent' } });
@@ -275,7 +278,7 @@ describe('ItemLibrary', () => {
   });
 
   it('should hide empty categories when filtering', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
     const searchInput = screen.getByPlaceholderText('Search items...');
 
     // Search for divider only
@@ -287,30 +290,14 @@ describe('ItemLibrary', () => {
   });
 
   it('should show item count in category headers', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     expect(screen.getByText(/Bins \(2\)/)).toBeInTheDocument();
     expect(screen.getByText(/Dividers \(1\)/)).toBeInTheDocument();
   });
 
-  it('should render export library button', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
-
-    const exportButton = screen.getByText('Export Library');
-    expect(exportButton).toBeInTheDocument();
-  });
-
-  it('should call onExportLibrary when export button is clicked', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
-
-    const exportButton = screen.getByText('Export Library');
-    fireEvent.click(exportButton);
-
-    expect(mockWriteOps.onExportLibrary).toHaveBeenCalledTimes(1);
-  });
-
   it('should render refresh library button', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const refreshButton = screen.getByText('Refresh Library');
     expect(refreshButton).toBeInTheDocument();
@@ -319,13 +306,13 @@ describe('ItemLibrary', () => {
   it('should call onRefreshLibrary when refresh button is clicked and confirmed', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
 
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const refreshButton = screen.getByText('Refresh Library');
     fireEvent.click(refreshButton);
 
-    expect(window.confirm).toHaveBeenCalledWith('Refresh library and categories from file? All custom changes will be lost.');
-    expect(mockWriteOps.onRefreshLibrary).toHaveBeenCalledTimes(1);
+    expect(window.confirm).toHaveBeenCalledWith('Refresh all libraries from files?');
+    expect(mockProps.onRefreshLibrary).toHaveBeenCalledTimes(1);
 
     vi.restoreAllMocks();
   });
@@ -333,13 +320,13 @@ describe('ItemLibrary', () => {
   it('should not call onRefreshLibrary when refresh is cancelled', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(false);
 
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const refreshButton = screen.getByText('Refresh Library');
     fireEvent.click(refreshButton);
 
     expect(window.confirm).toHaveBeenCalled();
-    expect(mockWriteOps.onRefreshLibrary).not.toHaveBeenCalled();
+    expect(mockProps.onRefreshLibrary).not.toHaveBeenCalled();
 
     vi.restoreAllMocks();
   });
@@ -357,7 +344,7 @@ describe('ItemLibrary', () => {
 
       const itemsWithMulti = [...mockLibraryItems, multiCategoryItem];
 
-      render(<ItemLibrary items={itemsWithMulti} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+      render(<ItemLibrary items={itemsWithMulti} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
       expect(screen.getByText(/Bins \(3\)/)).toBeInTheDocument();
       expect(screen.getByText(/Organizers \(2\)/)).toBeInTheDocument();
@@ -370,7 +357,7 @@ describe('ItemLibrary', () => {
       const emptyCategory: Category = { id: 'empty', name: 'Empty Category', color: '#999999', order: 4 };
       const categoriesWithEmpty = [...mockCategories, emptyCategory];
 
-      render(<ItemLibrary items={mockLibraryItems} categories={categoriesWithEmpty} isLoading={false} error={null} {...mockWriteOps} />);
+      render(<ItemLibrary items={mockLibraryItems} categories={categoriesWithEmpty} isLoading={false} error={null} {...mockProps} />);
 
       expect(screen.queryByText(/Empty Category/)).not.toBeInTheDocument();
     });
@@ -387,7 +374,7 @@ describe('ItemLibrary', () => {
 
       const itemsWithMulti = [...mockLibraryItems, multiCategoryItem];
 
-      render(<ItemLibrary items={itemsWithMulti} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+      render(<ItemLibrary items={itemsWithMulti} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
       const searchInput = screen.getByPlaceholderText('Search items...');
       fireEvent.change(searchInput, { target: { value: 'Combo' } });
@@ -403,7 +390,7 @@ describe('ItemLibrary', () => {
 
   describe('Dimension Filtering', () => {
     it('should hide filters by default', () => {
-      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
       // Toggle button should be present
       expect(screen.getByText(/Filter by Size/)).toBeInTheDocument();
@@ -413,7 +400,7 @@ describe('ItemLibrary', () => {
     });
 
     it('should show filters when toggle button is clicked', () => {
-      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
       const toggleButton = screen.getByText(/Filter by Size/);
       fireEvent.click(toggleButton);
@@ -423,7 +410,7 @@ describe('ItemLibrary', () => {
     });
 
     it('should hide filters when toggle button is clicked again', () => {
-      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
       const toggleButton = screen.getByText(/Filter by Size/);
 
@@ -437,7 +424,7 @@ describe('ItemLibrary', () => {
     });
 
     it('should show active indicator when filters are applied', () => {
-      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
       const toggleButton = screen.getByText(/Filter by Size/);
 
@@ -454,7 +441,7 @@ describe('ItemLibrary', () => {
     });
 
     it('should show all items when no filters are selected', () => {
-      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
       expect(screen.getByText('1x1 Bin')).toBeInTheDocument();
       expect(screen.getByText('2x2 Bin')).toBeInTheDocument();
@@ -462,7 +449,7 @@ describe('ItemLibrary', () => {
     });
 
     it('should filter items by width when width filter is selected', () => {
-      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
       // Show filters
       const toggleButton = screen.getByText(/Filter by Size/);
@@ -480,7 +467,7 @@ describe('ItemLibrary', () => {
     });
 
     it('should filter items by height when height filter is selected', () => {
-      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
       // Show filters
       const toggleButton = screen.getByText(/Filter by Size/);
@@ -500,7 +487,7 @@ describe('ItemLibrary', () => {
     });
 
     it('should combine width and height filters (AND logic)', () => {
-      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
       // Show filters
       const toggleButton = screen.getByText(/Filter by Size/);
@@ -520,7 +507,7 @@ describe('ItemLibrary', () => {
     });
 
     it('should allow multiple width selections (OR logic within dimension)', () => {
-      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
       // Show filters
       const toggleButton = screen.getByText(/Filter by Size/);
@@ -540,7 +527,7 @@ describe('ItemLibrary', () => {
     });
 
     it('should show "Clear Filters" button when filters are active', () => {
-      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
       // Show filters
       const toggleButton = screen.getByText(/Filter by Size/);
@@ -558,7 +545,7 @@ describe('ItemLibrary', () => {
     });
 
     it('should clear all filters when "Clear Filters" is clicked', () => {
-      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
       // Show filters
       const toggleButton = screen.getByText(/Filter by Size/);
@@ -585,7 +572,7 @@ describe('ItemLibrary', () => {
     });
 
     it('should combine text search with dimension filters', () => {
-      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
       // Enter search query
       const searchInput = screen.getByPlaceholderText('Search items...');
@@ -606,7 +593,7 @@ describe('ItemLibrary', () => {
     });
 
     it('should show no results message when filters have no matches', () => {
-      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockWriteOps} />);
+      render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
       // Show filters
       const toggleButton = screen.getByText(/Filter by Size/);

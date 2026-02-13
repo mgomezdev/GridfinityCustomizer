@@ -98,3 +98,26 @@ export interface ReferenceImage {
 }
 
 export type InteractionMode = 'items' | 'images';
+
+// Multi-library system types
+export interface Library {
+  id: string;
+  name: string;
+  path: string;
+  isEnabled: boolean;
+  itemCount?: number;
+}
+
+export interface LibraryManifest {
+  version: string;
+  libraries: {
+    id: string;
+    name: string;
+    path: string;
+  }[];
+}
+
+export interface LibraryIndex {
+  version: string;
+  items: LibraryItem[];
+}
