@@ -693,4 +693,386 @@ describe('useGridItems', () => {
       expect(result.current.placedItems[0].rotation).toBe(0);
     });
   });
+
+  describe('duplicateItem', () => {
+    it('should duplicate selected item with new instanceId', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+      });
+
+      const originalId = result.current.placedItems[0].instanceId;
+
+      act(() => {
+        result.current.duplicateItem();
+      });
+
+      expect(result.current.placedItems).toHaveLength(2);
+      expect(result.current.placedItems[1].instanceId).not.toBe(originalId);
+    });
+
+    it('should preserve rotation state on duplicate', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x2', 0, 0);
+      });
+
+      const instanceId = result.current.placedItems[0].instanceId;
+
+      act(() => {
+        result.current.rotateItem(instanceId, 'cw');
+      });
+
+      expect(result.current.placedItems[0].rotation).toBe(90);
+
+      act(() => {
+        result.current.duplicateItem();
+      });
+
+      expect(result.current.placedItems).toHaveLength(2);
+      expect(result.current.placedItems[1].rotation).toBe(90);
+    });
+
+    it('should offset duplicate by (+1, +1) from original', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+      });
+
+      act(() => {
+        result.current.duplicateItem();
+      });
+
+      expect(result.current.placedItems[1]).toMatchObject({
+        x: 1,
+        y: 1,
+      });
+    });
+
+    it('should not duplicate when nothing is selected', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+        result.current.selectItem(null);
+      });
+
+      act(() => {
+        result.current.duplicateItem();
+      });
+
+      expect(result.current.placedItems).toHaveLength(1);
+    });
+
+    it('should select the newly duplicated item', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+      });
+
+      act(() => {
+        result.current.duplicateItem();
+      });
+
+      const duplicatedId = result.current.placedItems[1].instanceId;
+      expect(result.current.selectedItemId).toBe(duplicatedId);
+    });
+
+    it('should handle duplicate when item is at grid edge', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 3, 3);
+      });
+
+      act(() => {
+        result.current.duplicateItem();
+      });
+
+      // Should try to find a valid nearby position
+      expect(result.current.placedItems).toHaveLength(2);
+    });
+
+    it('should not duplicate if no valid nearby position exists', () => {
+      const { result } = renderHook(() => useGridItems(2, 2, mockGetItemById));
+
+      // Fill entire grid
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+        result.current.addItem('bin-1x1', 1, 0);
+        result.current.addItem('bin-1x1', 0, 1);
+        result.current.addItem('bin-1x1', 1, 1);
+      });
+
+      const firstId = result.current.placedItems[0].instanceId;
+
+      act(() => {
+        result.current.selectItem(firstId);
+        result.current.duplicateItem();
+      });
+
+      // Grid is full, cannot duplicate
+      expect(result.current.placedItems).toHaveLength(4);
+    });
+
+    it('should maintain original item unchanged', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 1, 1);
+      });
+
+      const originalItem = { ...result.current.placedItems[0] };
+
+      act(() => {
+        result.current.duplicateItem();
+      });
+
+      expect(result.current.placedItems[0]).toMatchObject({
+        instanceId: originalItem.instanceId,
+        itemId: originalItem.itemId,
+        x: originalItem.x,
+        y: originalItem.y,
+        rotation: originalItem.rotation,
+      });
+    });
+
+    it('should preserve the itemId reference to the same library item', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-2x2', 0, 0);
+      });
+
+      act(() => {
+        result.current.duplicateItem();
+      });
+
+      expect(result.current.placedItems[0].itemId).toBe('bin-2x2');
+      expect(result.current.placedItems[1].itemId).toBe('bin-2x2');
+      expect(result.current.placedItems[0].itemId).toBe(result.current.placedItems[1].itemId);
+    });
+  });
+
+  describe('copyItems', () => {
+    it('should copy selected item to clipboard', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+      });
+
+      act(() => {
+        result.current.copyItems();
+      });
+
+      expect(result.current.clipboard).toHaveLength(1);
+      expect(result.current.clipboard[0]).toMatchObject({
+        itemId: 'bin-1x1',
+        x: 0,
+        y: 0,
+      });
+    });
+
+    it('should return clipboard contents', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 1, 1);
+      });
+
+      act(() => {
+        result.current.copyItems();
+      });
+
+      const clipboard = result.current.clipboard;
+      expect(clipboard).toBeDefined();
+      expect(clipboard).toHaveLength(1);
+    });
+
+    it('should not modify placed items when copying', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+      });
+
+      const originalLength = result.current.placedItems.length;
+
+      act(() => {
+        result.current.copyItems();
+      });
+
+      expect(result.current.placedItems).toHaveLength(originalLength);
+    });
+
+    it('should handle copy when nothing is selected', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+        result.current.selectItem(null);
+      });
+
+      act(() => {
+        result.current.copyItems();
+      });
+
+      expect(result.current.clipboard).toHaveLength(0);
+    });
+
+    it('should overwrite previous clipboard on new copy', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+      });
+
+      act(() => {
+        result.current.copyItems();
+      });
+
+      expect(result.current.clipboard[0].itemId).toBe('bin-1x1');
+
+      act(() => {
+        result.current.addItem('bin-2x2', 1, 1);
+      });
+
+      const newItemId = result.current.placedItems[1].instanceId;
+
+      act(() => {
+        result.current.selectItem(newItemId);
+        result.current.copyItems();
+      });
+
+      expect(result.current.clipboard).toHaveLength(1);
+      expect(result.current.clipboard[0].itemId).toBe('bin-2x2');
+    });
+  });
+
+  describe('pasteItems', () => {
+    it('should paste clipboard item at grid center', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+        result.current.copyItems();
+      });
+
+      act(() => {
+        result.current.pasteItems();
+      });
+
+      expect(result.current.placedItems).toHaveLength(2);
+      // Grid center for 4x4 is (2, 2)
+      expect(result.current.placedItems[1]).toMatchObject({
+        x: 2,
+        y: 2,
+      });
+    });
+
+    it('should create new instanceId for pasted item', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+      });
+
+      const originalId = result.current.placedItems[0].instanceId;
+
+      act(() => {
+        result.current.copyItems();
+        result.current.pasteItems();
+      });
+
+      expect(result.current.placedItems[1].instanceId).not.toBe(originalId);
+    });
+
+    it('should preserve rotation from clipboard', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x2', 0, 0);
+      });
+
+      const instanceId = result.current.placedItems[0].instanceId;
+
+      act(() => {
+        result.current.rotateItem(instanceId, 'cw');
+        result.current.copyItems();
+        result.current.pasteItems();
+      });
+
+      expect(result.current.placedItems[1].rotation).toBe(90);
+    });
+
+    it('should offset paste if position is occupied', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+        result.current.copyItems();
+        // Place item at grid center
+        result.current.addItem('bin-1x1', 2, 2);
+      });
+
+      act(() => {
+        result.current.pasteItems();
+      });
+
+      expect(result.current.placedItems).toHaveLength(3);
+      // Should paste at offset position, not at grid center (2,2)
+      expect(result.current.placedItems[2]).not.toMatchObject({
+        x: 2,
+        y: 2,
+      });
+    });
+
+    it('should not paste when clipboard is empty', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.pasteItems();
+      });
+
+      expect(result.current.placedItems).toHaveLength(0);
+    });
+
+    it('should select the pasted item', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+        result.current.copyItems();
+        result.current.pasteItems();
+      });
+
+      const pastedId = result.current.placedItems[1].instanceId;
+      expect(result.current.selectedItemId).toBe(pastedId);
+    });
+
+    it('should handle pasting item that would be out of bounds', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-2x2', 0, 0);
+        result.current.copyItems();
+      });
+
+      act(() => {
+        result.current.pasteItems();
+      });
+
+      // Grid center is (2,2), but 2x2 item at (2,2) would extend to (4,4) which is out of bounds
+      // Should try to fit within grid
+      expect(result.current.placedItems).toHaveLength(2);
+      const pastedItem = result.current.placedItems[1];
+      expect(pastedItem.x + pastedItem.width).toBeLessThanOrEqual(4);
+      expect(pastedItem.y + pastedItem.height).toBeLessThanOrEqual(4);
+    });
+  });
 });
