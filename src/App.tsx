@@ -125,6 +125,9 @@ function App() {
     clearAll,
     selectItem,
     handleDrop,
+    duplicateItem,
+    copyItems,
+    pasteItems,
   } = useGridItems(gridResult.gridX, gridResult.gridY, getItemById);
 
   const bomItems = useBillOfMaterials(placedItems, libraryItems);
@@ -232,6 +235,27 @@ function App() {
           }
           return;
         }
+      }
+
+      // Ctrl+D: Duplicate selected item
+      if ((event.key === 'd' || event.key === 'D') && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        duplicateItem();
+        return;
+      }
+
+      // Ctrl+C: Copy selected item
+      if ((event.key === 'c' || event.key === 'C') && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        copyItems();
+        return;
+      }
+
+      // Ctrl+V: Paste from clipboard
+      if ((event.key === 'v' || event.key === 'V') && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        pasteItems();
+        return;
       }
 
       // Escape: Clear both selections
