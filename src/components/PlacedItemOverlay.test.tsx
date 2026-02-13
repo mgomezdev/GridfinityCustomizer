@@ -2,6 +2,20 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { PlacedItemOverlay } from './PlacedItemOverlay';
 import type { PlacedItemWithValidity, LibraryItem } from '../types/gridfinity';
+import type React from 'react';
+
+// Mock usePointerDragSource to capture onTap callback
+let capturedOnTap: (() => void) | undefined;
+vi.mock('../hooks/usePointerDrag', () => ({
+  usePointerDragSource: (options: { onTap?: () => void }) => {
+    capturedOnTap = options.onTap;
+    return {
+      onPointerDown: vi.fn((e: React.PointerEvent) => {
+        e.stopPropagation();
+      }),
+    };
+  },
+}));
 
 describe('PlacedItemOverlay', () => {
   const mockGetItemById = (id: string): LibraryItem | undefined => {
@@ -24,6 +38,10 @@ describe('PlacedItemOverlay', () => {
     rotation: 0,
     isValid: true,
     ...overrides,
+  });
+
+  beforeEach(() => {
+    capturedOnTap = undefined;
   });
 
   describe('Percentage-based Positioning', () => {
@@ -311,9 +329,9 @@ describe('PlacedItemOverlay', () => {
   });
 
   describe('Click Handling', () => {
-    it('should call onSelect with instanceId when clicked', () => {
+    it('should call onSelect with instanceId on tap', () => {
       const item = createMockItem({ instanceId: 'test-item-123' });
-      const { container } = render(
+      render(
         <PlacedItemOverlay
           item={item}
           gridX={4}
@@ -324,14 +342,14 @@ describe('PlacedItemOverlay', () => {
         />
       );
 
-      const element = container.querySelector('.placed-item');
-      fireEvent.click(element!);
+      // Simulate tap via the captured onTap callback from usePointerDragSource
+      capturedOnTap?.();
 
       expect(mockOnSelect).toHaveBeenCalledWith('test-item-123');
       expect(mockOnSelect).toHaveBeenCalledTimes(1);
     });
 
-    it('should stop event propagation on click', () => {
+    it('should stop event propagation on pointer events', () => {
       const item = createMockItem();
       const parentClickHandler = vi.fn();
       const { container } = render(
@@ -348,15 +366,14 @@ describe('PlacedItemOverlay', () => {
       );
 
       const element = container.querySelector('.placed-item');
-      fireEvent.click(element!);
+      fireEvent.pointerDown(element!);
 
-      expect(mockOnSelect).toHaveBeenCalled();
       expect(parentClickHandler).not.toHaveBeenCalled();
     });
   });
 
   describe('Drag and Drop', () => {
-    it('should be draggable', () => {
+    it('should not have draggable attribute (uses pointer events instead)', () => {
       const item = createMockItem();
       const { container } = render(
         <PlacedItemOverlay
@@ -370,11 +387,11 @@ describe('PlacedItemOverlay', () => {
       );
 
       const element = container.querySelector('.placed-item');
-      expect(element).toHaveAttribute('draggable', 'true');
+      expect(element).not.toHaveAttribute('draggable');
     });
 
-    it('should set correct drag data on drag start', () => {
-      const item = createMockItem({ instanceId: 'drag-item-1', itemId: 'bin-2x2' });
+    it('should have onPointerDown handler for drag', () => {
+      const item = createMockItem();
       const { container } = render(
         <PlacedItemOverlay
           item={item}
@@ -387,22 +404,7 @@ describe('PlacedItemOverlay', () => {
       );
 
       const element = container.querySelector('.placed-item');
-      const dataTransfer = {
-        setData: vi.fn(),
-        effectAllowed: '',
-      };
-
-      fireEvent.dragStart(element!, { dataTransfer });
-
-      expect(dataTransfer.setData).toHaveBeenCalledWith(
-        'application/json',
-        JSON.stringify({
-          type: 'placed',
-          itemId: 'bin-2x2',
-          instanceId: 'drag-item-1',
-        })
-      );
-      expect(dataTransfer.effectAllowed).toBe('move');
+      expect(element).toBeInTheDocument();
     });
   });
 

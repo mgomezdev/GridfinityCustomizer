@@ -1963,4 +1963,92 @@
   font-family: monospace;
 }
 
+/* Touch/Mobile Support */
 
+/* Prevent browser gestures on draggable/interactive elements */
+.library-item-card,
+.placed-item,
+.reference-image-overlay--interactive {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.grid-container {
+  touch-action: none;
+}
+
+/* Visual feedback during pointer drag */
+.pointer-dragging {
+  opacity: 0.4;
+}
+
+/* Larger touch targets for coarse pointer devices (touch screens) */
+@media (pointer: coarse) {
+  .placed-item-delete-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+    top: -12px;
+    right: -12px;
+  }
+
+  .placed-item-rotate-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+    top: -12px;
+  }
+
+  .placed-item-rotate-btn--ccw {
+    left: -12px;
+  }
+
+  .placed-item-rotate-btn--cw {
+    left: 30px;
+  }
+
+  .reference-image-overlay__toolbar-btn {
+    min-width: 36px;
+    min-height: 36px;
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+
+  .reference-image-overlay__toolbar-slider::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+  }
+
+  .reference-image-overlay__toolbar-slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+  }
+
+  .library-item-card {
+    min-width: 72px;
+    padding: var(--space-md);
+  }
+}
+
+/* Disable hover effects on touch devices */
+@media (hover: none) {
+  .library-item-card:hover {
+    border-color: var(--border-primary);
+    background: var(--bg-secondary);
+    box-shadow: none;
+    transform: none;
+  }
+
+  .placed-item-delete-btn:hover,
+  .placed-item-rotate-btn:hover {
+    transform: none;
+    background: var(--bg-primary);
+    border-color: var(--border-secondary);
+    color: var(--text-tertiary);
+  }
+
+  .reference-image-overlay__toolbar-btn:hover {
+    background: transparent;
+  }
+}

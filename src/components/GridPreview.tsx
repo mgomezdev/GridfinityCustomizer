@@ -3,6 +3,7 @@ import type { PlacedItemWithValidity, DragData, ComputedSpacer, LibraryItem, Ref
 import { PlacedItemOverlay } from './PlacedItemOverlay';
 import { SpacerOverlay } from './SpacerOverlay';
 import { ReferenceImageOverlay } from './ReferenceImageOverlay';
+import { usePointerDropTarget } from '../hooks/usePointerDrag';
 
 interface GridPreviewProps {
   gridX: number;
@@ -53,6 +54,13 @@ export function GridPreview({
 }: GridPreviewProps) {
   const gridRef = useRef<HTMLDivElement>(null);
 
+  usePointerDropTarget({
+    gridRef,
+    gridX,
+    gridY,
+    onDrop,
+  });
+
   // Memoize cells array (must be before early return per Rules of Hooks)
   const cells = useMemo(() => {
     if (gridX <= 0 || gridY <= 0) return [];
@@ -92,35 +100,6 @@ export function GridPreview({
     );
   }
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    // Allow both copy (from library) and move (relocating placed items)
-    e.dataTransfer.dropEffect = e.dataTransfer.effectAllowed === 'move' ? 'move' : 'copy';
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-
-    const jsonData = e.dataTransfer.getData('application/json');
-    if (!jsonData) return;
-
-    const dragData: DragData = JSON.parse(jsonData);
-    const gridContainer = gridRef.current;
-    if (!gridContainer) return;
-
-    const rect = gridContainer.getBoundingClientRect();
-    const cellWidth = rect.width / gridX;
-    const cellHeight = rect.height / gridY;
-
-    const dropX = Math.floor((e.clientX - rect.left) / cellWidth);
-    const dropY = Math.floor((e.clientY - rect.top) / cellHeight);
-
-    const clampedX = Math.max(0, Math.min(dropX, gridX - 1));
-    const clampedY = Math.max(0, Math.min(dropY, gridY - 1));
-
-    onDrop(dragData, clampedX, clampedY);
-  };
-
   const handleGridClick = () => {
     onSelectItem(null);
   };
@@ -142,8 +121,6 @@ export function GridPreview({
             width: `${gridWidth}%`,
             height: `${gridHeight}%`,
           }}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
           onClick={handleGridClick}
         >
           {cells}
