@@ -8,6 +8,7 @@ import { useLibraries } from './hooks/useLibraries';
 import { useLibraryData } from './hooks/useLibraryData';
 import { useCategoryData } from './hooks/useCategoryData';
 import { useReferenceImages } from './hooks/useReferenceImages';
+import { useGridTransform } from './hooks/useGridTransform';
 import { useSubmitBOM } from './hooks/useSubmitBOM';
 import { migrateStoredItems, migrateLibrarySelection } from './utils/migration';
 import { DimensionInput } from './components/DimensionInput';
@@ -18,6 +19,7 @@ import { ItemControls } from './components/ItemControls';
 import { SpacerControls } from './components/SpacerControls';
 import { BillOfMaterials } from './components/BillOfMaterials';
 import { ReferenceImageUploader } from './components/ReferenceImageUploader';
+import { ZoomControls } from './components/ZoomControls';
 import './App.css';
 
 function App() {
@@ -161,6 +163,125 @@ function App() {
     libraryNames,
   );
 
+  // Zoom and pan
+  const {
+    transform,
+    zoomIn,
+    zoomOut,
+    resetZoom,
+    fitToScreen,
+    handleWheel,
+    setZoomLevel,
+    pan,
+  } = useGridTransform();
+
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const isPanningRef = useRef(false);
+  const panStartRef = useRef({ x: 0, y: 0 });
+  const isSpaceHeldRef = useRef(false);
+
+  // Wheel zoom handler
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const onWheel = (e: WheelEvent) => {
+      const rect = viewport.getBoundingClientRect();
+      handleWheel(e, rect);
+    };
+
+    viewport.addEventListener('wheel', onWheel, { passive: false });
+    return () => viewport.removeEventListener('wheel', onWheel);
+  }, [handleWheel]);
+
+  // Middle-mouse and space+drag pan
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const onMouseDown = (e: MouseEvent) => {
+      // Middle mouse button (button === 1) or space held
+      if (e.button === 1 || isSpaceHeldRef.current) {
+        e.preventDefault();
+        isPanningRef.current = true;
+        panStartRef.current = { x: e.clientX, y: e.clientY };
+        viewport.style.cursor = 'grabbing';
+      }
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isPanningRef.current) return;
+      const dx = (e.clientX - panStartRef.current.x) / transform.zoom;
+      const dy = (e.clientY - panStartRef.current.y) / transform.zoom;
+      pan(dx, dy);
+      panStartRef.current = { x: e.clientX, y: e.clientY };
+    };
+
+    const onMouseUp = () => {
+      if (isPanningRef.current) {
+        isPanningRef.current = false;
+        viewport.style.cursor = isSpaceHeldRef.current ? 'grab' : '';
+      }
+    };
+
+    viewport.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+
+    return () => {
+      viewport.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [pan, transform.zoom]);
+
+  // Pinch-to-zoom touch support
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    let lastPinchDist = 0;
+    let lastPinchZoom = 1;
+
+    const getDistance = (t1: Touch, t2: Touch) =>
+      Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        lastPinchDist = getDistance(e.touches[0], e.touches[1]);
+        lastPinchZoom = transform.zoom;
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const dist = getDistance(e.touches[0], e.touches[1]);
+        const scale = dist / lastPinchDist;
+        setZoomLevel(lastPinchZoom * scale);
+      }
+    };
+
+    viewport.addEventListener('touchstart', onTouchStart, { passive: false });
+    viewport.addEventListener('touchmove', onTouchMove, { passive: false });
+
+    return () => {
+      viewport.removeEventListener('touchstart', onTouchStart);
+      viewport.removeEventListener('touchmove', onTouchMove);
+    };
+  }, [transform.zoom, setZoomLevel]);
+
+  const handleFitToScreen = useCallback(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const rect = viewport.getBoundingClientRect();
+    // Content size: grid units * 42mm base cell size (approximate pixel mapping)
+    const contentWidth = gridResult.gridX * 42;
+    const contentHeight = gridResult.gridY * 42;
+    fitToScreen(rect.width, rect.height, contentWidth, contentHeight);
+  }, [fitToScreen, gridResult.gridX, gridResult.gridY]);
+
   const handleRotateSelectedCw = useCallback(() => {
     rotateSelected('cw');
   }, [rotateSelected]);
@@ -276,13 +397,54 @@ function App() {
         toggleImageLock(selectedImageId);
         return;
       }
+
+      // +/=: Zoom in, -: Zoom out, 0: Reset zoom
+      if (event.key === '+' || event.key === '=') {
+        event.preventDefault();
+        zoomIn();
+        return;
+      }
+      if (event.key === '-' || event.key === '_') {
+        event.preventDefault();
+        zoomOut();
+        return;
+      }
+      if (event.key === '0' && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        resetZoom();
+        return;
+      }
+
+      // Space: Track for pan mode
+      if (event.key === ' ') {
+        event.preventDefault();
+        isSpaceHeldRef.current = true;
+        if (viewportRef.current) {
+          viewportRef.current.style.cursor = 'grab';
+        }
+        return;
+      }
     };
   });
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => keyDownHandlerRef.current?.(e);
     document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === ' ') {
+        isSpaceHeldRef.current = false;
+        if (viewportRef.current) {
+          viewportRef.current.style.cursor = '';
+        }
+      }
+    };
+    document.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      document.removeEventListener('keydown', handler);
+      document.removeEventListener('keyup', handleKeyUp);
+    };
   }, []);
 
   return (
@@ -383,37 +545,60 @@ function App() {
         </section>
 
         <section className="preview">
-          <div className="reference-image-toolbar">
-            <ReferenceImageUploader onUpload={addImage} />
-            {placedItems.length > 0 && (
-              <button className="clear-all-button" onClick={handleClearAll}>
-                Clear All ({placedItems.length})
-              </button>
-            )}
+          <div className="preview-toolbar">
+            <div className="reference-image-toolbar">
+              <ReferenceImageUploader onUpload={addImage} />
+              {placedItems.length > 0 && (
+                <button className="clear-all-button" onClick={handleClearAll}>
+                  Clear All ({placedItems.length})
+                </button>
+              )}
+            </div>
+            <ZoomControls
+              zoom={transform.zoom}
+              onZoomIn={zoomIn}
+              onZoomOut={zoomOut}
+              onResetZoom={resetZoom}
+              onFitToScreen={handleFitToScreen}
+            />
           </div>
-          <GridPreview
-            gridX={gridResult.gridX}
-            gridY={gridResult.gridY}
-            placedItems={placedItems}
-            selectedItemIds={selectedItemIds}
-            spacers={spacers}
-            onDrop={handleDrop}
-            onSelectItem={(id, mods) => { selectItem(id, mods); if (id) setSelectedImageId(null); }}
-            getItemById={getItemById}
-            onDeleteItem={deleteItem}
-            onRotateItemCw={(id) => rotateItem(id, 'cw')}
-            onRotateItemCcw={(id) => rotateItem(id, 'ccw')}
-            referenceImages={images}
-            selectedImageId={selectedImageId}
-            onImagePositionChange={updateImagePosition}
-            onImageSelect={(id) => { setSelectedImageId(id); deselectAll(); }}
-            onImageScaleChange={updateImageScale}
-            onImageOpacityChange={updateImageOpacity}
-            onImageRemove={handleRemoveImage}
-            onImageToggleLock={toggleImageLock}
-            onImageRotateCw={(id) => updateImageRotation(id, 'cw')}
-            onImageRotateCcw={(id) => updateImageRotation(id, 'ccw')}
-          />
+          <div
+            ref={viewportRef}
+            className="preview-viewport"
+            data-testid="preview-viewport"
+          >
+            <div
+              className="preview-content"
+              style={{
+                transform: `scale(${transform.zoom}) translate(${transform.panX}px, ${transform.panY}px)`,
+                transformOrigin: '0 0',
+              }}
+            >
+              <GridPreview
+                gridX={gridResult.gridX}
+                gridY={gridResult.gridY}
+                placedItems={placedItems}
+                selectedItemIds={selectedItemIds}
+                spacers={spacers}
+                onDrop={handleDrop}
+                onSelectItem={(id, mods) => { selectItem(id, mods); if (id) setSelectedImageId(null); }}
+                getItemById={getItemById}
+                onDeleteItem={deleteItem}
+                onRotateItemCw={(id) => rotateItem(id, 'cw')}
+                onRotateItemCcw={(id) => rotateItem(id, 'ccw')}
+                referenceImages={images}
+                selectedImageId={selectedImageId}
+                onImagePositionChange={updateImagePosition}
+                onImageSelect={(id) => { setSelectedImageId(id); deselectAll(); }}
+                onImageScaleChange={updateImageScale}
+                onImageOpacityChange={updateImageOpacity}
+                onImageRemove={handleRemoveImage}
+                onImageToggleLock={toggleImageLock}
+                onImageRotateCw={(id) => updateImageRotation(id, 'cw')}
+                onImageRotateCcw={(id) => updateImageRotation(id, 'ccw')}
+              />
+            </div>
+          </div>
         </section>
 
         <section className="bom-sidebar">
