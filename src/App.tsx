@@ -8,6 +8,7 @@ import { useLibraries } from './hooks/useLibraries';
 import { useLibraryData } from './hooks/useLibraryData';
 import { useCategoryData } from './hooks/useCategoryData';
 import { useReferenceImages } from './hooks/useReferenceImages';
+import { useSubmitBOM } from './hooks/useSubmitBOM';
 import { migrateStoredItems, migrateLibrarySelection } from './utils/migration';
 import { DimensionInput } from './components/DimensionInput';
 import { GridPreview } from './components/GridPreview';
@@ -127,6 +128,31 @@ function App() {
   } = useGridItems(gridResult.gridX, gridResult.gridY, getItemById);
 
   const bomItems = useBillOfMaterials(placedItems, libraryItems);
+
+  const gridSummaryData = {
+    gridX: gridResult.gridX,
+    gridY: gridResult.gridY,
+    width,
+    depth,
+    unit: unitSystem,
+    imperialFormat,
+    gapWidth: gridResult.gapWidth,
+    gapDepth: gridResult.gapDepth,
+    spacerConfig,
+  };
+
+  const libraryNames = useMemo(
+    () => new Map(availableLibraries.map(lib => [lib.id, lib.name])),
+    [availableLibraries]
+  );
+
+  const { submitBOM, isSubmitting, error: submitError } = useSubmitBOM(
+    gridSummaryData,
+    placedItems,
+    bomItems,
+    getItemById,
+    libraryNames,
+  );
 
   const handleRotateSelectedCw = useCallback(() => {
     if (selectedItemId) {
@@ -362,7 +388,12 @@ function App() {
         </section>
 
         <section className="bom-sidebar">
-          <BillOfMaterials items={bomItems} />
+          <BillOfMaterials
+            items={bomItems}
+            onSubmitBOM={submitBOM}
+            isSubmitting={isSubmitting}
+            submitError={submitError}
+          />
         </section>
       </main>
     </div>

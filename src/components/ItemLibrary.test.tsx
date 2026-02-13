@@ -19,7 +19,7 @@ const mockLibraryItems: LibraryItem[] = [
 const mockLibraries: Library[] = [
   {
     id: 'default',
-    name: 'Default Library',
+    name: 'Simple Bins',
     path: '/libraries/default/index.json',
     isEnabled: true,
     itemCount: 40,
@@ -50,65 +50,65 @@ describe('ItemLibrary', () => {
     expect(screen.getByText(/Organizers/)).toBeInTheDocument();
   });
 
-  it('should have all categories expanded by default', () => {
+  it('should have all categories collapsed by default', () => {
     render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const categoryItems = document.querySelectorAll('.category-items');
     categoryItems.forEach(items => {
-      expect(items).toHaveClass('expanded');
-      expect(items).not.toHaveClass('collapsed');
+      expect(items).toHaveClass('collapsed');
+      expect(items).not.toHaveClass('expanded');
     });
   });
 
-  it('should have all chevrons pointing down (expanded) by default', () => {
+  it('should have all chevrons pointing right (collapsed) by default', () => {
     render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const chevrons = document.querySelectorAll('.category-chevron');
     chevrons.forEach(chevron => {
-      expect(chevron).toHaveClass('expanded');
-      expect(chevron).not.toHaveClass('collapsed');
+      expect(chevron).toHaveClass('collapsed');
+      expect(chevron).not.toHaveClass('expanded');
     });
   });
 
-  it('should collapse category when clicked', () => {
+  it('should expand category when clicked', () => {
     render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const binsTitle = screen.getByText(/Bins/);
     fireEvent.click(binsTitle);
 
     const binsItems = binsTitle.nextElementSibling;
-    expect(binsItems).toHaveClass('collapsed');
-    expect(binsItems).not.toHaveClass('expanded');
+    expect(binsItems).toHaveClass('expanded');
+    expect(binsItems).not.toHaveClass('collapsed');
   });
 
-  it('should expand category when clicked again', () => {
+  it('should collapse category when clicked again', () => {
     render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const binsTitle = screen.getByText(/Bins/);
 
-    // Collapse
-    fireEvent.click(binsTitle);
-    let binsItems = binsTitle.nextElementSibling;
-    expect(binsItems).toHaveClass('collapsed');
-
     // Expand
     fireEvent.click(binsTitle);
-    binsItems = binsTitle.nextElementSibling;
+    let binsItems = binsTitle.nextElementSibling;
     expect(binsItems).toHaveClass('expanded');
+
+    // Collapse
+    fireEvent.click(binsTitle);
+    binsItems = binsTitle.nextElementSibling;
+    expect(binsItems).toHaveClass('collapsed');
   });
 
-  it('should rotate chevron when category is collapsed', () => {
+  it('should rotate chevron when category is expanded', () => {
     render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const binsTitle = screen.getByText(/Bins/);
     const chevron = binsTitle.querySelector('.category-chevron');
 
-    expect(chevron).toHaveClass('expanded');
+    expect(chevron).toHaveClass('collapsed');
 
     fireEvent.click(binsTitle);
 
-    expect(chevron).toHaveClass('collapsed');
-    expect(chevron).not.toHaveClass('expanded');
+    expect(chevron).toHaveClass('expanded');
+    expect(chevron).not.toHaveClass('collapsed');
   });
 
   it('should handle keyboard interaction (Enter key)', () => {
@@ -118,7 +118,7 @@ describe('ItemLibrary', () => {
     fireEvent.keyDown(binsTitle, { key: 'Enter' });
 
     const binsItems = binsTitle.nextElementSibling;
-    expect(binsItems).toHaveClass('collapsed');
+    expect(binsItems).toHaveClass('expanded');
   });
 
   it('should handle keyboard interaction (Space key)', () => {
@@ -128,10 +128,10 @@ describe('ItemLibrary', () => {
     fireEvent.keyDown(binsTitle, { key: ' ' });
 
     const binsItems = binsTitle.nextElementSibling;
-    expect(binsItems).toHaveClass('collapsed');
+    expect(binsItems).toHaveClass('expanded');
   });
 
-  it('should collapse categories independently', () => {
+  it('should expand categories independently', () => {
     render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const binsTitle = screen.getByText(/Bins/);
@@ -142,19 +142,19 @@ describe('ItemLibrary', () => {
     const binsItems = binsTitle.nextElementSibling;
     const dividersItems = dividersTitle.nextElementSibling;
 
-    expect(binsItems).toHaveClass('collapsed');
-    expect(dividersItems).toHaveClass('expanded');
+    expect(binsItems).toHaveClass('expanded');
+    expect(dividersItems).toHaveClass('collapsed');
   });
 
   it('should save collapsed state to localStorage', () => {
     render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const binsTitle = screen.getByText(/Bins/);
-    fireEvent.click(binsTitle);
+    fireEvent.click(binsTitle); // Expands bin (removes from collapsed set)
 
     const stored = localStorage.getItem('gridfinity-collapsed-categories');
     expect(stored).toBeTruthy();
-    expect(JSON.parse(stored!)).toContain('bin');
+    expect(JSON.parse(stored!)).not.toContain('bin'); // bin is expanded, not in the collapsed set
   });
 
   it('should load collapsed state from localStorage', () => {
@@ -181,11 +181,11 @@ describe('ItemLibrary', () => {
     render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const binsTitle = screen.getByText(/Bins/);
-    fireEvent.click(binsTitle);
+    fireEvent.click(binsTitle); // Expands bin
 
     // Should still work despite localStorage error
     const binsItems = binsTitle.nextElementSibling;
-    expect(binsItems).toHaveClass('collapsed');
+    expect(binsItems).toHaveClass('expanded');
     expect(consoleWarnSpy).toHaveBeenCalled();
 
     // Restore
@@ -208,24 +208,24 @@ describe('ItemLibrary', () => {
     const binsTitle = screen.getByText(/Bins/);
     const dividersTitle = screen.getByText(/Dividers/);
 
-    // Collapse bins
+    // Expand bins (starts collapsed)
     fireEvent.click(binsTitle);
-    // Collapse dividers
+    // Expand dividers (starts collapsed)
     fireEvent.click(dividersTitle);
-    // Expand bins
+    // Collapse bins again
     fireEvent.click(binsTitle);
 
     const binsItems = binsTitle.nextElementSibling;
     const dividersItems = dividersTitle.nextElementSibling;
 
-    expect(binsItems).toHaveClass('expanded');
-    expect(dividersItems).toHaveClass('collapsed');
+    expect(binsItems).toHaveClass('collapsed');
+    expect(dividersItems).toHaveClass('expanded');
 
     // Check localStorage has correct state
     const stored = localStorage.getItem('gridfinity-collapsed-categories');
     const parsed = JSON.parse(stored!);
-    expect(parsed).toContain('divider');
-    expect(parsed).not.toContain('bin');
+    expect(parsed).toContain('bin'); // bin is collapsed
+    expect(parsed).not.toContain('divider'); // divider is expanded
   });
 
   it('should render search input', () => {
@@ -329,6 +329,48 @@ describe('ItemLibrary', () => {
     expect(mockProps.onRefreshLibrary).not.toHaveBeenCalled();
 
     vi.restoreAllMocks();
+  });
+
+  it('should have library selector collapsed by default', () => {
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
+
+    // LibrarySelector should not be in DOM initially
+    const librarySelector = document.querySelector('.library-selector');
+    expect(librarySelector).not.toBeInTheDocument();
+
+    // Toggle button should exist
+    const toggleButton = screen.getByText(/Library Selection/);
+    expect(toggleButton).toBeInTheDocument();
+  });
+
+  it('should expand library selector when toggle button clicked', () => {
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
+
+    const toggleButton = screen.getByText(/Library Selection/);
+    fireEvent.click(toggleButton);
+
+    // LibrarySelector should now be in DOM
+    const librarySelector = document.querySelector('.library-selector');
+    expect(librarySelector).toBeInTheDocument();
+  });
+
+  it('should show active indicator when multiple libraries selected', () => {
+    const multiLibraryProps = {
+      ...mockProps,
+      selectedLibraryIds: ['default', 'simple-utensils'],
+    };
+
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...multiLibraryProps} />);
+
+    const activeIndicator = document.querySelector('.library-active-indicator');
+    expect(activeIndicator).toBeInTheDocument();
+  });
+
+  it('should not show active indicator when only one library selected', () => {
+    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
+
+    const activeIndicator = document.querySelector('.library-active-indicator');
+    expect(activeIndicator).not.toBeInTheDocument();
   });
 
   describe('Category Grouping', () => {

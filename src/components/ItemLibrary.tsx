@@ -32,6 +32,7 @@ export function ItemLibrary({
   const [selectedWidths, setSelectedWidths] = useState<Set<number>>(new Set());
   const [selectedHeights, setSelectedHeights] = useState<Set<number>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
+  const [showLibrarySelector, setShowLibrarySelector] = useState(false);
 
   // Filter items by search query and dimensions
   const filteredItems = items.filter(item => {
@@ -69,7 +70,7 @@ export function ItemLibrary({
     (a.category.order || 0) - (b.category.order || 0)
   );
 
-  // Load collapsed state from localStorage, default all to expanded (false = expanded)
+  // Load collapsed state from localStorage, default all to COLLAPSED
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -79,7 +80,8 @@ export function ItemLibrary({
     } catch (e) {
       console.warn('Failed to load collapsed categories from localStorage', e);
     }
-    return new Set();
+    // Default: all categories collapsed (add all category IDs to the Set)
+    return new Set(categories.map(c => c.id));
   });
 
   // Save to localStorage whenever state changes
@@ -170,12 +172,25 @@ export function ItemLibrary({
       <h3 className="item-library-title">Item Library</h3>
       <p className="item-library-hint">Drag items onto the grid</p>
 
-      <LibrarySelector
-        availableLibraries={availableLibraries}
-        selectedLibraryIds={selectedLibraryIds}
-        onToggleLibrary={onToggleLibrary}
-        isLoading={isLibrariesLoading}
-      />
+      <button
+        className="toggle-library-selector-button"
+        onClick={() => setShowLibrarySelector(!showLibrarySelector)}
+        aria-expanded={showLibrarySelector}
+      >
+        {showLibrarySelector ? '▼' : '▶'} Library Selection
+        {selectedLibraryIds.length > 1 && (
+          <span className="library-active-indicator">●</span>
+        )}
+      </button>
+
+      {showLibrarySelector && (
+        <LibrarySelector
+          availableLibraries={availableLibraries}
+          selectedLibraryIds={selectedLibraryIds}
+          onToggleLibrary={onToggleLibrary}
+          isLoading={isLibrariesLoading}
+        />
+      )}
 
       <button
         className="refresh-library-button"

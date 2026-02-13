@@ -7,7 +7,7 @@ describe('LibrarySelector', () => {
   const mockLibraries: Library[] = [
     {
       id: 'default',
-      name: 'Default Library',
+      name: 'Simple Bins',
       path: '/libraries/default/index.json',
       isEnabled: true,
       itemCount: 40,
@@ -31,7 +31,7 @@ describe('LibrarySelector', () => {
       />
     );
 
-    expect(screen.getByText(/Default Library/)).toBeInTheDocument();
+    expect(screen.getByText(/Simple Bins/)).toBeInTheDocument();
     expect(screen.getByText(/Simple Utensils/)).toBeInTheDocument();
   });
 
@@ -147,7 +147,7 @@ describe('LibrarySelector', () => {
     const librariesWithoutCounts: Library[] = [
       {
         id: 'default',
-        name: 'Default Library',
+        name: 'Simple Bins',
         path: '/libraries/default/index.json',
         isEnabled: true,
       },

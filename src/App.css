@@ -452,6 +452,36 @@
   line-height: 1;
 }
 
+.toggle-library-selector-button {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-md);
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-family: var(--font-body);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.toggle-library-selector-button:hover {
+  border-color: var(--grid-primary);
+  background: var(--bg-primary);
+}
+
+.library-active-indicator {
+  margin-left: auto;
+  color: var(--grid-primary);
+  font-size: var(--text-lg);
+  line-height: 1;
+}
+
 .library-filters {
   margin-bottom: var(--space-lg);
   padding: var(--space-md);
@@ -1572,6 +1602,55 @@
 
 .bom-hint {
   font-size: 0.75rem;
+}
+
+/* Submit BOM */
+.bom-submit {
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border-primary);
+}
+
+.bom-submit-button {
+  width: 100%;
+  padding: var(--space-md);
+  background: var(--valid-primary);
+  border: 2px solid var(--valid-primary);
+  color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.bom-submit-button:hover:not(:disabled) {
+  background: var(--valid-secondary);
+  border-color: var(--valid-secondary);
+}
+
+.bom-submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.bom-submit-notice {
+  margin: var(--space-sm) 0 0;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  text-align: center;
+  font-family: var(--font-body);
+}
+
+.bom-submit-error {
+  margin: var(--space-sm) 0 0;
+  font-size: var(--text-xs);
+  color: var(--invalid-primary);
+  text-align: center;
+  font-family: var(--font-body);
 }
 
 /* Responsive */

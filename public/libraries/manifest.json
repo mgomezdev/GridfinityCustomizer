@@ -3,7 +3,7 @@
   "libraries": [
     {
       "id": "default",
-      "name": "Default Library",
+      "name": "Simple Bins",
       "path": "/libraries/default/index.json"
     },
     {
