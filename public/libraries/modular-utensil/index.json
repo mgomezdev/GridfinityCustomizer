@@ -76,8 +76,8 @@
     {
       "id": "3x2-endcap",
       "name": "3x2 -endcap",
-      "widthUnits": 2,
-      "heightUnits": 3,
+      "widthUnits": 3,
+      "heightUnits": 2,
       "color": "#10B981",
       "categories": ["modular", "utensil"],
       "imageUrl": "-endcap 3x2.png"
