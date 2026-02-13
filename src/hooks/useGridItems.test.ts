@@ -1075,4 +1075,528 @@ describe('useGridItems', () => {
       expect(pastedItem.y + pastedItem.height).toBeLessThanOrEqual(4);
     });
   });
+
+  describe('Multi-Select', () => {
+    describe('Selection modes', () => {
+      it('selectItem with no modifiers replaces entire selection', () => {
+        const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+        act(() => {
+          result.current.addItem('bin-1x1', 0, 0);
+          result.current.addItem('bin-1x1', 1, 1);
+        });
+
+        const itemAId = result.current.placedItems[0].instanceId;
+        const itemBId = result.current.placedItems[1].instanceId;
+
+        act(() => {
+          result.current.selectItem(itemAId);
+        });
+
+        expect(result.current.selectedItemIds.has(itemAId)).toBe(true);
+        expect(result.current.selectedItemIds.size).toBe(1);
+
+        act(() => {
+          result.current.selectItem(itemBId);
+        });
+
+        expect(result.current.selectedItemIds.has(itemBId)).toBe(true);
+        expect(result.current.selectedItemIds.has(itemAId)).toBe(false);
+        expect(result.current.selectedItemIds.size).toBe(1);
+      });
+
+      it('selectItem with shift adds to selection', () => {
+        const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+        act(() => {
+          result.current.addItem('bin-1x1', 0, 0);
+          result.current.addItem('bin-1x1', 1, 1);
+        });
+
+        const itemAId = result.current.placedItems[0].instanceId;
+        const itemBId = result.current.placedItems[1].instanceId;
+
+        act(() => {
+          result.current.selectItem(itemAId);
+        });
+
+        expect(result.current.selectedItemIds.size).toBe(1);
+
+        act(() => {
+          result.current.selectItem(itemBId, { shift: true });
+        });
+
+        expect(result.current.selectedItemIds.has(itemAId)).toBe(true);
+        expect(result.current.selectedItemIds.has(itemBId)).toBe(true);
+        expect(result.current.selectedItemIds.size).toBe(2);
+      });
+
+      it('selectItem with ctrl toggles item', () => {
+        const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+        act(() => {
+          result.current.addItem('bin-1x1', 0, 0);
+        });
+
+        const itemAId = result.current.placedItems[0].instanceId;
+
+        act(() => {
+          result.current.selectItem(itemAId);
+        });
+
+        expect(result.current.selectedItemIds.has(itemAId)).toBe(true);
+
+        act(() => {
+          result.current.selectItem(itemAId, { ctrl: true });
+        });
+
+        expect(result.current.selectedItemIds.has(itemAId)).toBe(false);
+        expect(result.current.selectedItemIds.size).toBe(0);
+
+        act(() => {
+          result.current.selectItem(itemAId, { ctrl: true });
+        });
+
+        expect(result.current.selectedItemIds.has(itemAId)).toBe(true);
+        expect(result.current.selectedItemIds.size).toBe(1);
+      });
+
+      it('ctrl+click on unselected item adds it', () => {
+        const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+        act(() => {
+          result.current.addItem('bin-1x1', 0, 0);
+          result.current.addItem('bin-1x1', 1, 1);
+        });
+
+        const itemAId = result.current.placedItems[0].instanceId;
+        const itemBId = result.current.placedItems[1].instanceId;
+
+        act(() => {
+          result.current.selectItem(itemAId);
+        });
+
+        expect(result.current.selectedItemIds.size).toBe(1);
+
+        act(() => {
+          result.current.selectItem(itemBId, { ctrl: true });
+        });
+
+        expect(result.current.selectedItemIds.has(itemAId)).toBe(true);
+        expect(result.current.selectedItemIds.has(itemBId)).toBe(true);
+        expect(result.current.selectedItemIds.size).toBe(2);
+      });
+
+      it('selectItem(null) clears all selection', () => {
+        const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+        act(() => {
+          result.current.addItem('bin-1x1', 0, 0);
+          result.current.addItem('bin-1x1', 1, 1);
+        });
+
+        const itemAId = result.current.placedItems[0].instanceId;
+        const itemBId = result.current.placedItems[1].instanceId;
+
+        act(() => {
+          result.current.selectItem(itemAId);
+          result.current.selectItem(itemBId, { shift: true });
+        });
+
+        expect(result.current.selectedItemIds.size).toBe(2);
+
+        act(() => {
+          result.current.selectItem(null);
+        });
+
+        expect(result.current.selectedItemIds.size).toBe(0);
+        expect(result.current.selectedItemId).toBeNull();
+      });
+
+      it('selectedItemId returns first selected', () => {
+        const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+        act(() => {
+          result.current.addItem('bin-1x1', 0, 0);
+          result.current.addItem('bin-1x1', 1, 1);
+        });
+
+        const itemAId = result.current.placedItems[0].instanceId;
+        const itemBId = result.current.placedItems[1].instanceId;
+
+        act(() => {
+          result.current.selectItem(itemAId);
+          result.current.selectItem(itemBId, { shift: true });
+        });
+
+        expect(result.current.selectedItemId).toBe(itemAId);
+      });
+
+      it('selectedItemIds is empty Set initially', () => {
+        const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+        expect(result.current.selectedItemIds).toBeInstanceOf(Set);
+        expect(result.current.selectedItemIds.size).toBe(0);
+      });
+
+      it('addItem auto-selects only the new item', () => {
+        const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+        act(() => {
+          result.current.addItem('bin-1x1', 0, 0);
+          result.current.addItem('bin-1x1', 1, 1);
+        });
+
+        const firstId = result.current.placedItems[0].instanceId;
+        const secondId = result.current.placedItems[1].instanceId;
+
+        act(() => {
+          result.current.selectItem(firstId);
+        });
+
+        expect(result.current.selectedItemIds.has(firstId)).toBe(true);
+        expect(result.current.selectedItemIds.size).toBe(1);
+
+        act(() => {
+          result.current.addItem('bin-1x1', 2, 2);
+        });
+
+        const thirdId = result.current.placedItems[2].instanceId;
+
+        expect(result.current.selectedItemIds.has(thirdId)).toBe(true);
+        expect(result.current.selectedItemIds.has(firstId)).toBe(false);
+        expect(result.current.selectedItemIds.size).toBe(1);
+      });
+    });
+
+    describe('Select all / deselect all', () => {
+      it('selectAll selects all placed items', () => {
+        const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+        act(() => {
+          result.current.addItem('bin-1x1', 0, 0);
+          result.current.addItem('bin-1x1', 1, 1);
+          result.current.addItem('bin-1x1', 2, 2);
+        });
+
+        const id1 = result.current.placedItems[0].instanceId;
+        const id2 = result.current.placedItems[1].instanceId;
+        const id3 = result.current.placedItems[2].instanceId;
+
+        act(() => {
+          result.current.selectAll();
+        });
+
+        expect(result.current.selectedItemIds.size).toBe(3);
+        expect(result.current.selectedItemIds.has(id1)).toBe(true);
+        expect(result.current.selectedItemIds.has(id2)).toBe(true);
+        expect(result.current.selectedItemIds.has(id3)).toBe(true);
+      });
+
+      it('selectAll on empty grid does nothing', () => {
+        const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+        act(() => {
+          result.current.selectAll();
+        });
+
+        expect(result.current.selectedItemIds.size).toBe(0);
+      });
+
+      it('deselectAll clears all selected items', () => {
+        const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+        act(() => {
+          result.current.addItem('bin-1x1', 0, 0);
+          result.current.addItem('bin-1x1', 1, 1);
+        });
+
+        const id1 = result.current.placedItems[0].instanceId;
+        const id2 = result.current.placedItems[1].instanceId;
+
+        act(() => {
+          result.current.selectItem(id1);
+          result.current.selectItem(id2, { shift: true });
+        });
+
+        expect(result.current.selectedItemIds.size).toBe(2);
+
+        act(() => {
+          result.current.deselectAll();
+        });
+
+        expect(result.current.selectedItemIds.size).toBe(0);
+        expect(result.current.selectedItemId).toBeNull();
+      });
+    });
+  });
+
+  describe('Batch Operations', () => {
+    describe('Delete', () => {
+      it('deleteSelected removes all selected items', () => {
+        const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+        act(() => {
+          result.current.addItem('bin-1x1', 0, 0);
+          result.current.addItem('bin-1x1', 1, 1);
+          result.current.addItem('bin-1x1', 2, 2);
+        });
+
+        const id1 = result.current.placedItems[0].instanceId;
+        const id2 = result.current.placedItems[1].instanceId;
+
+        act(() => {
+          result.current.selectItem(id1);
+          result.current.selectItem(id2, { shift: true });
+        });
+
+        expect(result.current.placedItems).toHaveLength(3);
+
+        act(() => {
+          result.current.deleteSelected();
+        });
+
+        expect(result.current.placedItems).toHaveLength(1);
+        expect(result.current.placedItems[0]).toMatchObject({
+          x: 2,
+          y: 2,
+        });
+      });
+
+      it('deleteSelected with nothing selected is no-op', () => {
+        const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+        act(() => {
+          result.current.addItem('bin-1x1', 0, 0);
+          result.current.addItem('bin-1x1', 1, 1);
+        });
+
+        act(() => {
+          result.current.selectItem(null);
+        });
+
+        act(() => {
+          result.current.deleteSelected();
+        });
+
+        expect(result.current.placedItems).toHaveLength(2);
+      });
+
+      it('deleteSelected clears selection afterward', () => {
+        const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+        act(() => {
+          result.current.addItem('bin-1x1', 0, 0);
+          result.current.addItem('bin-1x1', 1, 1);
+        });
+
+        const id1 = result.current.placedItems[0].instanceId;
+        const id2 = result.current.placedItems[1].instanceId;
+
+        act(() => {
+          result.current.selectItem(id1);
+          result.current.selectItem(id2, { shift: true });
+        });
+
+        expect(result.current.selectedItemIds.size).toBe(2);
+
+        act(() => {
+          result.current.deleteSelected();
+        });
+
+        expect(result.current.selectedItemIds.size).toBe(0);
+        expect(result.current.selectedItemId).toBeNull();
+      });
+    });
+
+    describe('Rotate', () => {
+      it('rotateSelected rotates all selected items', () => {
+        const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+        act(() => {
+          result.current.addItem('bin-1x2', 0, 0);
+          result.current.addItem('bin-1x2', 2, 0);
+        });
+
+        const id1 = result.current.placedItems[0].instanceId;
+        const id2 = result.current.placedItems[1].instanceId;
+
+        act(() => {
+          result.current.selectItem(id1);
+          result.current.selectItem(id2, { shift: true });
+        });
+
+        expect(result.current.placedItems[0].rotation).toBe(0);
+        expect(result.current.placedItems[1].rotation).toBe(0);
+
+        act(() => {
+          result.current.rotateSelected('cw');
+        });
+
+        expect(result.current.placedItems[0].rotation).toBe(90);
+        expect(result.current.placedItems[1].rotation).toBe(90);
+      });
+
+      it('rotateSelected with nothing selected is no-op', () => {
+        const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+        act(() => {
+          result.current.addItem('bin-1x2', 0, 0);
+        });
+
+        act(() => {
+          result.current.selectItem(null);
+        });
+
+        const originalRotation = result.current.placedItems[0].rotation;
+
+        act(() => {
+          result.current.rotateSelected('cw');
+        });
+
+        expect(result.current.placedItems[0].rotation).toBe(originalRotation);
+      });
+
+      it('rotateSelected preserves unselected items', () => {
+        const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+        act(() => {
+          result.current.addItem('bin-1x2', 0, 0);
+          result.current.addItem('bin-1x2', 2, 0);
+          result.current.addItem('bin-1x2', 0, 2);
+        });
+
+        const id1 = result.current.placedItems[0].instanceId;
+        const id2 = result.current.placedItems[1].instanceId;
+
+        act(() => {
+          result.current.selectItem(id1);
+          result.current.selectItem(id2, { shift: true });
+        });
+
+        act(() => {
+          result.current.rotateSelected('cw');
+        });
+
+        expect(result.current.placedItems[0].rotation).toBe(90);
+        expect(result.current.placedItems[1].rotation).toBe(90);
+        expect(result.current.placedItems[2].rotation).toBe(0);
+      });
+    });
+
+    describe('Copy (multi-item)', () => {
+      it('copyItems copies all selected items', () => {
+        const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+        act(() => {
+          result.current.addItem('bin-1x1', 0, 0);
+          result.current.addItem('bin-1x1', 1, 1);
+        });
+
+        const id1 = result.current.placedItems[0].instanceId;
+        const id2 = result.current.placedItems[1].instanceId;
+
+        act(() => {
+          result.current.selectItem(id1);
+          result.current.selectItem(id2, { shift: true });
+        });
+
+        act(() => {
+          result.current.copyItems();
+        });
+
+        expect(result.current.clipboard).toHaveLength(2);
+        expect(result.current.clipboard[0].itemId).toBe('bin-1x1');
+        expect(result.current.clipboard[1].itemId).toBe('bin-1x1');
+      });
+
+      it('pasteItems pastes all clipboard items', () => {
+        const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+        act(() => {
+          result.current.addItem('bin-1x1', 0, 0);
+          result.current.addItem('bin-1x1', 1, 0);
+        });
+
+        const id1 = result.current.placedItems[0].instanceId;
+        const id2 = result.current.placedItems[1].instanceId;
+
+        act(() => {
+          result.current.selectItem(id1);
+          result.current.selectItem(id2, { shift: true });
+          result.current.copyItems();
+        });
+
+        expect(result.current.placedItems).toHaveLength(2);
+
+        act(() => {
+          result.current.pasteItems();
+        });
+
+        expect(result.current.placedItems).toHaveLength(4);
+      });
+    });
+  });
+
+  describe('Group Move', () => {
+    it('moveSelected moves all selected items by delta', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+        result.current.addItem('bin-1x1', 1, 0);
+      });
+
+      const id1 = result.current.placedItems[0].instanceId;
+      const id2 = result.current.placedItems[1].instanceId;
+
+      act(() => {
+        result.current.selectItem(id1);
+        result.current.selectItem(id2, { shift: true });
+      });
+
+      act(() => {
+        result.current.moveSelected(1, 1);
+      });
+
+      expect(result.current.placedItems[0]).toMatchObject({
+        x: 1,
+        y: 1,
+      });
+      expect(result.current.placedItems[1]).toMatchObject({
+        x: 2,
+        y: 1,
+      });
+    });
+
+    it('moveSelected preserves relative positions', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+        result.current.addItem('bin-1x1', 2, 1);
+      });
+
+      const id1 = result.current.placedItems[0].instanceId;
+      const id2 = result.current.placedItems[1].instanceId;
+
+      const originalDeltaX = result.current.placedItems[1].x - result.current.placedItems[0].x;
+      const originalDeltaY = result.current.placedItems[1].y - result.current.placedItems[0].y;
+
+      act(() => {
+        result.current.selectItem(id1);
+        result.current.selectItem(id2, { shift: true });
+      });
+
+      act(() => {
+        result.current.moveSelected(1, 2);
+      });
+
+      const newDeltaX = result.current.placedItems[1].x - result.current.placedItems[0].x;
+      const newDeltaY = result.current.placedItems[1].y - result.current.placedItems[0].y;
+
+      expect(newDeltaX).toBe(originalDeltaX);
+      expect(newDeltaY).toBe(originalDeltaY);
+    });
+  });
 });

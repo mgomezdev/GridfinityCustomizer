@@ -23,6 +23,23 @@ function hasCollision(
   return false;
 }
 
+function hasCollisionExcludeSet(
+  items: PlacedItem[],
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  excludeIds: Set<string>
+): boolean {
+  for (const item of items) {
+    if (excludeIds.has(item.instanceId)) continue;
+    const overlapX = x < item.x + item.width && x + width > item.x;
+    const overlapY = y < item.y + item.height && y + height > item.y;
+    if (overlapX && overlapY) return true;
+  }
+  return false;
+}
+
 function isOutOfBounds(
   x: number,
   y: number,
@@ -83,19 +100,25 @@ function findValidPosition(
   return null;
 }
 
+const EMPTY_SET: Set<string> = new Set();
+
+export interface SelectModifiers {
+  shift?: boolean;
+  ctrl?: boolean;
+}
+
 export function useGridItems(
   gridX: number,
   gridY: number,
   getItemById: (id: string) => LibraryItem | undefined
 ) {
   const [placedItems, setPlacedItems] = useState<PlacedItem[]>([]);
-  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(EMPTY_SET);
   const [clipboard, setClipboard] = useState<PlacedItem[]>([]);
 
   // Refs for synchronous cross-state reads within the same React batch.
-  // Updated eagerly so chained operations (e.g. addItem→copyItems) see latest values.
   const itemsRef = useRef<PlacedItem[]>(placedItems);
-  const selectedRef = useRef<string | null>(selectedItemId);
+  const selectedRef = useRef<Set<string>>(selectedItemIds);
   const clipboardRef = useRef<PlacedItem[]>(clipboard);
 
   const updateItems = useCallback((items: PlacedItem[]) => {
@@ -103,15 +126,25 @@ export function useGridItems(
     setPlacedItems(items);
   }, []);
 
-  const updateSelected = useCallback((id: string | null) => {
-    selectedRef.current = id;
-    setSelectedItemId(id);
+  const updateSelected = useCallback((ids: Set<string>) => {
+    selectedRef.current = ids;
+    setSelectedItemIds(ids);
   }, []);
 
   const updateClipboard = useCallback((items: PlacedItem[]) => {
     clipboardRef.current = items;
     setClipboard(items);
   }, []);
+
+  // Backward compat: first selected item or null
+  const selectedItemId = useMemo(() => {
+    if (selectedItemIds.size === 0) return null;
+    // Return first item that exists in placed items (maintains stable ordering)
+    for (const item of placedItems) {
+      if (selectedItemIds.has(item.instanceId)) return item.instanceId;
+    }
+    return null;
+  }, [selectedItemIds, placedItems]);
 
   const placedItemsWithValidity: PlacedItemWithValidity[] = useMemo(() => {
     return placedItems.map(item => ({
@@ -136,7 +169,7 @@ export function useGridItems(
     };
 
     updateItems([...itemsRef.current, newItem]);
-    updateSelected(newItem.instanceId);
+    updateSelected(new Set([newItem.instanceId]));
   }, [getItemById, updateItems, updateSelected]);
 
   const moveItem = useCallback((instanceId: string, newX: number, newY: number) => {
@@ -168,64 +201,173 @@ export function useGridItems(
 
   const deleteItem = useCallback((instanceId: string) => {
     updateItems(itemsRef.current.filter(item => item.instanceId !== instanceId));
-    if (selectedRef.current === instanceId) {
-      updateSelected(null);
+    const current = selectedRef.current;
+    if (current.has(instanceId)) {
+      const next = new Set(current);
+      next.delete(instanceId);
+      updateSelected(next.size === 0 ? EMPTY_SET : next);
     }
   }, [updateItems, updateSelected]);
 
   const clearAll = useCallback(() => {
     updateItems([]);
-    updateSelected(null);
+    updateSelected(EMPTY_SET);
   }, [updateItems, updateSelected]);
 
-  const selectItem = useCallback((instanceId: string | null) => {
-    updateSelected(instanceId);
+  const selectItem = useCallback((instanceId: string | null, modifiers?: SelectModifiers) => {
+    if (instanceId === null) {
+      updateSelected(EMPTY_SET);
+      return;
+    }
+
+    const current = selectedRef.current;
+
+    if (modifiers?.ctrl) {
+      const next = new Set(current);
+      if (next.has(instanceId)) {
+        next.delete(instanceId);
+      } else {
+        next.add(instanceId);
+      }
+      updateSelected(next.size === 0 ? EMPTY_SET : next);
+    } else if (modifiers?.shift) {
+      const next = new Set(current);
+      next.add(instanceId);
+      updateSelected(next);
+    } else {
+      updateSelected(new Set([instanceId]));
+    }
+  }, [updateSelected]);
+
+  const selectAll = useCallback(() => {
+    const items = itemsRef.current;
+    if (items.length === 0) return;
+    updateSelected(new Set(items.map(item => item.instanceId)));
+  }, [updateSelected]);
+
+  const deselectAll = useCallback(() => {
+    updateSelected(EMPTY_SET);
   }, [updateSelected]);
 
   const handleDrop = useCallback((dragData: DragData, dropX: number, dropY: number) => {
     if (dragData.type === 'library') {
       addItem(dragData.itemId, dropX, dropY);
     } else if (dragData.type === 'placed' && dragData.instanceId) {
-      moveItem(dragData.instanceId, dropX, dropY);
+      const currentSelected = selectedRef.current;
+      // Group move: if dragged item is part of a multi-selection, move the whole group
+      if (currentSelected.size > 1 && currentSelected.has(dragData.instanceId)) {
+        const items = itemsRef.current;
+        const draggedItem = items.find(i => i.instanceId === dragData.instanceId);
+        if (!draggedItem) return;
+        const dx = dropX - draggedItem.x;
+        const dy = dropY - draggedItem.y;
+
+        // Validate all moves (exclude selected items from collision checks)
+        const allValid = items
+          .filter(i => currentSelected.has(i.instanceId))
+          .every(i => !isOutOfBounds(i.x + dx, i.y + dy, i.width, i.height, gridX, gridY) &&
+            !hasCollisionExcludeSet(items, i.x + dx, i.y + dy, i.width, i.height, currentSelected));
+
+        if (!allValid) return;
+
+        const updated = items.map(item =>
+          currentSelected.has(item.instanceId)
+            ? { ...item, x: item.x + dx, y: item.y + dy }
+            : item
+        );
+        updateItems(updated);
+      } else {
+        moveItem(dragData.instanceId, dropX, dropY);
+      }
     }
-  }, [addItem, moveItem]);
+  }, [addItem, moveItem, gridX, gridY, updateItems]);
+
+  const deleteSelected = useCallback(() => {
+    const ids = selectedRef.current;
+    if (ids.size === 0) return;
+    updateItems(itemsRef.current.filter(item => !ids.has(item.instanceId)));
+    updateSelected(EMPTY_SET);
+  }, [updateItems, updateSelected]);
+
+  const rotateSelected = useCallback((direction: 'cw' | 'ccw' = 'cw') => {
+    const ids = selectedRef.current;
+    if (ids.size === 0) return;
+
+    const updated = itemsRef.current.map(item => {
+      if (!ids.has(item.instanceId)) return item;
+
+      const newRotation = direction === 'cw'
+        ? ROTATION_CW[item.rotation]
+        : ROTATION_CCW[item.rotation];
+
+      const shouldSwap = isSideways(item.rotation) !== isSideways(newRotation);
+
+      return {
+        ...item,
+        width: shouldSwap ? item.height : item.width,
+        height: shouldSwap ? item.width : item.height,
+        rotation: newRotation,
+      };
+    });
+    updateItems(updated);
+  }, [updateItems]);
+
+  const moveSelected = useCallback((dx: number, dy: number) => {
+    const ids = selectedRef.current;
+    if (ids.size === 0) return;
+
+    const updated = itemsRef.current.map(item =>
+      ids.has(item.instanceId) ? { ...item, x: item.x + dx, y: item.y + dy } : item
+    );
+    updateItems(updated);
+  }, [updateItems]);
 
   const duplicateItem = useCallback(() => {
-    const id = selectedRef.current;
-    if (!id) return;
+    const ids = selectedRef.current;
+    if (ids.size === 0) return;
 
     const items = itemsRef.current;
-    const source = items.find(item => item.instanceId === id);
-    if (!source) return;
+    const sources = items.filter(item => ids.has(item.instanceId));
+    if (sources.length === 0) return;
 
-    const pos = findValidPosition(
-      items, source.width, source.height,
-      source.x + 1, source.y + 1,
-      gridX, gridY
-    );
-    if (!pos) return;
+    const allItems = [...items];
+    const newIds: string[] = [];
 
-    const newItem: PlacedItem = {
-      instanceId: generateInstanceId(),
-      itemId: source.itemId,
-      x: pos.x,
-      y: pos.y,
-      width: source.width,
-      height: source.height,
-      rotation: source.rotation,
-    };
+    for (const source of sources) {
+      const pos = findValidPosition(
+        allItems, source.width, source.height,
+        source.x + 1, source.y + 1,
+        gridX, gridY
+      );
+      if (!pos) continue;
 
-    updateItems([...items, newItem]);
-    updateSelected(newItem.instanceId);
+      const newItem: PlacedItem = {
+        instanceId: generateInstanceId(),
+        itemId: source.itemId,
+        x: pos.x,
+        y: pos.y,
+        width: source.width,
+        height: source.height,
+        rotation: source.rotation,
+      };
+
+      allItems.push(newItem);
+      newIds.push(newItem.instanceId);
+    }
+
+    if (newIds.length === 0) return;
+
+    updateItems(allItems);
+    updateSelected(new Set(newIds));
   }, [gridX, gridY, updateItems, updateSelected]);
 
   const copyItems = useCallback(() => {
-    const id = selectedRef.current;
-    if (!id) {
+    const ids = selectedRef.current;
+    if (ids.size === 0) {
       updateClipboard([]);
       return;
     }
-    const selected = itemsRef.current.filter(item => item.instanceId === id);
+    const selected = itemsRef.current.filter(item => ids.has(item.instanceId));
     updateClipboard(selected);
   }, [updateClipboard]);
 
@@ -261,12 +403,13 @@ export function useGridItems(
     if (newItems.length === 0) return;
 
     updateItems([...currentItems, ...newItems]);
-    updateSelected(newItems[newItems.length - 1].instanceId);
+    updateSelected(new Set(newItems.map(i => i.instanceId)));
   }, [gridX, gridY, updateItems, updateSelected]);
 
   return {
     placedItems: placedItemsWithValidity,
     selectedItemId,
+    selectedItemIds,
     clipboard,
     addItem,
     moveItem,
@@ -274,9 +417,14 @@ export function useGridItems(
     deleteItem,
     clearAll,
     selectItem,
+    selectAll,
+    deselectAll,
     handleDrop,
     duplicateItem,
     copyItems,
     pasteItems,
+    deleteSelected,
+    rotateSelected,
+    moveSelected,
   };
 }
