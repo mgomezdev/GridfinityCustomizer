@@ -119,15 +119,19 @@ function App() {
 
   const {
     placedItems,
-    selectedItemId,
+    selectedItemIds,
     rotateItem,
     deleteItem,
     clearAll,
     selectItem,
+    selectAll,
+    deselectAll,
     handleDrop,
     duplicateItem,
     copyItems,
     pasteItems,
+    deleteSelected,
+    rotateSelected,
   } = useGridItems(gridResult.gridX, gridResult.gridY, getItemById);
 
   const bomItems = useBillOfMaterials(placedItems, libraryItems);
@@ -158,22 +162,16 @@ function App() {
   );
 
   const handleRotateSelectedCw = useCallback(() => {
-    if (selectedItemId) {
-      rotateItem(selectedItemId, 'cw');
-    }
-  }, [selectedItemId, rotateItem]);
+    rotateSelected('cw');
+  }, [rotateSelected]);
 
   const handleRotateSelectedCcw = useCallback(() => {
-    if (selectedItemId) {
-      rotateItem(selectedItemId, 'ccw');
-    }
-  }, [selectedItemId, rotateItem]);
+    rotateSelected('ccw');
+  }, [rotateSelected]);
 
   const handleDeleteSelected = useCallback(() => {
-    if (selectedItemId) {
-      deleteItem(selectedItemId);
-    }
-  }, [selectedItemId, deleteItem]);
+    deleteSelected();
+  }, [deleteSelected]);
 
   const handleClearAll = () => {
     if (window.confirm(`Remove all ${placedItems.length} placed items?`)) {
@@ -204,7 +202,7 @@ function App() {
         return;
       }
 
-      // Delete or Backspace: Remove selected image or selected item
+      // Delete or Backspace: Remove selected image or selected items
       if ((event.key === 'Delete' || event.key === 'Backspace')) {
         if (selectedImageId) {
           event.preventDefault();
@@ -212,26 +210,26 @@ function App() {
           setSelectedImageId(null);
           return;
         }
-        if (selectedItemId) {
+        if (selectedItemIds.size > 0) {
           event.preventDefault();
-          handleDeleteSelected();
+          deleteSelected();
           return;
         }
       }
 
-      // R: Rotate selected item CW, Shift+R: CCW
+      // R: Rotate selected item(s) CW, Shift+R: CCW
       if (event.key === 'r' || event.key === 'R') {
         if (selectedImageId) {
           event.preventDefault();
           updateImageRotation(selectedImageId, event.shiftKey ? 'ccw' : 'cw');
           return;
         }
-        if (selectedItemId) {
+        if (selectedItemIds.size > 0) {
           event.preventDefault();
           if (event.shiftKey) {
-            handleRotateSelectedCcw();
+            rotateSelected('ccw');
           } else {
-            handleRotateSelectedCw();
+            rotateSelected('cw');
           }
           return;
         }
@@ -260,8 +258,15 @@ function App() {
 
       // Escape: Clear both selections
       if (event.key === 'Escape') {
-        selectItem(null);
+        deselectAll();
         setSelectedImageId(null);
+        return;
+      }
+
+      // Ctrl+A: Select all items
+      if ((event.key === 'a' || event.key === 'A') && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        selectAll();
         return;
       }
 
@@ -368,7 +373,7 @@ function App() {
             isLibrariesLoading={isLibrariesLoading}
           />
 
-          {selectedItemId && (
+          {selectedItemIds.size > 0 && (
             <ItemControls
               onRotateCw={handleRotateSelectedCw}
               onRotateCcw={handleRotateSelectedCcw}
@@ -390,10 +395,10 @@ function App() {
             gridX={gridResult.gridX}
             gridY={gridResult.gridY}
             placedItems={placedItems}
-            selectedItemId={selectedItemId}
+            selectedItemIds={selectedItemIds}
             spacers={spacers}
             onDrop={handleDrop}
-            onSelectItem={(id) => { selectItem(id); if (id) setSelectedImageId(null); }}
+            onSelectItem={(id, mods) => { selectItem(id, mods); if (id) setSelectedImageId(null); }}
             getItemById={getItemById}
             onDeleteItem={deleteItem}
             onRotateItemCw={(id) => rotateItem(id, 'cw')}
@@ -401,7 +406,7 @@ function App() {
             referenceImages={images}
             selectedImageId={selectedImageId}
             onImagePositionChange={updateImagePosition}
-            onImageSelect={(id) => { setSelectedImageId(id); selectItem(null); }}
+            onImageSelect={(id) => { setSelectedImageId(id); deselectAll(); }}
             onImageScaleChange={updateImageScale}
             onImageOpacityChange={updateImageOpacity}
             onImageRemove={handleRemoveImage}
