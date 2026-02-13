@@ -10,6 +10,11 @@
       "id": "simple-utensils",
       "name": "Simple Utensils",
       "path": "/libraries/simple-utensils/index.json"
+    },
+    {
+      "id": "modular-utensil",
+      "name": "Modular Utensil",
+      "path": "/libraries/modular-utensil/index.json"
     }
   ]
 }
