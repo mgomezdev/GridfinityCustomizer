@@ -23,11 +23,22 @@ describe('useLibraryData', () => {
     { id: 'community', path: '/libraries/community/index.json' },
   ];
 
+  // Stable array references for tests
+  const singleLibrary = ['default'];
+  const multipleLibraries = ['default', 'community'];
+  const emptyLibraries: string[] = [];
+  const nonExistentLibrary = ['non-existent'];
+
   let mockFetch: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    // Create mock function and assign directly to globalThis
-    mockFetch = vi.fn();
+    // Create mock function with sensible default that returns valid Response
+    mockFetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: async () => ({ version: '1.0.0', items: [] }),
+      } as Response)
+    );
     globalThis.fetch = mockFetch as unknown as typeof fetch;
   });
 
@@ -46,7 +57,7 @@ describe('useLibraryData', () => {
       } as Response);
 
       const { result } = renderHook(() =>
-        useLibraryData(['default'], manifestLibraries)
+        useLibraryData(singleLibrary, manifestLibraries)
       );
 
       await waitFor(() => {
@@ -70,7 +81,7 @@ describe('useLibraryData', () => {
         } as Response);
 
       const { result } = renderHook(() =>
-        useLibraryData(['default', 'community'], manifestLibraries)
+        useLibraryData(multipleLibraries, manifestLibraries)
       );
 
       await waitFor(() => {
@@ -89,7 +100,7 @@ describe('useLibraryData', () => {
       } as Response);
 
       const { result } = renderHook(() =>
-        useLibraryData(['default'], manifestLibraries)
+        useLibraryData(singleLibrary, manifestLibraries)
       );
 
       await waitFor(() => {
@@ -112,7 +123,7 @@ describe('useLibraryData', () => {
             heightUnits: 1,
             color: '#3B82F6',
             categories: ['bin'],
-            imageUrl: '/images/bin-1x1.png'
+            imageUrl: 'bin-1x1.png'  // Changed to relative path
           },
         ],
       };
@@ -123,19 +134,52 @@ describe('useLibraryData', () => {
       } as Response);
 
       const { result } = renderHook(() =>
-        useLibraryData(['default'], manifestLibraries)
+        useLibraryData(singleLibrary, manifestLibraries)
       );
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
       });
 
+      expect(result.current.items[0].imageUrl).toBe('/libraries/default/bin-1x1.png');
+    });
+
+    it('should maintain backward compatibility with absolute paths', async () => {
+      const libraryWithAbsolutePaths = {
+        version: '1.0.0',
+        items: [
+          {
+            id: 'bin-1x1',
+            name: '1x1 Bin',
+            widthUnits: 1,
+            heightUnits: 1,
+            color: '#3B82F6',
+            categories: ['bin'],
+            imageUrl: '/libraries/default/images/bin-1x1.png'
+          },
+        ],
+      };
+
+      getMockFetch().mockResolvedValueOnce({
+        ok: true,
+        json: async () => libraryWithAbsolutePaths,
+      } as Response);
+
+      const { result } = renderHook(() =>
+        useLibraryData(singleLibrary, manifestLibraries)
+      );
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // Should pass through unchanged
       expect(result.current.items[0].imageUrl).toBe('/libraries/default/images/bin-1x1.png');
     });
 
     it('should handle empty library selection', async () => {
       const { result } = renderHook(() =>
-        useLibraryData([], manifestLibraries)
+        useLibraryData(emptyLibraries, manifestLibraries)
       );
 
       await waitFor(() => {
@@ -154,7 +198,7 @@ describe('useLibraryData', () => {
       } as Response);
 
       const { result } = renderHook(() =>
-        useLibraryData(['default'], manifestLibraries)
+        useLibraryData(singleLibrary, manifestLibraries)
       );
 
       await waitFor(() => {
@@ -169,7 +213,7 @@ describe('useLibraryData', () => {
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       const { result } = renderHook(() =>
-        useLibraryData(['non-existent'], manifestLibraries)
+        useLibraryData(nonExistentLibrary, manifestLibraries)
       );
 
       await waitFor(() => {
@@ -196,7 +240,7 @@ describe('useLibraryData', () => {
         } as Response);
 
       const { result } = renderHook(() =>
-        useLibraryData(['default', 'community'], manifestLibraries)
+        useLibraryData(multipleLibraries, manifestLibraries)
       );
 
       await waitFor(() => {
@@ -219,7 +263,7 @@ describe('useLibraryData', () => {
 
     it('getItemById should find item by prefixed ID', async () => {
       const { result } = renderHook(() =>
-        useLibraryData(['default'], manifestLibraries)
+        useLibraryData(singleLibrary, manifestLibraries)
       );
 
       await waitFor(() => {
@@ -233,7 +277,7 @@ describe('useLibraryData', () => {
 
     it('getItemById should return undefined for non-existent item', async () => {
       const { result } = renderHook(() =>
-        useLibraryData(['default'], manifestLibraries)
+        useLibraryData(singleLibrary, manifestLibraries)
       );
 
       await waitFor(() => {
@@ -246,7 +290,7 @@ describe('useLibraryData', () => {
 
     it('getItemsByCategory should filter by category', async () => {
       const { result } = renderHook(() =>
-        useLibraryData(['default'], manifestLibraries)
+        useLibraryData(singleLibrary, manifestLibraries)
       );
 
       await waitFor(() => {
@@ -270,7 +314,7 @@ describe('useLibraryData', () => {
         } as Response);
 
       const { result } = renderHook(() =>
-        useLibraryData(['default', 'community'], manifestLibraries)
+        useLibraryData(multipleLibraries, manifestLibraries)
       );
 
       await waitFor(() => {
@@ -295,7 +339,7 @@ describe('useLibraryData', () => {
       } as Response);
 
       const { result } = renderHook(() =>
-        useLibraryData(['default'], manifestLibraries)
+        useLibraryData(singleLibrary, manifestLibraries)
       );
 
       await waitFor(() => {
@@ -326,7 +370,7 @@ describe('useLibraryData', () => {
 
       const { result, rerender } = renderHook(
         ({ libs }) => useLibraryData(libs, manifestLibraries),
-        { initialProps: { libs: ['default'] } }
+        { initialProps: { libs: singleLibrary } }
       );
 
       await waitFor(() => {
@@ -335,8 +379,9 @@ describe('useLibraryData', () => {
 
       expect(result.current.items).toHaveLength(2);
 
-      // Change to community library
-      rerender({ libs: ['community'] });
+      // Change to community library - use stable reference
+      const communityOnly = ['community'];
+      rerender({ libs: communityOnly });
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);

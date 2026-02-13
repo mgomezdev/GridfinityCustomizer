@@ -59,11 +59,18 @@ export function useLibraryData(
             throw new Error(`Invalid library data format for ${libraryId}`);
           }
 
+          // Derive library base path from manifest path
+          // Example: "/libraries/simple-utensils/index.json" -> "/libraries/simple-utensils"
+          const libraryBasePath = libraryMeta.path.substring(
+            0,
+            libraryMeta.path.lastIndexOf('/')
+          );
+
           // Prefix item IDs and resolve image paths
           return data.items.map((item) => ({
             ...item,
             id: prefixItemId(libraryId, item.id),
-            imageUrl: resolveImagePath(libraryId, item.imageUrl),
+            imageUrl: resolveImagePath(libraryId, libraryBasePath, item.imageUrl),
           }));
         } catch (err) {
           console.error(`Failed to load library "${libraryId}":`, err);

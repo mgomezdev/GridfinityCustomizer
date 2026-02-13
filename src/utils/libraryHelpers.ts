@@ -28,27 +28,42 @@ export function unprefixItemId(prefixedId: string): { libraryId: string; itemId:
 /**
  * Resolve image URL to library-specific path
  * @param libraryId - ID of the library
+ * @param libraryBasePath - Base path of the library (e.g., '/libraries/simple-utensils')
  * @param imageUrl - Image URL from library item (optional)
  * @returns Resolved absolute path or undefined
  */
-export function resolveImagePath(libraryId: string, imageUrl?: string): string | undefined {
+export function resolveImagePath(
+  libraryId: string,
+  libraryBasePath: string,
+  imageUrl?: string
+): string | undefined {
   if (!imageUrl) return undefined;
 
-  // Absolute HTTP/HTTPS URL - return as-is
+  // Security: Reject paths with parent directory traversal
+  if (imageUrl.includes('../')) {
+    console.error(`Invalid image path (parent directory traversal): ${imageUrl}`);
+    return undefined;
+  }
+
+  // Absolute HTTP/HTTPS URL - return as-is (security: only full URLs)
   if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
     return imageUrl;
   }
 
-  // Already resolved to library path
+  // Already resolved to full library path (backward compatibility)
   if (imageUrl.startsWith('/libraries/')) {
     return imageUrl;
   }
 
-  // Path starting with /images/ - prepend library path
-  if (imageUrl.startsWith('/images/')) {
-    return `/libraries/${libraryId}${imageUrl}`;
+  // Security: Reject any other absolute paths (starting with /)
+  // Only support relative paths from library root
+  if (imageUrl.startsWith('/')) {
+    console.error(`Invalid image path (absolute path not allowed): ${imageUrl}`);
+    return undefined;
   }
 
-  // Relative path - assume it's in library's images folder
-  return `/libraries/${libraryId}/images/${imageUrl}`;
+  // Relative path - resolve relative to library base path
+  // Supports: "filename.png" or "subfolder/filename.png"
+  // Security: Only current directory and subdirectories allowed
+  return `${libraryBasePath}/${imageUrl}`;
 }
