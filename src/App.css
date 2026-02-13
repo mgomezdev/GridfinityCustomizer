@@ -452,6 +452,36 @@
   line-height: 1;
 }
 
+.toggle-library-selector-button {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-md);
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-family: var(--font-body);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.toggle-library-selector-button:hover {
+  border-color: var(--grid-primary);
+  background: var(--bg-primary);
+}
+
+.library-active-indicator {
+  margin-left: auto;
+  color: var(--grid-primary);
+  font-size: var(--text-lg);
+  line-height: 1;
+}
+
 .library-filters {
   margin-bottom: var(--space-lg);
   padding: var(--space-md);
