@@ -5,9 +5,9 @@ import type { PlacedItemWithValidity, LibraryItem } from '../types/gridfinity';
 import type React from 'react';
 
 // Mock usePointerDragSource to capture onTap callback
-let capturedOnTap: (() => void) | undefined;
+let capturedOnTap: ((e: PointerEvent) => void) | undefined;
 vi.mock('../hooks/usePointerDrag', () => ({
-  usePointerDragSource: (options: { onTap?: () => void }) => {
+  usePointerDragSource: (options: { onTap?: (e: PointerEvent) => void }) => {
     capturedOnTap = options.onTap;
     return {
       onPointerDown: vi.fn((e: React.PointerEvent) => {
@@ -343,9 +343,10 @@ describe('PlacedItemOverlay', () => {
       );
 
       // Simulate tap via the captured onTap callback from usePointerDragSource
-      capturedOnTap?.();
+      const fakeEvent = new PointerEvent('pointerup', { bubbles: true });
+      capturedOnTap?.(fakeEvent);
 
-      expect(mockOnSelect).toHaveBeenCalledWith('test-item-123');
+      expect(mockOnSelect).toHaveBeenCalledWith('test-item-123', expect.objectContaining({ shift: false, ctrl: false }));
       expect(mockOnSelect).toHaveBeenCalledTimes(1);
     });
 

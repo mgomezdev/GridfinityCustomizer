@@ -9,10 +9,10 @@ interface GridPreviewProps {
   gridX: number;
   gridY: number;
   placedItems: PlacedItemWithValidity[];
-  selectedItemId: string | null;
+  selectedItemIds: Set<string>;
   spacers?: ComputedSpacer[];
   onDrop: (dragData: DragData, x: number, y: number) => void;
-  onSelectItem: (instanceId: string | null) => void;
+  onSelectItem: (instanceId: string | null, modifiers?: { shift?: boolean; ctrl?: boolean }) => void;
   getItemById: (id: string) => LibraryItem | undefined;
   onDeleteItem?: (instanceId: string) => void;
   onRotateItemCw?: (instanceId: string) => void;
@@ -33,7 +33,7 @@ export function GridPreview({
   gridX,
   gridY,
   placedItems,
-  selectedItemId,
+  selectedItemIds,
   spacers = [],
   onDrop,
   onSelectItem,
@@ -106,6 +106,11 @@ export function GridPreview({
 
   return (
     <div className="grid-preview" style={{ aspectRatio: `${gridX} / ${gridY}` }}>
+      {selectedItemIds.size > 1 && (
+        <div className="selection-count-indicator">
+          {selectedItemIds.size} items selected
+        </div>
+      )}
       <div className="drawer-container">
         {spacers.map(spacer => (
           <SpacerOverlay key={spacer.id} spacer={spacer} />
@@ -145,8 +150,8 @@ export function GridPreview({
               item={item}
               gridX={gridX}
               gridY={gridY}
-              isSelected={item.instanceId === selectedItemId}
-              onSelect={onSelectItem}
+              isSelected={selectedItemIds.has(item.instanceId)}
+              onSelect={(instanceId, modifiers) => onSelectItem(instanceId, modifiers)}
               getItemById={getItemById}
               onDelete={onDeleteItem}
               onRotateCw={onRotateItemCw}

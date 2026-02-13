@@ -96,7 +96,7 @@ interface PointerDragSourceOptions {
   dragData: DragData;
   onDragStart?: () => void;
   onDragEnd?: () => void;
-  onTap?: () => void;
+  onTap?: (e: PointerEvent) => void;
 }
 
 interface PointerDragSourceResult {
@@ -186,7 +186,7 @@ export function usePointerDragSource(
       if (!isDragging) {
         // Below threshold — this was a tap
         cleanup();
-        optionsRef.current.onTap?.();
+        optionsRef.current.onTap?.(upEvent);
       } else {
         // End of drag — attempt drop
         attemptDrop(upEvent.clientX, upEvent.clientY);
