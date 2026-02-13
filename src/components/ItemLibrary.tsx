@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import type { LibraryItem, Category } from '../types/gridfinity';
+import type { LibraryItem, Category, Library } from '../types/gridfinity';
 import { LibraryItemCard } from './LibraryItemCard';
-import { LibraryManager } from './LibraryManager';
+import { LibrarySelector } from './LibrarySelector';
 
 const STORAGE_KEY = 'gridfinity-collapsed-categories';
 
@@ -10,18 +10,11 @@ interface ItemLibraryProps {
   categories: Category[];
   isLoading: boolean;
   error: Error | null;
-  onAddItem: (item: LibraryItem) => void;
-  onUpdateItem: (id: string, updates: Partial<LibraryItem>) => void;
-  onDeleteItem: (id: string) => void;
-  onResetToDefaults: () => void;
   onRefreshLibrary: () => Promise<void>;
-  onExportLibrary: () => void;
-  onAddCategory: (category: Category) => void;
-  onUpdateCategory: (id: string, updates: Partial<Category>) => void;
-  onDeleteCategory: (id: string) => void;
-  onResetCategories: () => void;
-  onUpdateItemCategories: (oldCategoryId: string, newCategoryId: string) => void;
-  getCategoryById: (id: string) => Category | undefined;
+  availableLibraries: Library[];
+  selectedLibraryIds: string[];
+  onToggleLibrary: (libraryId: string) => void;
+  isLibrariesLoading: boolean;
 }
 
 export function ItemLibrary({
@@ -29,21 +22,13 @@ export function ItemLibrary({
   categories,
   isLoading,
   error,
-  onAddItem,
-  onUpdateItem,
-  onDeleteItem,
-  onResetToDefaults,
   onRefreshLibrary,
-  onExportLibrary,
-  onAddCategory,
-  onUpdateCategory,
-  onDeleteCategory,
-  onResetCategories,
-  onUpdateItemCategories,
-  getCategoryById,
+  availableLibraries,
+  selectedLibraryIds,
+  onToggleLibrary,
+  isLibrariesLoading,
 }: ItemLibraryProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [showManager, setShowManager] = useState(false);
   const [selectedWidths, setSelectedWidths] = useState<Set<number>>(new Set());
   const [selectedHeights, setSelectedHeights] = useState<Set<number>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
@@ -185,22 +170,21 @@ export function ItemLibrary({
       <h3 className="item-library-title">Item Library</h3>
       <p className="item-library-hint">Drag items onto the grid</p>
 
-      <button
-        className="export-library-button"
-        onClick={onExportLibrary}
-        title="Export library to JSON file"
-      >
-        Export Library
-      </button>
+      <LibrarySelector
+        availableLibraries={availableLibraries}
+        selectedLibraryIds={selectedLibraryIds}
+        onToggleLibrary={onToggleLibrary}
+        isLoading={isLibrariesLoading}
+      />
 
       <button
         className="refresh-library-button"
         onClick={() => {
-          if (window.confirm('Refresh library and categories from file? All custom changes will be lost.')) {
+          if (window.confirm('Refresh all libraries from files?')) {
             onRefreshLibrary();
           }
         }}
-        title="Re-fetch library and categories from file, discarding custom changes"
+        title="Re-fetch all selected libraries from files"
       >
         Refresh Library
       </button>
@@ -303,13 +287,6 @@ export function ItemLibrary({
         </div>
       )}
 
-      <button
-        className="manage-library-button"
-        onClick={() => setShowManager(true)}
-      >
-        Manage Library
-      </button>
-
       {!hasResults && (searchQuery || selectedWidths.size > 0 || selectedHeights.size > 0) && (
         <div className="library-no-results">
           <p>No items found{searchQuery && ` matching "${searchQuery}"`}</p>
@@ -318,24 +295,6 @@ export function ItemLibrary({
 
       {sortedCategories.map(({ category, items: categoryItems }) =>
         renderCategory(category, categoryItems)
-      )}
-
-      {showManager && (
-        <LibraryManager
-          items={items}
-          categories={categories}
-          onClose={() => setShowManager(false)}
-          onAddItem={onAddItem}
-          onUpdateItem={onUpdateItem}
-          onDeleteItem={onDeleteItem}
-          onResetToDefaults={onResetToDefaults}
-          onAddCategory={onAddCategory}
-          onUpdateCategory={onUpdateCategory}
-          onDeleteCategory={onDeleteCategory}
-          onResetCategories={onResetCategories}
-          onUpdateItemCategories={onUpdateItemCategories}
-          getCategoryById={getCategoryById}
-        />
       )}
     </div>
   );

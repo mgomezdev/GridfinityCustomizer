@@ -446,17 +446,6 @@
         "bin",
         "labeled"
       ]
-    },
-    {
-      "id": "utensil-simple-1x3",
-      "name": "1x3 Utensil Tray (simple)",
-      "widthUnits": 1,
-      "heightUnits": 3,
-      "color": "#FDFBD4",
-      "categories": [
-        "utensil"
-      ],
-      "imageUrl": "/images/utensil-simple-1x3.png"
     }
   ]
 }

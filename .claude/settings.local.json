@@ -16,7 +16,17 @@
       "Bash(gh issue view:*)",
       "Bash(gh issue list:*)",
       "Bash(npm run lint:*)",
-      "Bash(npm run test:run:*)"
+      "Bash(npm run test:run:*)",
+      "Bash(gh pr view:*)",
+      "Bash(git tag:*)",
+      "Bash(gh release create:*)",
+      "Bash(git merge:*)",
+      "Bash(npm test:*)",
+      "Bash(gh issue close:*)",
+      "Bash(git restore:*)",
+      "Bash(echo:*)",
+      "Bash(timeout 5 tail:*)",
+      "Bash(exit 0)"
     ]
   },
   "enableAllProjectMcpServers": true,

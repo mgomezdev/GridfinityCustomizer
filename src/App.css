@@ -1839,4 +1839,49 @@
   text-align: center;
 }
 
+/* Library Selector */
+.library-selector {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+}
+
+.library-selector-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.library-selector-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.library-selector-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.library-selector-item input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.library-selector-label {
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.library-selector-count {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  font-family: monospace;
+}
+
 
