@@ -233,6 +233,21 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
+}
+
+.selection-count-indicator {
+  position: absolute;
+  top: -28px;
+  right: 0;
+  font-size: 0.75rem;
+  color: var(--blue-600, #2563EB);
+  background: var(--blue-50, #EFF6FF);
+  border: 1px solid var(--blue-200, #BFDBFE);
+  border-radius: var(--radius-sm, 4px);
+  padding: 2px 8px;
+  z-index: 20;
+  pointer-events: none;
 }
 
 .grid-preview.empty {
