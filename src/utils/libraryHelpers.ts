@@ -33,7 +33,6 @@ export function unprefixItemId(prefixedId: string): { libraryId: string; itemId:
  * @returns Resolved absolute path or undefined
  */
 export function resolveImagePath(
-  libraryId: string,
   libraryBasePath: string,
   imageUrl?: string
 ): string | undefined {

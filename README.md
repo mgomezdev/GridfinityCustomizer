@@ -44,17 +44,8 @@ Gridfinity is a modular storage system designed for 3D printing, using standardi
 ### Developer Features
 - **E2E testing** - 47 Playwright tests for critical workflows
 - **Unit testing** - 511 tests covering hooks, components, and utilities
-- **Docker deployment** - One-command containerized deployment
 
 ## 🚀 Quick Start
-
-### Run with Docker (Recommended)
-
-```bash
-docker-compose up -d
-```
-
-Visit `http://localhost:8080`
 
 ### Local Development
 
@@ -136,32 +127,32 @@ npm run build        # Production build
 npm run lint         # Lint codebase
 ```
 
-## 🐳 Docker Deployment
+## 🚀 Deployment
 
-### Using Docker Compose (Recommended)
+This application is deployed on Cloudflare Pages with automatic builds from the main branch.
 
-```bash
-# Start container
-docker-compose up -d
+### Cloudflare Pages Setup
 
-# Stop container
-docker-compose down
+1. **Connect Repository**
+   - Log in to [Cloudflare Dashboard](https://dash.cloudflare.com)
+   - Navigate to Workers & Pages > Create application > Pages > Connect to Git
+   - Select GitHub repository: `mgomezdev/GridfinityCustomizer`
 
-# Custom port
-PORT=3000 docker-compose up -d
-```
+2. **Build Configuration**
+   - Framework preset: Vite
+   - Build command: `npm run build`
+   - Build output directory: `dist`
+   - Root directory: `/` (leave empty)
+   - Node version: `20` (set via environment variable `NODE_VERSION=20`)
 
-### Manual Docker Build
+3. **Deploy**
+   - Cloudflare Pages automatically builds and deploys on push to main branch
+   - Preview deployments are created automatically for pull requests
+   - Access your site at `https://<project-name>.pages.dev`
 
-```bash
-# Build image
-docker build -t gridfinity-customizer .
+### Custom Domain (Optional)
 
-# Run container
-docker run -d -p 8080:80 --name gridfinity gridfinity-customizer
-```
-
-The application will be available at `http://localhost:8080`.
+Configure a custom domain in Cloudflare Pages dashboard under Custom Domains.
 
 ## 📝 License
 

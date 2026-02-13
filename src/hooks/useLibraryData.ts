@@ -70,7 +70,7 @@ export function useLibraryData(
           return data.items.map((item) => ({
             ...item,
             id: prefixItemId(libraryId, item.id),
-            imageUrl: resolveImagePath(libraryId, libraryBasePath, item.imageUrl),
+            imageUrl: resolveImagePath(libraryBasePath, item.imageUrl),
           }));
         } catch (err) {
           console.error(`Failed to load library "${libraryId}":`, err);
