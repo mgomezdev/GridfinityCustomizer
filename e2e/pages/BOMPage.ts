@@ -11,10 +11,15 @@ export class BOMPage {
   readonly bomContainer: Locator;
   readonly bomItems: Locator;
 
+  readonly submitButton: Locator;
+  readonly submitNotice: Locator;
+
   constructor(page: Page) {
     this.page = page;
     this.bomContainer = page.locator('.bill-of-materials');
     this.bomItems = page.locator('.bom-item');
+    this.submitButton = page.locator('.bom-submit-button');
+    this.submitNotice = page.locator('.bom-submit-notice');
   }
 
   async waitForBOMReady(): Promise<void> {
