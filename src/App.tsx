@@ -275,12 +275,11 @@ function App() {
   const handleFitToScreen = useCallback(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
-    const rect = viewport.getBoundingClientRect();
-    // Content size: grid units * 42mm base cell size (approximate pixel mapping)
-    const contentWidth = gridResult.gridX * 42;
-    const contentHeight = gridResult.gridY * 42;
-    fitToScreen(rect.width, rect.height, contentWidth, contentHeight);
-  }, [fitToScreen, gridResult.gridX, gridResult.gridY]);
+    const content = viewport.querySelector('.grid-preview') as HTMLElement | null;
+    if (!content) return;
+    const viewportRect = viewport.getBoundingClientRect();
+    fitToScreen(viewportRect.width, viewportRect.height, content.offsetWidth, content.offsetHeight);
+  }, [fitToScreen]);
 
   const handleRotateSelectedCw = useCallback(() => {
     rotateSelected('cw');
