@@ -51,7 +51,7 @@ export function ReferenceImageOverlay({
     setImageLoadError(true);
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handlePointerDown = (e: React.PointerEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -68,7 +68,7 @@ export function ReferenceImageOverlay({
     });
   };
 
-  const handleToolbarMouseDown = (e: React.MouseEvent) => {
+  const handleToolbarPointerDown = (e: React.PointerEvent) => {
     e.stopPropagation();
   };
 
@@ -82,11 +82,11 @@ export function ReferenceImageOverlay({
     onScaleChange(percentage / 100);
   };
 
-  // Attach global mouse event listeners during drag
+  // Attach global pointer event listeners during drag
   useEffect(() => {
     if (!dragState.isDragging) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const handlePointerMove = (e: PointerEvent) => {
       const container = containerRef.current?.parentElement;
       if (!container) return;
 
@@ -108,16 +108,22 @@ export function ReferenceImageOverlay({
       onPositionChange(clampedX, clampedY);
     };
 
-    const handleMouseUp = () => {
+    const handlePointerUp = () => {
       setDragState(INITIAL_DRAG_STATE);
     };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    const handlePointerCancel = () => {
+      setDragState(INITIAL_DRAG_STATE);
+    };
+
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerUp);
+    document.addEventListener('pointercancel', handlePointerCancel);
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+      document.removeEventListener('pointercancel', handlePointerCancel);
     };
   }, [dragState, onPositionChange]);
 
@@ -144,6 +150,7 @@ export function ReferenceImageOverlay({
     width: `${image.width}%`,
     height: `${image.height}%`,
     pointerEvents: 'auto',
+    touchAction: image.isLocked ? undefined : 'none',
   };
 
   // Inner content carries the visual transforms (scale + opacity)
@@ -163,12 +170,12 @@ export function ReferenceImageOverlay({
       ref={containerRef}
       className={className}
       style={wrapperStyle}
-      onMouseDown={handleMouseDown}
+      onPointerDown={handlePointerDown}
     >
       {isSelected && (
         <div
           className="reference-image-overlay__toolbar"
-          onMouseDown={handleToolbarMouseDown}
+          onPointerDown={handleToolbarPointerDown}
         >
           <label className="reference-image-overlay__toolbar-label">
             Op

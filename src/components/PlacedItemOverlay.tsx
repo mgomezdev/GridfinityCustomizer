@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import type { PlacedItemWithValidity, DragData, LibraryItem } from '../types/gridfinity';
+import type { PlacedItemWithValidity, LibraryItem } from '../types/gridfinity';
+import { usePointerDragSource } from '../hooks/usePointerDrag';
 
 interface PlacedItemOverlayProps {
   item: PlacedItemWithValidity;
@@ -71,20 +72,14 @@ export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, ge
     setLoadState({ forUrl: libraryItem?.imageUrl ?? '', loaded: false, error: true });
   };
 
-  const handleDragStart = (e: React.DragEvent) => {
-    const dragData: DragData = {
+  const { onPointerDown } = usePointerDragSource({
+    dragData: {
       type: 'placed',
       itemId: item.itemId,
       instanceId: item.instanceId,
-    };
-    e.dataTransfer.setData('application/json', JSON.stringify(dragData));
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onSelect(item.instanceId, { shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey });
-  };
+    },
+    onTap: (e: PointerEvent) => onSelect(item.instanceId, { shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey }),
+  });
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -114,10 +109,9 @@ export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, ge
         height: `${(item.height / gridY) * 100}%`,
         backgroundColor: `${color}66`,
         borderColor: color,
+        touchAction: 'none',
       }}
-      draggable
-      onDragStart={handleDragStart}
-      onClick={handleClick}
+      onPointerDown={onPointerDown}
     >
       {libraryItem?.imageUrl && !imageError && (
         <div className="placed-item-image-container">

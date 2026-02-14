@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import type { LibraryItem, DragData } from '../types/gridfinity';
+import type { LibraryItem } from '../types/gridfinity';
+import { usePointerDragSource } from '../hooks/usePointerDrag';
 
 interface LibraryItemCardProps {
   item: LibraryItem;
@@ -24,14 +25,12 @@ export function LibraryItemCard({ item }: LibraryItemCardProps) {
   const imageError = isCurrentUrl && loadState.error;
   const shouldShowImage = item.imageUrl && imageLoaded && !imageError;
 
-  const handleDragStart = (e: React.DragEvent) => {
-    const dragData: DragData = {
+  const { onPointerDown } = usePointerDragSource({
+    dragData: {
       type: 'library',
       itemId: item.id,
-    };
-    e.dataTransfer.setData('application/json', JSON.stringify(dragData));
-    e.dataTransfer.effectAllowed = 'copy';
-  };
+    },
+  });
 
   const handleImageLoad = () => {
     setLoadState({ forUrl: item.imageUrl ?? '', loaded: true, error: false });
@@ -60,8 +59,8 @@ export function LibraryItemCard({ item }: LibraryItemCardProps) {
   return (
     <div
       className="library-item-card"
-      draggable
-      onDragStart={handleDragStart}
+      onPointerDown={onPointerDown}
+      style={{ touchAction: 'none' }}
     >
       <div className="library-item-preview-container">
         {item.imageUrl && !imageError && (

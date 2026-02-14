@@ -1,12 +1,11 @@
 import type { Page, Locator } from '@playwright/test';
 
 /**
- * Performs HTML5 drag and drop with proper dataTransfer handling.
- * This simulates the full drag-and-drop flow that React components expect.
- * Uses element handles from Playwright locators instead of elementFromPoint
- * for reliable element targeting.
+ * Performs drag and drop using pointer events (mouse movements).
+ * This simulates the full drag-and-drop flow using the Pointer Events API
+ * that the application now uses instead of HTML5 Drag and Drop.
  */
-export async function html5DragDrop(
+export async function pointerDragDrop(
   page: Page,
   source: Locator,
   target: Locator,
@@ -31,123 +30,19 @@ export async function html5DragDrop(
     dropY = targetBox.y + targetBox.height / 2;
   }
 
-  // Get element handles directly from locators (more reliable than elementFromPoint)
-  const sourceHandle = await source.elementHandle();
-  if (!sourceHandle) {
-    throw new Error('Could not get element handle for source locator');
+  // Use mouse methods which generate pointer events in the browser
+  await page.mouse.move(sourceX, sourceY);
+  await page.mouse.down();
+
+  // Move in steps to exceed the 5px drag threshold
+  const steps = 10;
+  for (let i = 1; i <= steps; i++) {
+    const x = sourceX + (dropX - sourceX) * (i / steps);
+    const y = sourceY + (dropY - sourceY) * (i / steps);
+    await page.mouse.move(x, y);
   }
 
-  // Execute the drag and drop in browser context with proper event simulation
-  await page.evaluate(
-    async ({ sourceEl, sourceX, sourceY, dropX, dropY }) => {
-      const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-      // Find the draggable element (may be a parent of the source)
-      const draggable = (sourceEl as HTMLElement).closest('[draggable="true"]') as HTMLElement
-        || sourceEl as HTMLElement;
-
-      // Store the data that would be set during dragstart
-      // We need to capture this and pass it through manually
-      const storedData: Record<string, string> = {};
-
-      // Create a proxy dataTransfer that stores and retrieves data
-      const createDataTransfer = () => {
-        const dt = new DataTransfer();
-        return {
-          dataTransfer: dt,
-          setData: (type: string, data: string) => {
-            storedData[type] = data;
-            try { dt.setData(type, data); } catch (e) { /* ignore */ }
-          },
-          getData: (type: string) => {
-            return storedData[type] || '';
-          },
-          get types() { return Object.keys(storedData); },
-          effectAllowed: 'copy' as string,
-          dropEffect: 'none' as string,
-        };
-      };
-
-      const transfer = createDataTransfer();
-
-      // Dispatch dragstart
-      const dragStartEvent = new DragEvent('dragstart', {
-        bubbles: true,
-        cancelable: true,
-        clientX: sourceX,
-        clientY: sourceY,
-      });
-
-      // Manually set dataTransfer with our proxy
-      Object.defineProperty(dragStartEvent, 'dataTransfer', {
-        value: {
-          setData: transfer.setData,
-          getData: transfer.getData,
-          get types() { return transfer.types; },
-          effectAllowed: transfer.effectAllowed,
-          dropEffect: transfer.dropEffect,
-        },
-        writable: false,
-      });
-
-      draggable.dispatchEvent(dragStartEvent);
-      await sleep(50);
-
-      // Find the grid-container by selector (reliable regardless of overlapping elements)
-      const gridContainer = document.querySelector('.grid-container') as HTMLElement;
-      if (!gridContainer) {
-        throw new Error('Could not find grid container for drop events');
-      }
-
-      // Dispatch dragover
-      const dragOverEvent = new DragEvent('dragover', {
-        bubbles: true,
-        cancelable: true,
-        clientX: dropX,
-        clientY: dropY,
-      });
-      Object.defineProperty(dragOverEvent, 'dataTransfer', {
-        value: {
-          setData: transfer.setData,
-          getData: transfer.getData,
-          get types() { return transfer.types; },
-          effectAllowed: transfer.effectAllowed,
-          dropEffect: 'copy',
-        },
-        writable: false,
-      });
-      gridContainer.dispatchEvent(dragOverEvent);
-      await sleep(50);
-
-      // Dispatch drop
-      const dropEvent = new DragEvent('drop', {
-        bubbles: true,
-        cancelable: true,
-        clientX: dropX,
-        clientY: dropY,
-      });
-      Object.defineProperty(dropEvent, 'dataTransfer', {
-        value: {
-          setData: transfer.setData,
-          getData: transfer.getData,
-          get types() { return transfer.types; },
-          effectAllowed: transfer.effectAllowed,
-          dropEffect: 'copy',
-        },
-        writable: false,
-      });
-      gridContainer.dispatchEvent(dropEvent);
-      await sleep(50);
-
-      // Dispatch dragend
-      const dragEndEvent = new DragEvent('dragend', {
-        bubbles: true,
-        cancelable: true,
-      });
-      draggable.dispatchEvent(dragEndEvent);
-    },
-    { sourceEl: sourceHandle, sourceX, sourceY, dropX, dropY }
-  );
+  await page.mouse.up();
 
   // Wait for React state to update
   await page.waitForTimeout(150);
@@ -178,7 +73,7 @@ export async function dragToGridCell(
   const targetX = (cellX + 0.5) * cellWidth;
   const targetY = (cellY + 0.5) * cellHeight;
 
-  await html5DragDrop(page, source, gridContainer, { x: targetX, y: targetY });
+  await pointerDragDrop(page, source, gridContainer, { x: targetX, y: targetY });
 }
 
 /**
@@ -212,8 +107,7 @@ export function getAllPlacedItems(page: Page): Locator {
 }
 
 /**
- * Performs a drag and drop using the native HTML5 drag and drop API
- * This is more reliable for components using dataTransfer
+ * Performs a drag and drop to a specific grid cell using pointer events
  */
 export async function dragAndDropToGrid(
   page: Page,
@@ -240,14 +134,8 @@ export async function dragAndDropToGrid(
   const cellWidth = gridBox.width / gridStyle.columns;
   const cellHeight = gridBox.height / gridStyle.rows;
 
-  const dropX = gridBox.x + (targetX + 0.5) * cellWidth;
-  const dropY = gridBox.y + (targetY + 0.5) * cellHeight;
-
-  // Use Playwright's built-in drag and drop with precise target coordinates
-  await source.dragTo(gridContainer, {
-    targetPosition: {
-      x: (targetX + 0.5) * cellWidth,
-      y: (targetY + 0.5) * cellHeight,
-    },
+  await pointerDragDrop(page, source, gridContainer, {
+    x: (targetX + 0.5) * cellWidth,
+    y: (targetY + 0.5) * cellHeight,
   });
 }

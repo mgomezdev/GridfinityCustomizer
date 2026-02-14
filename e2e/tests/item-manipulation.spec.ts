@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { GridPage } from '../pages/GridPage';
 import { LibraryPage } from '../pages/LibraryPage';
-import { html5DragDrop, dragToGridCell } from '../utils/drag-drop';
+import { dragToGridCell } from '../utils/drag-drop';
 
 test.describe('Item Manipulation', () => {
   let gridPage: GridPage;

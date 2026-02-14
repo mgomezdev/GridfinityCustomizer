@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { LibraryPage } from '../pages/LibraryPage';
 import { BOMPage } from '../pages/BOMPage';
 import { GridPage } from '../pages/GridPage';
-import { html5DragDrop, dragToGridCell } from '../utils/drag-drop';
+import { dragToGridCell } from '../utils/drag-drop';
 
 test.describe('Library Management', () => {
   let libraryPage: LibraryPage;
@@ -13,7 +13,7 @@ test.describe('Library Management', () => {
     await libraryPage.waitForLibraryReady();
   });
 
-  test('library displays items with name and size', async ({ page }) => {
+  test('library displays items with name and size', async () => {
     // Get first library item
     const firstItem = libraryPage.libraryItems.first();
     await expect(firstItem).toBeVisible();
@@ -31,15 +31,15 @@ test.describe('Library Management', () => {
     expect(sizeText).toMatch(/\d+x\d+/); // e.g., "1x1", "2x1"
   });
 
-  test('library items are draggable', async ({ page }) => {
+  test('library items are draggable', async () => {
     const firstItem = libraryPage.libraryItems.first();
 
-    // Check draggable attribute
-    const isDraggable = await firstItem.getAttribute('draggable');
-    expect(isDraggable).toBe('true');
+    // Items use pointer events for drag - verify touch-action is set
+    const touchAction = await firstItem.evaluate((el) => getComputedStyle(el).touchAction);
+    expect(touchAction).toBe('none');
   });
 
-  test('library shows color preview for items', async ({ page }) => {
+  test('library shows color preview for items', async () => {
     const firstItem = libraryPage.libraryItems.first();
 
     // Should have a preview section
@@ -62,7 +62,7 @@ test.describe('Bill of Materials Updates', () => {
     await libraryPage.waitForLibraryReady();
   });
 
-  test('BOM is empty when no items are placed', async ({ page }) => {
+  test('BOM is empty when no items are placed', async () => {
     // BOM should be empty or show no items
     const itemCount = await bomPage.getItemCount();
     expect(itemCount).toBe(0);

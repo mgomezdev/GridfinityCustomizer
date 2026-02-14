@@ -3,7 +3,6 @@ import { resolveImagePath, prefixItemId, unprefixItemId } from './libraryHelpers
 
 describe('libraryHelpers', () => {
   describe('resolveImagePath', () => {
-    const libraryId = 'simple-utensils';
     const basePath = '/libraries/simple-utensils';
 
     it('should handle undefined imageUrl', () => {

@@ -114,12 +114,6 @@ test.describe('Copy/Paste/Duplicate', () => {
     await page.keyboard.press('r');
     await page.waitForTimeout(100);
 
-    // Get the rotation state of the first item
-    const placedItem = page.locator('.placed-item').first();
-    const initialTransform = await placedItem.evaluate((el) => {
-      return window.getComputedStyle(el).transform;
-    });
-
     // Duplicate the item
     await page.keyboard.press('Control+d');
     await page.waitForTimeout(100);

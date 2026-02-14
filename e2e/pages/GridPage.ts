@@ -1,5 +1,5 @@
 import type { Page, Locator } from '@playwright/test';
-import { dragAndDropToGrid, getGridContainer, getAllPlacedItems } from '../utils/drag-drop';
+import { getAllPlacedItems } from '../utils/drag-drop';
 
 export class GridPage {
   readonly page: Page;
