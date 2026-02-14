@@ -99,7 +99,7 @@ e2e/
 - Mock external dependencies, not internal modules
 
 ## Git Workflow
-Always follow gitflow conventions: never commit directly to main. Create feature branches, open PRs, and merge via PR. When committing, verify all changed files are staged before committing (run `git status` to check for unstaged changes). No cherry-picking
+Always follow gitflow conventions: never commit directly to main. Create feature branches, open PRs, and merge via PR. When committing, verify all changed files are staged before committing (run `git status` to check for unstaged changes). No cherry-picking. **Never delete `main` or `develop` branches (local or remote).**
 
 ```bash
 # Create feature branch
