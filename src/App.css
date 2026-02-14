@@ -1885,7 +1885,7 @@
   width: 60px;
   height: 4px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.5);
   cursor: pointer;
   -webkit-appearance: none;
   appearance: none;
@@ -1911,7 +1911,8 @@
 }
 
 .reference-image-overlay__toolbar-slider:focus {
-  outline: none;
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 2px;
 }
 
 .reference-image-overlay__toolbar-btn {
@@ -1999,6 +2000,25 @@
   font-family: var(--font-body);
   font-weight: var(--font-medium);
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.reference-image-uploader__error-dismiss {
+  background: none;
+  border: none;
+  color: var(--invalid-primary);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.reference-image-uploader__error-dismiss:hover {
+  opacity: 0.7;
 }
 
 /* Library Selector */
@@ -2134,4 +2154,147 @@
   .reference-image-overlay__toolbar-btn:hover {
     background: transparent;
   }
+}
+
+/* Keyboard Help Button */
+.keyboard-help-button {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full, 50%);
+  border: 1px solid var(--border-primary);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.keyboard-help-button:hover {
+  background: var(--accent-primary);
+  color: white;
+  border-color: var(--accent-primary);
+}
+
+/* Keyboard Shortcuts Dialog */
+.keyboard-shortcuts-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.keyboard-shortcuts-dialog {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-lg, 0 10px 40px rgba(0, 0, 0, 0.15));
+  max-width: 520px;
+  width: 90%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  outline: none;
+}
+
+.keyboard-shortcuts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-lg);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.keyboard-shortcuts-header h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+}
+
+.keyboard-shortcuts-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.keyboard-shortcuts-close:hover {
+  color: var(--text-primary);
+}
+
+.keyboard-shortcuts-body {
+  padding: var(--space-lg);
+  overflow-y: auto;
+}
+
+.keyboard-shortcuts-section {
+  margin-bottom: var(--space-lg);
+}
+
+.keyboard-shortcuts-section:last-child {
+  margin-bottom: 0;
+}
+
+.keyboard-shortcuts-section h3 {
+  margin: 0 0 var(--space-sm) 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.keyboard-shortcuts-list {
+  margin: 0;
+  padding: 0;
+}
+
+.keyboard-shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-xs) 0;
+}
+
+.keyboard-shortcut-keys {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.keyboard-shortcut-separator {
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  margin: 0 2px;
+}
+
+.keyboard-shortcut-keys kbd {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono, monospace);
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+  min-width: 24px;
+  text-align: center;
+  box-shadow: 0 1px 0 var(--border-secondary);
+}
+
+.keyboard-shortcut-description {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  margin: 0;
 }

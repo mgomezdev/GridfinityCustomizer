@@ -20,7 +20,7 @@ export function BillOfMaterials({ items, onSubmitBOM, isSubmitting, submitError 
       </div>
 
       {items.length === 0 ? (
-        <div className="bom-empty">
+        <div className="bom-empty" role="status" aria-live="polite">
           <p>No items placed yet</p>
           <p className="bom-hint">Drag items from the library to add them</p>
         </div>

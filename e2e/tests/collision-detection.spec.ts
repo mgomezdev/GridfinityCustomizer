@@ -62,8 +62,18 @@ test.describe('Collision Detection', () => {
     // Both should be valid
     expect(await gridPage.hasInvalidItems()).toBe(false);
 
+    // Deselect before dragging the placed item
+    await gridPage.clickEmptyGridArea();
+    await page.waitForTimeout(200);
+
+    // Verify items are placed correctly before the move
+    expect(await gridPage.getPlacedItemCount()).toBe(2);
+
     // Move second item to overlap with first at cell (0, 0)
+    // Scroll the second item into view first — clickEmptyGridArea scrolls
+    // to the bottom-right cell, which can push top-row items off-viewport
     const secondItem = page.locator('.placed-item').nth(1);
+    await secondItem.scrollIntoViewIfNeeded();
     await dragToGridCell(page, secondItem, gridPage.gridContainer, 0, 0, 4, 4);
 
     // Now should have invalid items

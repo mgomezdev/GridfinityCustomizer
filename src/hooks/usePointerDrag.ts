@@ -1,7 +1,7 @@
 import { useCallback, useRef, useEffect } from 'react';
 import type { DragData } from '../types/gridfinity';
 
-// --- Module-level drag store (side-channel replacing HTML5 dataTransfer) ---
+// --- Drag store — encapsulated singleton replacing loose module-level vars ---
 
 interface ActiveDrag {
   data: DragData;
@@ -18,28 +18,44 @@ interface DropTargetConfig {
   onDrop: (dragData: DragData, x: number, y: number) => void;
 }
 
-let activeDrag: ActiveDrag | null = null;
-let registeredDropTarget: DropTargetConfig | null = null;
+const dragStore = {
+  activeDrag: null as ActiveDrag | null,
+  dropTarget: null as DropTargetConfig | null,
+
+  /** Reset all state — useful for tests */
+  reset(): void {
+    if (this.activeDrag?.ghostElement) {
+      this.activeDrag.ghostElement.remove();
+    }
+    this.activeDrag = null;
+    this.dropTarget = null;
+  },
+};
 
 const DRAG_THRESHOLD = 5; // pixels — below this, treat as tap
 
 export function getActiveDrag(): ActiveDrag | null {
-  return activeDrag;
+  return dragStore.activeDrag;
 }
 
 export function clearActiveDrag(): void {
-  if (activeDrag?.ghostElement) {
-    activeDrag.ghostElement.remove();
+  if (dragStore.activeDrag?.ghostElement) {
+    dragStore.activeDrag.ghostElement.remove();
   }
-  activeDrag = null;
+  dragStore.activeDrag = null;
 }
 
 export function registerDropTarget(config: DropTargetConfig): void {
-  registeredDropTarget = config;
+  dragStore.dropTarget = config;
 }
 
 export function unregisterDropTarget(): void {
-  registeredDropTarget = null;
+  dragStore.dropTarget = null;
+}
+
+/** Reset entire drag store (for testing) */
+export function resetDragStore(): void {
+  dragStore.reset();
 }
 
 // --- Ghost element ---
@@ -67,22 +83,23 @@ function createGhostElement(sourceElement: HTMLElement): HTMLElement {
 // --- Drop detection ---
 
 function attemptDrop(clientX: number, clientY: number): void {
-  if (!activeDrag || !registeredDropTarget) return;
+  const { activeDrag, dropTarget } = dragStore;
+  if (!activeDrag || !dropTarget) return;
 
-  const rect = registeredDropTarget.element.getBoundingClientRect();
+  const rect = dropTarget.element.getBoundingClientRect();
 
   // Check if drop coordinates fall within the grid container bounds
   if (clientX < rect.left || clientX > rect.right ||
       clientY < rect.top || clientY > rect.bottom) return;
 
-  const cellWidth = rect.width / registeredDropTarget.gridX;
-  const cellHeight = rect.height / registeredDropTarget.gridY;
+  const cellWidth = rect.width / dropTarget.gridX;
+  const cellHeight = rect.height / dropTarget.gridY;
   const dropX = Math.floor((clientX - rect.left) / cellWidth);
   const dropY = Math.floor((clientY - rect.top) / cellHeight);
-  const clampedX = Math.max(0, Math.min(dropX, registeredDropTarget.gridX - 1));
-  const clampedY = Math.max(0, Math.min(dropY, registeredDropTarget.gridY - 1));
+  const clampedX = Math.max(0, Math.min(dropX, dropTarget.gridX - 1));
+  const clampedY = Math.max(0, Math.min(dropY, dropTarget.gridY - 1));
 
-  registeredDropTarget.onDrop(activeDrag.data, clampedX, clampedY);
+  dropTarget.onDrop(activeDrag.data, clampedX, clampedY);
 }
 
 // --- usePointerDragSource hook ---
@@ -149,7 +166,7 @@ export function usePointerDragSource(
         isDragging = true;
 
         const rect = sourceElement.getBoundingClientRect();
-        activeDrag = {
+        dragStore.activeDrag = {
           data: optionsRef.current.dragData,
           ghostElement: createGhostElement(sourceElement),
           sourceElement,
@@ -161,9 +178,9 @@ export function usePointerDragSource(
         optionsRef.current.onDragStart?.();
       }
 
-      if (isDragging && activeDrag?.ghostElement) {
-        activeDrag.ghostElement.style.left = `${moveEvent.clientX - activeDrag.offsetX}px`;
-        activeDrag.ghostElement.style.top = `${moveEvent.clientY - activeDrag.offsetY}px`;
+      if (isDragging && dragStore.activeDrag?.ghostElement) {
+        dragStore.activeDrag.ghostElement.style.left = `${moveEvent.clientX - dragStore.activeDrag.offsetX}px`;
+        dragStore.activeDrag.ghostElement.style.top = `${moveEvent.clientY - dragStore.activeDrag.offsetY}px`;
       }
     };
 

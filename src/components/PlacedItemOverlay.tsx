@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { memo } from 'react';
 import type { PlacedItemWithValidity, LibraryItem } from '../types/gridfinity';
 import { usePointerDragSource } from '../hooks/usePointerDrag';
+import { useImageLoadState } from '../hooks/useImageLoadState';
 
 interface PlacedItemOverlayProps {
   item: PlacedItemWithValidity;
@@ -14,30 +15,15 @@ interface PlacedItemOverlayProps {
   onRotateCcw?: (instanceId: string) => void;
 }
 
-interface ImageLoadState {
-  forUrl: string;
-  loaded: boolean;
-  error: boolean;
-}
-
 const DEFAULT_VALID_COLOR = '#3B82F6';
 const INVALID_COLOR = '#EF4444';
 
-export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, getItemById, onDelete, onRotateCw, onRotateCcw }: PlacedItemOverlayProps) {
+export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, getItemById, onDelete, onRotateCw, onRotateCcw }: PlacedItemOverlayProps) {
   const libraryItem = getItemById(item.itemId);
   const color = item.isValid ? (libraryItem?.color || DEFAULT_VALID_COLOR) : INVALID_COLOR;
 
-  const [loadState, setLoadState] = useState<ImageLoadState>({
-    forUrl: '',
-    loaded: false,
-    error: false,
-  });
-
-  // Derive current state - automatically "resets" when URL changes
-  const isCurrentUrl = loadState.forUrl === libraryItem?.imageUrl;
-  const imageLoaded = isCurrentUrl && loadState.loaded;
-  const imageError = isCurrentUrl && loadState.error;
-  const shouldShowImage = libraryItem?.imageUrl && imageLoaded && !imageError;
+  const { imageError, shouldShowImage, handleImageLoad, handleImageError } =
+    useImageLoadState(libraryItem?.imageUrl);
 
   // Calculate image dimensions for rotation
   // When rotated 90° or 270°, we need to swap dimensions to fill the container
@@ -62,14 +48,6 @@ export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, ge
     }
 
     return { transform: `rotate(${item.rotation}deg)` };
-  };
-
-  const handleImageLoad = () => {
-    setLoadState({ forUrl: libraryItem?.imageUrl ?? '', loaded: true, error: false });
-  };
-
-  const handleImageError = () => {
-    setLoadState({ forUrl: libraryItem?.imageUrl ?? '', loaded: false, error: true });
   };
 
   const { onPointerDown } = usePointerDragSource({
@@ -111,8 +89,27 @@ export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, ge
         borderColor: color,
         touchAction: 'none',
       }}
+      role="button"
+      tabIndex={0}
+      aria-label={`${libraryItem?.name ?? 'Item'} at position ${item.x},${item.y}${isSelected ? ', selected' : ''}${!item.isValid ? ', invalid placement' : ''}`}
       onPointerDown={onPointerDown}
       onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect(item.instanceId, { shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey });
+        } else if (e.key === 'Delete' || e.key === 'Backspace') {
+          e.preventDefault();
+          onDelete?.(item.instanceId);
+        } else if (e.key === 'r' || e.key === 'R') {
+          e.preventDefault();
+          if (e.shiftKey) {
+            onRotateCcw?.(item.instanceId);
+          } else {
+            onRotateCw?.(item.instanceId);
+          }
+        }
+      }}
     >
       {libraryItem?.imageUrl && !imageError && (
         <div className="placed-item-image-container">
@@ -173,4 +170,4 @@ export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, ge
       )}
     </div>
   );
-}
+});

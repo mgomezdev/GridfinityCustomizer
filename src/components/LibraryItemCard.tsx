@@ -1,29 +1,14 @@
-import { useState } from 'react';
 import type { LibraryItem } from '../types/gridfinity';
 import { usePointerDragSource } from '../hooks/usePointerDrag';
+import { useImageLoadState } from '../hooks/useImageLoadState';
 
 interface LibraryItemCardProps {
   item: LibraryItem;
 }
 
-interface ImageLoadState {
-  forUrl: string;
-  loaded: boolean;
-  error: boolean;
-}
-
 export function LibraryItemCard({ item }: LibraryItemCardProps) {
-  const [loadState, setLoadState] = useState<ImageLoadState>({
-    forUrl: '',
-    loaded: false,
-    error: false,
-  });
-
-  // Derive current state - automatically "resets" when URL changes
-  const isCurrentUrl = loadState.forUrl === item.imageUrl;
-  const imageLoaded = isCurrentUrl && loadState.loaded;
-  const imageError = isCurrentUrl && loadState.error;
-  const shouldShowImage = item.imageUrl && imageLoaded && !imageError;
+  const { imageError, shouldShowImage, handleImageLoad, handleImageError } =
+    useImageLoadState(item.imageUrl);
 
   const { onPointerDown } = usePointerDragSource({
     dragData: {
@@ -31,14 +16,6 @@ export function LibraryItemCard({ item }: LibraryItemCardProps) {
       itemId: item.id,
     },
   });
-
-  const handleImageLoad = () => {
-    setLoadState({ forUrl: item.imageUrl ?? '', loaded: true, error: false });
-  };
-
-  const handleImageError = () => {
-    setLoadState({ forUrl: item.imageUrl ?? '', loaded: false, error: true });
-  };
 
   // Generate mini grid preview
   const previewCells = [];
@@ -61,6 +38,14 @@ export function LibraryItemCard({ item }: LibraryItemCardProps) {
       className="library-item-card"
       onPointerDown={onPointerDown}
       style={{ touchAction: 'none' }}
+      role="button"
+      tabIndex={0}
+      aria-label={`${item.name}, ${item.widthUnits} by ${item.heightUnits} units. Drag to place on grid.`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+        }
+      }}
     >
       <div className="library-item-preview-container">
         {item.imageUrl && !imageError && (
