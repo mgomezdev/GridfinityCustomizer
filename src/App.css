@@ -278,14 +278,20 @@
 /* Zoom Viewport */
 .preview-viewport {
   width: 100%;
-  flex: 1;
-  overflow: hidden;
   position: relative;
   border-radius: var(--radius-lg);
 }
 
+.preview-viewport.zoomed {
+  overflow: hidden;
+  flex: 1;
+}
+
 .preview-content {
   width: 100%;
+}
+
+.preview-content.transformed {
   will-change: transform;
 }
 

@@ -178,8 +178,8 @@ test.describe('Zoom and Pan Controls', () => {
 
       const content = page.locator('.preview-content');
       const transform = await content.evaluate((el) => el.style.transform);
-      expect(transform).toContain('scale(1)');
-      expect(transform).toContain('translate(0px, 0px)');
+      // At default zoom (1x, no pan), no inline transform is applied
+      expect(transform).toBe('');
     });
   });
 
