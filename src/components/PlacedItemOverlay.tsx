@@ -112,6 +112,7 @@ export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, ge
         touchAction: 'none',
       }}
       onPointerDown={onPointerDown}
+      onClick={(e) => e.stopPropagation()}
     >
       {libraryItem?.imageUrl && !imageError && (
         <div className="placed-item-image-container">
