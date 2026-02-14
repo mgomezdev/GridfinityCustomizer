@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { GridPreview } from './GridPreview';
 import type { PlacedItemWithValidity, LibraryItem, ComputedSpacer } from '../types/gridfinity';
+import type React from 'react';
 
 // Mock the PlacedItemOverlay component
 vi.mock('./PlacedItemOverlay', () => ({
@@ -21,6 +22,18 @@ vi.mock('./PlacedItemOverlay', () => ({
   ),
 }));
 
+// Mock the usePointerDrag hook
+const mockRegisterDropTarget = vi.fn();
+const mockUnregisterDropTarget = vi.fn();
+vi.mock('../hooks/usePointerDrag', () => ({
+  usePointerDropTarget: (options: { gridRef: React.RefObject<HTMLDivElement | null>; gridX: number; gridY: number; onDrop: unknown }) => {
+    // Match the real hook's behavior: only register if gridX and gridY are positive
+    if (options.gridX > 0 && options.gridY > 0) {
+      mockRegisterDropTarget(options);
+    }
+  },
+}));
+
 describe('GridPreview', () => {
   const mockGetItemById = (id: string): LibraryItem | undefined => {
     const items: Record<string, LibraryItem> = {
@@ -36,6 +49,8 @@ describe('GridPreview', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockRegisterDropTarget.mockClear();
+    mockUnregisterDropTarget.mockClear();
     originalGetBoundingClientRect = Element.prototype.getBoundingClientRect;
   });
 
@@ -325,26 +340,9 @@ describe('GridPreview', () => {
     });
   });
 
-  describe('Drag and Drop', () => {
-    // Note: Tests for drop position calculation are skipped because jsdom's
-    // getBoundingClientRect returns zeros and cannot be reliably mocked.
-    // Drop position calculation is tested in BinPlacement.integration.test.tsx
-    // which uses the hook directly without needing DOM measurements.
-
-    it.skip('should call onDrop when item is dropped on grid (requires real browser)', () => {
-      // This test requires getBoundingClientRect to work properly
-    });
-
-    it.skip('should calculate drop position in middle of grid (requires real browser)', () => {
-      // This test requires getBoundingClientRect to work properly
-    });
-
-    it.skip('should clamp drop position to grid boundaries (requires real browser)', () => {
-      // This test requires getBoundingClientRect to work properly
-    });
-
-    it('should not call onDrop if no drag data', () => {
-      const { container } = render(
+  describe('Drop Target Registration', () => {
+    it('should register as a drop target with correct grid dimensions', () => {
+      render(
         <GridPreview
           gridX={4}
           gridY={4}
@@ -356,25 +354,19 @@ describe('GridPreview', () => {
         />
       );
 
-      const gridContainer = container.querySelector('.grid-container');
-      const dataTransfer = {
-        getData: vi.fn().mockReturnValue(''),
-        dropEffect: '',
-      };
-
-      fireEvent.drop(gridContainer!, {
-        clientX: 250,
-        clientY: 250,
-        dataTransfer,
-      });
-
-      expect(mockOnDrop).not.toHaveBeenCalled();
+      expect(mockRegisterDropTarget).toHaveBeenCalledWith(
+        expect.objectContaining({
+          gridX: 4,
+          gridY: 4,
+          onDrop: mockOnDrop,
+        })
+      );
     });
 
-    it('should set dropEffect to copy on drag over', () => {
-      const { container } = render(
+    it('should not register drop target when gridX is 0', () => {
+      render(
         <GridPreview
-          gridX={4}
+          gridX={0}
           gridY={4}
           placedItems={[]}
           selectedItemIds={new Set()}
@@ -384,14 +376,23 @@ describe('GridPreview', () => {
         />
       );
 
-      const gridContainer = container.querySelector('.grid-container');
-      const dataTransfer = {
-        dropEffect: 'none',
-      };
+      expect(mockRegisterDropTarget).not.toHaveBeenCalled();
+    });
 
-      fireEvent.dragOver(gridContainer!, { dataTransfer });
+    it('should not register drop target when gridY is 0', () => {
+      render(
+        <GridPreview
+          gridX={4}
+          gridY={0}
+          placedItems={[]}
+          selectedItemId={null}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
 
-      expect(dataTransfer.dropEffect).toBe('copy');
+      expect(mockRegisterDropTarget).not.toHaveBeenCalled();
     });
   });
 

@@ -29,6 +29,9 @@ public/images/
 *.sln
 *.sw?
 
+# Coverage reports
+coverage/
+
 # Playwright
 /test-results/
 /playwright-report/

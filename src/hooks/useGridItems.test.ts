@@ -1248,7 +1248,6 @@ describe('useGridItems', () => {
         });
 
         const firstId = result.current.placedItems[0].instanceId;
-        const secondId = result.current.placedItems[1].instanceId;
 
         act(() => {
           result.current.selectItem(firstId);
