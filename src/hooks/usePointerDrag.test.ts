@@ -1238,10 +1238,6 @@ describe('usePointerDrag', () => {
       const onDrop = vi.fn();
       const dragData: DragData = { type: 'library', itemId: 'test-item' };
 
-      // Mock elementFromPoint
-      const originalElementFromPoint = document.elementFromPoint;
-      document.elementFromPoint = vi.fn(() => mockGridElement);
-
       registerDropTarget({
         element: mockGridElement,
         gridX: 4,
@@ -1298,16 +1294,11 @@ describe('usePointerDrag', () => {
 
       expect(onDrop).toHaveBeenCalledTimes(1);
       expect(onDrop).toHaveBeenCalledWith(dragData, 1, 1);
-
-      document.elementFromPoint = originalElementFromPoint;
     });
 
     it('should calculate correct grid cell from drop coordinates', () => {
       const onDrop = vi.fn();
       const dragData: DragData = { type: 'library', itemId: 'test-item' };
-
-      const originalElementFromPoint = document.elementFromPoint;
-      document.elementFromPoint = vi.fn(() => mockGridElement);
 
       registerDropTarget({
         element: mockGridElement,
@@ -1368,16 +1359,11 @@ describe('usePointerDrag', () => {
       });
 
       expect(onDrop).toHaveBeenCalledWith(dragData, 2, 3);
-
-      document.elementFromPoint = originalElementFromPoint;
     });
 
-    it('should clamp drop coordinates to grid bounds', () => {
+    it('should clamp drop coordinates at grid edge to last cell', () => {
       const onDrop = vi.fn();
       const dragData: DragData = { type: 'library', itemId: 'test-item' };
-
-      const originalElementFromPoint = document.elementFromPoint;
-      document.elementFromPoint = vi.fn(() => mockGridElement);
 
       registerDropTarget({
         element: mockGridElement,
@@ -1423,11 +1409,12 @@ describe('usePointerDrag', () => {
         document.dispatchEvent(pointerMoveEvent);
       });
 
-      // Drop at position way outside grid (500, 500)
+      // Drop at exact grid edge (400, 400) — right at the boundary
+      // cellWidth = 400 / 4 = 100, dropX = Math.floor(400 / 100) = 4, clamped to 3
       const pointerUpEvent = new PointerEvent('pointerup', {
         pointerId: 1,
-        clientX: 500,
-        clientY: 500,
+        clientX: 400,
+        clientY: 400,
       });
 
       act(() => {
@@ -1436,16 +1423,11 @@ describe('usePointerDrag', () => {
 
       // Should clamp to (3, 3) which is max valid position
       expect(onDrop).toHaveBeenCalledWith(dragData, 3, 3);
-
-      document.elementFromPoint = originalElementFromPoint;
     });
 
     it('should not call onDrop when drag ends outside grid', () => {
       const onDrop = vi.fn();
       const dragData: DragData = { type: 'library', itemId: 'test-item' };
-
-      const originalElementFromPoint = document.elementFromPoint;
-      document.elementFromPoint = vi.fn(() => document.body);
 
       registerDropTarget({
         element: mockGridElement,
@@ -1502,79 +1484,6 @@ describe('usePointerDrag', () => {
       });
 
       expect(onDrop).not.toHaveBeenCalled();
-
-      document.elementFromPoint = originalElementFromPoint;
-    });
-
-    it('should hide ghost element during elementFromPoint check', () => {
-      const onDrop = vi.fn();
-      const dragData: DragData = { type: 'library', itemId: 'test-item' };
-
-      let ghostDisplayDuringCheck: string | undefined;
-      const originalElementFromPoint = document.elementFromPoint;
-      document.elementFromPoint = vi.fn(() => {
-        const ghostElement = document.querySelector('[data-drag-ghost="true"]') as HTMLElement;
-        ghostDisplayDuringCheck = ghostElement?.style.display;
-        return mockGridElement;
-      });
-
-      registerDropTarget({
-        element: mockGridElement,
-        gridX: 4,
-        gridY: 4,
-        onDrop,
-      });
-
-      const { result } = renderHook(() =>
-        usePointerDragSource({
-          dragData,
-        })
-      );
-
-      const pointerDownEvent = new PointerEvent('pointerdown', {
-        pointerId: 1,
-        clientX: 50,
-        clientY: 50,
-        button: 0,
-        bubbles: true,
-      });
-
-      Object.defineProperty(pointerDownEvent, 'currentTarget', {
-        value: mockElement,
-        writable: false,
-      });
-      Object.defineProperty(pointerDownEvent, 'target', {
-        value: mockElement,
-        writable: false,
-      });
-
-      act(() => {
-        result.current.onPointerDown(pointerDownEvent as unknown as React.PointerEvent);
-      });
-
-      const pointerMoveEvent = new PointerEvent('pointermove', {
-        pointerId: 1,
-        clientX: 60,
-        clientY: 60,
-      });
-
-      act(() => {
-        document.dispatchEvent(pointerMoveEvent);
-      });
-
-      const pointerUpEvent = new PointerEvent('pointerup', {
-        pointerId: 1,
-        clientX: 150,
-        clientY: 150,
-      });
-
-      act(() => {
-        document.dispatchEvent(pointerUpEvent);
-      });
-
-      expect(ghostDisplayDuringCheck).toBe('none');
-
-      document.elementFromPoint = originalElementFromPoint;
     });
   });
 });

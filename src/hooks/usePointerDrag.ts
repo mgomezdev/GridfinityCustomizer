@@ -69,25 +69,20 @@ function createGhostElement(sourceElement: HTMLElement): HTMLElement {
 function attemptDrop(clientX: number, clientY: number): void {
   if (!activeDrag || !registeredDropTarget) return;
 
-  // Hide ghost so elementFromPoint can find the real element underneath
-  if (activeDrag.ghostElement) {
-    activeDrag.ghostElement.style.display = 'none';
-  }
+  const rect = registeredDropTarget.element.getBoundingClientRect();
 
-  const elementUnder = document.elementFromPoint(clientX, clientY);
-  const gridContainer = elementUnder?.closest('.grid-container');
+  // Check if drop coordinates fall within the grid container bounds
+  if (clientX < rect.left || clientX > rect.right ||
+      clientY < rect.top || clientY > rect.bottom) return;
 
-  if (gridContainer && gridContainer === registeredDropTarget.element) {
-    const rect = registeredDropTarget.element.getBoundingClientRect();
-    const cellWidth = rect.width / registeredDropTarget.gridX;
-    const cellHeight = rect.height / registeredDropTarget.gridY;
-    const dropX = Math.floor((clientX - rect.left) / cellWidth);
-    const dropY = Math.floor((clientY - rect.top) / cellHeight);
-    const clampedX = Math.max(0, Math.min(dropX, registeredDropTarget.gridX - 1));
-    const clampedY = Math.max(0, Math.min(dropY, registeredDropTarget.gridY - 1));
+  const cellWidth = rect.width / registeredDropTarget.gridX;
+  const cellHeight = rect.height / registeredDropTarget.gridY;
+  const dropX = Math.floor((clientX - rect.left) / cellWidth);
+  const dropY = Math.floor((clientY - rect.top) / cellHeight);
+  const clampedX = Math.max(0, Math.min(dropX, registeredDropTarget.gridX - 1));
+  const clampedY = Math.max(0, Math.min(dropY, registeredDropTarget.gridY - 1));
 
-    registeredDropTarget.onDrop(activeDrag.data, clampedX, clampedY);
-  }
+  registeredDropTarget.onDrop(activeDrag.data, clampedX, clampedY);
 }
 
 // --- usePointerDragSource hook ---
