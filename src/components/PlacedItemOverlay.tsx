@@ -6,7 +6,7 @@ interface PlacedItemOverlayProps {
   gridX: number;
   gridY: number;
   isSelected: boolean;
-  onSelect: (instanceId: string) => void;
+  onSelect: (instanceId: string, modifiers: { shift: boolean; ctrl: boolean }) => void;
   getItemById: (id: string) => LibraryItem | undefined;
   onDelete?: (instanceId: string) => void;
   onRotateCw?: (instanceId: string) => void;
@@ -83,7 +83,7 @@ export function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, ge
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onSelect(item.instanceId);
+    onSelect(item.instanceId, { shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey });
   };
 
   const handleDeleteClick = (e: React.MouseEvent) => {

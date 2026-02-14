@@ -327,7 +327,7 @@ describe('PlacedItemOverlay', () => {
       const element = container.querySelector('.placed-item');
       fireEvent.click(element!);
 
-      expect(mockOnSelect).toHaveBeenCalledWith('test-item-123');
+      expect(mockOnSelect).toHaveBeenCalledWith('test-item-123', expect.objectContaining({ shift: false, ctrl: false }));
       expect(mockOnSelect).toHaveBeenCalledTimes(1);
     });
 

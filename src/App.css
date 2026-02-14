@@ -218,13 +218,81 @@
   padding: var(--space-2xl);
 }
 
+.preview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: var(--space-md);
+  gap: var(--space-md);
+}
+
 .reference-image-toolbar {
   display: flex;
   align-items: center;
   gap: var(--space-md);
+}
+
+/* Zoom Controls */
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.zoom-control-btn {
+  padding: var(--space-xs) var(--space-sm);
+  border: 2px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 32px;
+  text-align: center;
+}
+
+.zoom-control-btn:hover:not(:disabled) {
+  border-color: var(--grid-primary);
+  background: var(--bg-hover);
+}
+
+.zoom-control-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.zoom-level {
+  font-size: var(--text-sm);
+  font-family: var(--font-mono);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+  min-width: 3.5em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Zoom Viewport */
+.preview-viewport {
   width: 100%;
-  justify-content: flex-end;
-  margin-bottom: var(--space-md);
+  position: relative;
+  border-radius: var(--radius-lg);
+}
+
+.preview-viewport.zoomed {
+  overflow: hidden;
+  flex: 1;
+}
+
+.preview-content {
+  width: 100%;
+}
+
+.preview-content.transformed {
+  will-change: transform;
 }
 
 .grid-preview {
@@ -233,6 +301,21 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
+}
+
+.selection-count-indicator {
+  position: absolute;
+  top: -28px;
+  right: 0;
+  font-size: 0.75rem;
+  color: var(--blue-600, #2563EB);
+  background: var(--blue-50, #EFF6FF);
+  border: 1px solid var(--blue-200, #BFDBFE);
+  border-radius: var(--radius-sm, 4px);
+  padding: 2px 8px;
+  z-index: 20;
+  pointer-events: none;
 }
 
 .grid-preview.empty {
