@@ -275,12 +275,11 @@ function App() {
   const handleFitToScreen = useCallback(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
-    const rect = viewport.getBoundingClientRect();
-    // Content size: grid units * 42mm base cell size (approximate pixel mapping)
-    const contentWidth = gridResult.gridX * 42;
-    const contentHeight = gridResult.gridY * 42;
-    fitToScreen(rect.width, rect.height, contentWidth, contentHeight);
-  }, [fitToScreen, gridResult.gridX, gridResult.gridY]);
+    const content = viewport.querySelector('.grid-preview') as HTMLElement | null;
+    if (!content) return;
+    const viewportRect = viewport.getBoundingClientRect();
+    fitToScreen(viewportRect.width, viewportRect.height, content.offsetWidth, content.offsetHeight);
+  }, [fitToScreen]);
 
   const handleRotateSelectedCw = useCallback(() => {
     rotateSelected('cw');
@@ -564,15 +563,15 @@ function App() {
           </div>
           <div
             ref={viewportRef}
-            className="preview-viewport"
+            className={`preview-viewport${transform.zoom !== 1 || transform.panX !== 0 || transform.panY !== 0 ? ' zoomed' : ''}`}
             data-testid="preview-viewport"
           >
             <div
-              className="preview-content"
-              style={{
+              className={`preview-content${transform.zoom !== 1 || transform.panX !== 0 || transform.panY !== 0 ? ' transformed' : ''}`}
+              style={transform.zoom !== 1 || transform.panX !== 0 || transform.panY !== 0 ? {
                 transform: `scale(${transform.zoom}) translate(${transform.panX}px, ${transform.panY}px)`,
                 transformOrigin: '0 0',
-              }}
+              } : undefined}
             >
               <GridPreview
                 gridX={gridResult.gridX}
