@@ -150,4 +150,38 @@ export async function runMigrations(client: Client): Promise<void> {
       max_image_bytes INTEGER NOT NULL DEFAULT 52428800
     );
   `);
+
+  // Sharing tables
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS shared_projects (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      layout_id INTEGER NOT NULL REFERENCES layouts(id) ON DELETE CASCADE,
+      slug TEXT NOT NULL UNIQUE,
+      created_by INTEGER NOT NULL REFERENCES users(id),
+      expires_at TEXT,
+      view_count INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
+
+  await client.execute(`
+    CREATE INDEX IF NOT EXISTS idx_shared_projects_slug ON shared_projects(slug);
+  `);
+
+  // BOM submissions table
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS bom_submissions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      layout_id INTEGER REFERENCES layouts(id) ON DELETE SET NULL,
+      user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      grid_x INTEGER NOT NULL,
+      grid_y INTEGER NOT NULL,
+      width_mm REAL NOT NULL,
+      depth_mm REAL NOT NULL,
+      total_items INTEGER NOT NULL,
+      total_unique INTEGER NOT NULL,
+      export_json TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
 }

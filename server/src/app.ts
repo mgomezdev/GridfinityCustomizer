@@ -11,6 +11,8 @@ import librariesRoutes from './routes/libraries.routes.js';
 import categoriesRoutes from './routes/categories.routes.js';
 import imagesRoutes from './routes/images.routes.js';
 import layoutsRoutes from './routes/layouts.routes.js';
+import sharedRoutes from './routes/shared.routes.js';
+import bomRoutes from './routes/bom.routes.js';
 
 export function createApp(): express.Express {
   const app = express();
@@ -44,6 +46,8 @@ export function createApp(): express.Express {
   app.use('/api/v1/categories', categoriesRoutes);
   app.use('/api/v1/images', imagesRoutes);
   app.use('/api/v1/layouts', layoutsRoutes);
+  app.use('/api/v1', sharedRoutes);
+  app.use('/api/v1/bom', bomRoutes);
 
   // Global error handler (must be last)
   app.use(errorHandler);

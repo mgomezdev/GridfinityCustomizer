@@ -268,3 +268,40 @@ export interface TokenResponse {
   accessToken: string;
   refreshToken: string;
 }
+
+// ============================================================
+// Sharing API types
+// ============================================================
+
+export interface ApiSharedProject {
+  id: number;
+  layoutId: number;
+  slug: string;
+  createdBy: number;
+  expiresAt: string | null;
+  viewCount: number;
+  createdAt: string;
+}
+
+export interface ApiSharedLayoutView {
+  layout: ApiLayout;
+  placedItems: ApiPlacedItem[];
+  sharedBy: string;
+}
+
+// ============================================================
+// BOM API types
+// ============================================================
+
+export interface ApiBomSubmission {
+  id: number;
+  layoutId: number | null;
+  userId: number | null;
+  gridX: number;
+  gridY: number;
+  widthMm: number;
+  depthMm: number;
+  totalItems: number;
+  totalUnique: number;
+  createdAt: string;
+}

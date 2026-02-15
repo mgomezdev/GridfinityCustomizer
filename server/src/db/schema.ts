@@ -111,6 +111,34 @@ export const userStorage = sqliteTable('user_storage', {
   maxImageBytes: integer('max_image_bytes').notNull().default(52428800),
 });
 
+// Sharing tables
+export const sharedProjects = sqliteTable('shared_projects', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  layoutId: integer('layout_id').notNull().references(() => layouts.id, { onDelete: 'cascade' }),
+  slug: text('slug').notNull().unique(),
+  createdBy: integer('created_by').notNull().references(() => users.id),
+  expiresAt: text('expires_at'),
+  viewCount: integer('view_count').notNull().default(0),
+  createdAt: text('created_at').notNull().default(''),
+}, (table) => [
+  index('idx_shared_projects_slug').on(table.slug),
+]);
+
+// BOM tables
+export const bomSubmissions = sqliteTable('bom_submissions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  layoutId: integer('layout_id').references(() => layouts.id, { onDelete: 'set null' }),
+  userId: integer('user_id').references(() => users.id, { onDelete: 'set null' }),
+  gridX: integer('grid_x').notNull(),
+  gridY: integer('grid_y').notNull(),
+  widthMm: real('width_mm').notNull(),
+  depthMm: real('depth_mm').notNull(),
+  totalItems: integer('total_items').notNull(),
+  totalUnique: integer('total_unique').notNull(),
+  exportJson: text('export_json').notNull(),
+  createdAt: text('created_at').notNull().default(''),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   refreshTokens: many(refreshTokens),
@@ -169,6 +197,28 @@ export const placedItemsRelations = relations(placedItems, ({ one }) => ({
 export const userStorageRelations = relations(userStorage, ({ one }) => ({
   user: one(users, {
     fields: [userStorage.userId],
+    references: [users.id],
+  }),
+}));
+
+export const sharedProjectsRelations = relations(sharedProjects, ({ one }) => ({
+  layout: one(layouts, {
+    fields: [sharedProjects.layoutId],
+    references: [layouts.id],
+  }),
+  creator: one(users, {
+    fields: [sharedProjects.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const bomSubmissionsRelations = relations(bomSubmissions, ({ one }) => ({
+  layout: one(layouts, {
+    fields: [bomSubmissions.layoutId],
+    references: [layouts.id],
+  }),
+  user: one(users, {
+    fields: [bomSubmissions.userId],
     references: [users.id],
   }),
 }));
