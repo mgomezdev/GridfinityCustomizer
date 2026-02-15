@@ -15,7 +15,7 @@ export function ShareDialog({ isOpen, onClose, layoutId }: ShareDialogProps) {
 }
 
 function ShareDialogContent({ onClose, layoutId }: Omit<ShareDialogProps, 'isOpen'>) {
-  const { accessToken } = useAuth();
+  const { getAccessToken } = useAuth();
   const [shares, setShares] = useState<ApiSharedProject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -24,29 +24,31 @@ function ShareDialogContent({ onClose, layoutId }: Omit<ShareDialogProps, 'isOpe
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
 
   const loadShares = useCallback(async () => {
-    if (!accessToken) return;
+    const token = getAccessToken();
+    if (!token) return;
     setIsLoading(true);
     try {
-      const result = await getSharesByLayout(accessToken, layoutId);
+      const result = await getSharesByLayout(token, layoutId);
       setShares(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load shares');
     } finally {
       setIsLoading(false);
     }
-  }, [accessToken, layoutId]);
+  }, [getAccessToken, layoutId]);
 
   useEffect(() => {
     loadShares();
   }, [loadShares]);
 
   const handleCreateShare = async () => {
-    if (!accessToken) return;
+    const token = getAccessToken();
+    if (!token) return;
     setIsCreating(true);
     setError(null);
     try {
       const days = expiresInDays ? parseInt(expiresInDays, 10) : undefined;
-      await createShareLink(accessToken, layoutId, days);
+      await createShareLink(token, layoutId, days);
       setExpiresInDays('');
       await loadShares();
     } catch (err) {
@@ -57,9 +59,10 @@ function ShareDialogContent({ onClose, layoutId }: Omit<ShareDialogProps, 'isOpe
   };
 
   const handleDelete = async (shareId: number) => {
-    if (!accessToken) return;
+    const token = getAccessToken();
+    if (!token) return;
     try {
-      await deleteShareLink(accessToken, shareId);
+      await deleteShareLink(token, shareId);
       setShares(prev => prev.filter(s => s.id !== shareId));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete share');

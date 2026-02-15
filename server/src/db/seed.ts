@@ -46,12 +46,8 @@ function getCategoryName(id: string): string {
 }
 
 async function seed(): Promise<void> {
-  // Detect if running from compiled dist/ or source src/
-  const isRunningFromDist = __dirname.includes('dist');
-  // From src/db -> ../../.. = project root; from dist/db -> ../../../.. = project root
-  const projectRoot = isRunningFromDist
-    ? resolve(__dirname, '..', '..', '..', '..')
-    : resolve(__dirname, '..', '..', '..');
+  // From server/src/db or server/dist/db -> 3 levels up = project root
+  const projectRoot = resolve(__dirname, '..', '..', '..');
   const publicDir = resolve(projectRoot, 'public');
 
   // Use environment variables if set (for Docker), otherwise use defaults
