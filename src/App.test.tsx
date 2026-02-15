@@ -57,6 +57,10 @@ vi.mock('./components/KeyboardShortcutsHelp', () => ({
   },
 }));
 
+vi.mock('./components/auth/UserMenu', () => ({
+  UserMenu: () => <div data-testid="user-menu" />,
+}));
+
 vi.mock('./components/DimensionInput', () => ({
   DimensionInput: (props: Record<string, unknown>) => (
     <div data-testid={`dimension-input-${props.label}`} data-value={props.value} />

@@ -21,6 +21,7 @@ import { BillOfMaterials } from './components/BillOfMaterials';
 import { ReferenceImageUploader } from './components/ReferenceImageUploader';
 import { ZoomControls } from './components/ZoomControls';
 import { KeyboardShortcutsHelp } from './components/KeyboardShortcutsHelp';
+import { UserMenu } from './components/auth/UserMenu';
 import './App.css';
 
 function App() {
@@ -454,14 +455,17 @@ function App() {
       <header className="app-header">
         <h1>Gridfinity Bin Customizer</h1>
         <p className="subtitle">Design your modular storage layout</p>
-        <button
-          className="keyboard-help-button"
-          onClick={() => setShowKeyboardHelp(true)}
-          aria-label="Keyboard shortcuts"
-          title="Keyboard shortcuts (?)"
-        >
-          ?
-        </button>
+        <div className="header-actions">
+          <UserMenu />
+          <button
+            className="keyboard-help-button"
+            onClick={() => setShowKeyboardHelp(true)}
+            aria-label="Keyboard shortcuts"
+            title="Keyboard shortcuts (?)"
+          >
+            ?
+          </button>
+        </div>
       </header>
 
       <section className="grid-controls">

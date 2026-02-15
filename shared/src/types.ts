@@ -182,3 +182,26 @@ export interface ReadyResponse {
 }
 
 export type UserRole = 'user' | 'admin';
+
+// ============================================================
+// Auth API types
+// ============================================================
+
+export interface ApiUser {
+  id: number;
+  email: string;
+  username: string;
+  role: UserRole;
+  createdAt: string;
+}
+
+export interface AuthResponse {
+  user: ApiUser;
+  accessToken: string;
+  refreshToken: string;
+}
+
+export interface TokenResponse {
+  accessToken: string;
+  refreshToken: string;
+}

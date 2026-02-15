@@ -2,6 +2,7 @@ import { createClient } from '@libsql/client';
 import { readFileSync, existsSync, mkdirSync, copyFileSync } from 'node:fs';
 import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import argon2 from 'argon2';
 import { runMigrations } from './migrate.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -178,6 +179,34 @@ async function seed(): Promise<void> {
     }
   }
 
+  // Seed default user accounts
+  console.log('');
+  console.log('Seeding default user accounts...');
+
+  // Clear existing users (cascade will handle refresh_tokens)
+  await client.execute('DELETE FROM refresh_tokens;');
+  await client.execute('DELETE FROM users;');
+
+  const adminPasswordHash = await argon2.hash('admin', { type: argon2.argon2id });
+  const testPasswordHash = await argon2.hash('test123', { type: argon2.argon2id });
+
+  await client.execute({
+    sql: `INSERT INTO users (email, username, password_hash, role, failed_login_attempts, created_at, updated_at)
+          VALUES (?, ?, ?, ?, 0, datetime('now'), datetime('now'))`,
+    args: ['admin@gridfinity.local', 'admin', adminPasswordHash, 'admin'],
+  });
+
+  await client.execute({
+    sql: `INSERT INTO users (email, username, password_hash, role, failed_login_attempts, created_at, updated_at)
+          VALUES (?, ?, ?, ?, 0, datetime('now'), datetime('now'))`,
+    args: ['test@gridfinity.local', 'test', testPasswordHash, 'user'],
+  });
+
+  console.log('  Created admin account: admin@gridfinity.local / admin');
+  console.log('  Created test account: test@gridfinity.local / test123');
+  console.log('  WARNING: Change default passwords before deploying to production!');
+
+  console.log('');
   console.log('Seed complete!');
 
   // Print summary
@@ -185,12 +214,14 @@ async function seed(): Promise<void> {
   const itemCount = await client.execute('SELECT COUNT(*) as count FROM library_items');
   const catCount = await client.execute('SELECT COUNT(*) as count FROM categories');
   const junctionCount = await client.execute('SELECT COUNT(*) as count FROM item_categories');
+  const userCount = await client.execute('SELECT COUNT(*) as count FROM users');
 
   console.log(`Summary:`);
   console.log(`  Libraries: ${libCount.rows[0].count}`);
   console.log(`  Items: ${itemCount.rows[0].count}`);
   console.log(`  Categories: ${catCount.rows[0].count}`);
   console.log(`  Item-Category links: ${junctionCount.rows[0].count}`);
+  console.log(`  Users: ${userCount.rows[0].count}`);
 
   client.close();
 }

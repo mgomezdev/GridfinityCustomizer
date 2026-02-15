@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, primaryKey, index } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
 
 export const libraries = sqliteTable('libraries', {
@@ -43,7 +43,44 @@ export const itemCategories = sqliteTable('item_categories', {
   primaryKey({ columns: [table.libraryId, table.itemId, table.categoryId] }),
 ]);
 
+// Auth tables
+export const users = sqliteTable('users', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  email: text('email').notNull().unique(),
+  username: text('username').notNull().unique(),
+  passwordHash: text('password_hash').notNull(),
+  role: text('role').notNull().default('user'),
+  failedLoginAttempts: integer('failed_login_attempts').notNull().default(0),
+  lockedUntil: text('locked_until'),
+  createdAt: text('created_at').notNull().default(''),
+  updatedAt: text('updated_at').notNull().default(''),
+});
+
+export const refreshTokens = sqliteTable('refresh_tokens', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  familyId: text('family_id').notNull(),
+  tokenHash: text('token_hash').notNull().unique(),
+  isRevoked: integer('is_revoked', { mode: 'boolean' }).notNull().default(false),
+  expiresAt: text('expires_at').notNull(),
+  createdAt: text('created_at').notNull().default(''),
+}, (table) => [
+  index('idx_refresh_tokens_family').on(table.familyId),
+  index('idx_refresh_tokens_user').on(table.userId),
+]);
+
 // Relations
+export const usersRelations = relations(users, ({ many }) => ({
+  refreshTokens: many(refreshTokens),
+}));
+
+export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [refreshTokens.userId],
+    references: [users.id],
+  }),
+}));
+
 export const librariesRelations = relations(libraries, ({ many }) => ({
   items: many(libraryItems),
 }));
