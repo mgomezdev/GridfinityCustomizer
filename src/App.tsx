@@ -10,6 +10,7 @@ import { useCategoryData } from './hooks/useCategoryData';
 import { useReferenceImages } from './hooks/useReferenceImages';
 import { useGridTransform } from './hooks/useGridTransform';
 import { useSubmitBOM } from './hooks/useSubmitBOM';
+import { useAuth } from './contexts/AuthContext';
 import { migrateStoredItems, migrateLibrarySelection } from './utils/migration';
 import { DimensionInput } from './components/DimensionInput';
 import { GridPreview } from './components/GridPreview';
@@ -22,6 +23,9 @@ import { ReferenceImageUploader } from './components/ReferenceImageUploader';
 import { ZoomControls } from './components/ZoomControls';
 import { KeyboardShortcutsHelp } from './components/KeyboardShortcutsHelp';
 import { UserMenu } from './components/auth/UserMenu';
+import { SaveLayoutDialog } from './components/layouts/SaveLayoutDialog';
+import { LoadLayoutDialog } from './components/layouts/LoadLayoutDialog';
+import type { LoadedLayoutConfig } from './components/layouts/LoadLayoutDialog';
 import './App.css';
 
 function App() {
@@ -35,6 +39,10 @@ function App() {
   });
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [showLoadDialog, setShowLoadDialog] = useState(false);
+
+  const { isAuthenticated } = useAuth();
 
   // Run migrations on mount
   useEffect(() => {
@@ -122,6 +130,7 @@ function App() {
     rotateItem,
     deleteItem,
     clearAll,
+    loadItems,
     selectItem,
     selectAll,
     deselectAll,
@@ -295,6 +304,19 @@ function App() {
       clearAll();
     }
   };
+
+  const handleLoadLayout = useCallback((config: LoadedLayoutConfig) => {
+    // Set dimensions (always in mm)
+    if (unitSystem === 'imperial') {
+      setWidth(parseFloat(mmToInches(config.widthMm).toFixed(4)));
+      setDepth(parseFloat(mmToInches(config.depthMm).toFixed(4)));
+    } else {
+      setWidth(config.widthMm);
+      setDepth(config.depthMm);
+    }
+    setSpacerConfig(config.spacerConfig);
+    loadItems(config.placedItems);
+  }, [unitSystem, loadItems]);
 
   const handleRemoveImage = (id: string) => {
     removeImage(id);
@@ -562,6 +584,24 @@ function App() {
           <div className="preview-toolbar">
             <div className="reference-image-toolbar">
               <ReferenceImageUploader onUpload={addImage} />
+              {isAuthenticated && (
+                <button
+                  className="layout-toolbar-btn layout-load-btn"
+                  onClick={() => setShowLoadDialog(true)}
+                  type="button"
+                >
+                  Load
+                </button>
+              )}
+              {isAuthenticated && placedItems.length > 0 && (
+                <button
+                  className="layout-toolbar-btn layout-save-btn"
+                  onClick={() => setShowSaveDialog(true)}
+                  type="button"
+                >
+                  Save
+                </button>
+              )}
               {placedItems.length > 0 && (
                 <button className="clear-all-button" onClick={handleClearAll}>
                   Clear All ({placedItems.length})
@@ -628,6 +668,24 @@ function App() {
       <KeyboardShortcutsHelp
         isOpen={showKeyboardHelp}
         onClose={() => setShowKeyboardHelp(false)}
+      />
+
+      <SaveLayoutDialog
+        isOpen={showSaveDialog}
+        onClose={() => setShowSaveDialog(false)}
+        gridX={gridResult.gridX}
+        gridY={gridResult.gridY}
+        widthMm={drawerWidth}
+        depthMm={drawerDepth}
+        spacerConfig={spacerConfig}
+        placedItems={placedItems}
+      />
+
+      <LoadLayoutDialog
+        isOpen={showLoadDialog}
+        onClose={() => setShowLoadDialog(false)}
+        onLoad={handleLoadLayout}
+        hasItems={placedItems.length > 0}
       />
     </div>
   );

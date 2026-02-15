@@ -184,6 +184,69 @@ export interface ReadyResponse {
 export type UserRole = 'user' | 'admin';
 
 // ============================================================
+// Layout API types
+// ============================================================
+
+export interface ApiLayout {
+  id: number;
+  userId: number;
+  name: string;
+  description: string | null;
+  gridX: number;
+  gridY: number;
+  widthMm: number;
+  depthMm: number;
+  spacerHorizontal: string;
+  spacerVertical: string;
+  isPublic: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApiPlacedItem {
+  id: number;
+  layoutId: number;
+  libraryId: string;
+  itemId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  sortOrder: number;
+}
+
+export interface ApiLayoutDetail extends ApiLayout {
+  placedItems: ApiPlacedItem[];
+}
+
+export interface CreateLayoutRequest {
+  name: string;
+  description?: string;
+  gridX: number;
+  gridY: number;
+  widthMm: number;
+  depthMm: number;
+  spacerHorizontal?: string;
+  spacerVertical?: string;
+  placedItems: Array<{
+    itemId: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    rotation: number;
+  }>;
+}
+
+export type UpdateLayoutRequest = CreateLayoutRequest;
+
+export interface UpdateLayoutMetaRequest {
+  name?: string;
+  description?: string;
+}
+
+// ============================================================
 // Auth API types
 // ============================================================
 

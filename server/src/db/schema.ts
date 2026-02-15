@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, primaryKey, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, primaryKey, index } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
 
 export const libraries = sqliteTable('libraries', {
@@ -69,9 +69,52 @@ export const refreshTokens = sqliteTable('refresh_tokens', {
   index('idx_refresh_tokens_user').on(table.userId),
 ]);
 
+// Layout tables
+export const layouts = sqliteTable('layouts', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  description: text('description'),
+  gridX: integer('grid_x').notNull(),
+  gridY: integer('grid_y').notNull(),
+  widthMm: real('width_mm').notNull(),
+  depthMm: real('depth_mm').notNull(),
+  spacerHorizontal: text('spacer_horizontal').notNull().default('none'),
+  spacerVertical: text('spacer_vertical').notNull().default('none'),
+  isPublic: integer('is_public', { mode: 'boolean' }).notNull().default(false),
+  createdAt: text('created_at').notNull().default(''),
+  updatedAt: text('updated_at').notNull().default(''),
+}, (table) => [
+  index('idx_layouts_user').on(table.userId),
+]);
+
+export const placedItems = sqliteTable('placed_items', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  layoutId: integer('layout_id').notNull().references(() => layouts.id, { onDelete: 'cascade' }),
+  libraryId: text('library_id').notNull(),
+  itemId: text('item_id').notNull(),
+  x: integer('x').notNull(),
+  y: integer('y').notNull(),
+  width: integer('width').notNull(),
+  height: integer('height').notNull(),
+  rotation: integer('rotation').notNull().default(0),
+  sortOrder: integer('sort_order').notNull().default(0),
+}, (table) => [
+  index('idx_placed_items_layout').on(table.layoutId),
+]);
+
+export const userStorage = sqliteTable('user_storage', {
+  userId: integer('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  layoutCount: integer('layout_count').notNull().default(0),
+  imageBytes: integer('image_bytes').notNull().default(0),
+  maxLayouts: integer('max_layouts').notNull().default(50),
+  maxImageBytes: integer('max_image_bytes').notNull().default(52428800),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   refreshTokens: many(refreshTokens),
+  layouts: many(layouts),
 }));
 
 export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({
@@ -105,5 +148,27 @@ export const itemCategoriesRelations = relations(itemCategories, ({ one }) => ({
   item: one(libraryItems, {
     fields: [itemCategories.libraryId, itemCategories.itemId],
     references: [libraryItems.libraryId, libraryItems.id],
+  }),
+}));
+
+export const layoutsRelations = relations(layouts, ({ one, many }) => ({
+  user: one(users, {
+    fields: [layouts.userId],
+    references: [users.id],
+  }),
+  placedItems: many(placedItems),
+}));
+
+export const placedItemsRelations = relations(placedItems, ({ one }) => ({
+  layout: one(layouts, {
+    fields: [placedItems.layoutId],
+    references: [layouts.id],
+  }),
+}));
+
+export const userStorageRelations = relations(userStorage, ({ one }) => ({
+  user: one(users, {
+    fields: [userStorage.userId],
+    references: [users.id],
   }),
 }));

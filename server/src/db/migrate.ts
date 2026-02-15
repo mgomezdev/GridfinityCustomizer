@@ -98,4 +98,56 @@ export async function runMigrations(client: Client): Promise<void> {
   await client.execute(`
     CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
   `);
+
+  // Layout tables
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS layouts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      description TEXT,
+      grid_x INTEGER NOT NULL CHECK (grid_x BETWEEN 1 AND 20),
+      grid_y INTEGER NOT NULL CHECK (grid_y BETWEEN 1 AND 20),
+      width_mm REAL NOT NULL,
+      depth_mm REAL NOT NULL,
+      spacer_horizontal TEXT NOT NULL DEFAULT 'none',
+      spacer_vertical TEXT NOT NULL DEFAULT 'none',
+      is_public INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
+
+  await client.execute(`
+    CREATE INDEX IF NOT EXISTS idx_layouts_user ON layouts(user_id);
+  `);
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS placed_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      layout_id INTEGER NOT NULL REFERENCES layouts(id) ON DELETE CASCADE,
+      library_id TEXT NOT NULL,
+      item_id TEXT NOT NULL,
+      x INTEGER NOT NULL,
+      y INTEGER NOT NULL,
+      width INTEGER NOT NULL CHECK (width BETWEEN 1 AND 10),
+      height INTEGER NOT NULL CHECK (height BETWEEN 1 AND 10),
+      rotation INTEGER NOT NULL DEFAULT 0 CHECK (rotation IN (0, 90, 180, 270)),
+      sort_order INTEGER NOT NULL DEFAULT 0
+    );
+  `);
+
+  await client.execute(`
+    CREATE INDEX IF NOT EXISTS idx_placed_items_layout ON placed_items(layout_id);
+  `);
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS user_storage (
+      user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      layout_count INTEGER NOT NULL DEFAULT 0,
+      image_bytes INTEGER NOT NULL DEFAULT 0,
+      max_layouts INTEGER NOT NULL DEFAULT 50,
+      max_image_bytes INTEGER NOT NULL DEFAULT 52428800
+    );
+  `);
 }

@@ -413,6 +413,16 @@ export function useGridItems(
     updateClipboard(selected);
   }, [updateClipboard]);
 
+  const loadItems = useCallback((items: PlacedItem[]) => {
+    // Replace all current items with the given items, assigning new instance IDs
+    const newItems = items.map(item => ({
+      ...item,
+      instanceId: generateInstanceId(),
+    }));
+    updateItems(newItems);
+    updateSelected(EMPTY_SET);
+  }, [updateItems, updateSelected]);
+
   const pasteItems = useCallback(() => {
     const clipboardItems = clipboardRef.current;
     if (clipboardItems.length === 0) return;
@@ -458,6 +468,7 @@ export function useGridItems(
     rotateItem,
     deleteItem,
     clearAll,
+    loadItems,
     selectItem,
     selectAll,
     deselectAll,

@@ -61,6 +61,26 @@ vi.mock('./components/auth/UserMenu', () => ({
   UserMenu: () => <div data-testid="user-menu" />,
 }));
 
+vi.mock('./contexts/AuthContext', () => ({
+  useAuth: () => ({
+    user: null,
+    isAuthenticated: false,
+    isLoading: false,
+    login: vi.fn(),
+    register: vi.fn(),
+    logout: vi.fn(),
+    getAccessToken: () => null,
+  }),
+}));
+
+vi.mock('./components/layouts/SaveLayoutDialog', () => ({
+  SaveLayoutDialog: () => null,
+}));
+
+vi.mock('./components/layouts/LoadLayoutDialog', () => ({
+  LoadLayoutDialog: () => null,
+}));
+
 vi.mock('./components/DimensionInput', () => ({
   DimensionInput: (props: Record<string, unknown>) => (
     <div data-testid={`dimension-input-${props.label}`} data-value={props.value} />
