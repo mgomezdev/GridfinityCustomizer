@@ -51,12 +51,6 @@ function App() {
     refreshLibraries,
   } = useLibraries();
 
-  // Memoize library metadata to prevent infinite re-renders
-  const manifestLibraries = useMemo(
-    () => availableLibraries.map(lib => ({ id: lib.id, path: lib.path })),
-    [availableLibraries]
-  );
-
   // Library data loading (multi-library)
   const {
     items: libraryItems,
@@ -64,7 +58,7 @@ function App() {
     error: libraryError,
     getItemById,
     refreshLibrary,
-  } = useLibraryData(selectedLibraryIds, manifestLibraries);
+  } = useLibraryData(selectedLibraryIds);
 
   // Category discovery from items
   const {

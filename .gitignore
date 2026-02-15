@@ -41,3 +41,11 @@ coverage/
 # Internal planning and development artifacts
 plans/
 TODOs.txt
+
+# Server data (SQLite DB + uploaded images)
+server/data/
+!server/data/.gitkeep
+
+# Environment files
+.env
+server/.env

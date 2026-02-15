@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Library, LibraryManifest, LibraryIndex } from '../types/gridfinity';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { Library } from '../types/gridfinity';
+import { useDataSource } from '../contexts/DataSourceContext';
 import { STORAGE_KEYS } from '../utils/storageKeys';
 
 const SELECTED_LIBRARIES_KEY = STORAGE_KEYS.SELECTED_LIBRARIES;
-const MANIFEST_PATH = '/libraries/manifest.json';
 
 export interface UseLibrariesResult {
   availableLibraries: Library[];
@@ -17,11 +18,13 @@ export interface UseLibrariesResult {
 
 /**
  * Hook for managing library discovery and selection
- * Loads manifest.json to discover available libraries
+ * Loads libraries via the DataSourceAdapter
  * Persists user's library selection to localStorage
  */
 export function useLibraries(): UseLibrariesResult {
-  const [availableLibraries, setAvailableLibraries] = useState<Library[]>([]);
+  const adapter = useDataSource();
+  const queryClient = useQueryClient();
+
   const [selectedLibraryIds, setSelectedLibraryIds] = useState<string[]>(() => {
     // Load from localStorage or default to ['default']
     try {
@@ -39,57 +42,21 @@ export function useLibraries(): UseLibrariesResult {
     }
     return ['default'];
   });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
 
-  // Fetch manifest and build library list
-  const fetchLibraries = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  // Fetch libraries via adapter using TanStack Query
+  const { data: libraryInfos, isLoading, error: queryError } = useQuery({
+    queryKey: ['libraries'],
+    queryFn: () => adapter.getLibraries(),
+  });
 
-    try {
-      const response = await fetch(MANIFEST_PATH);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch manifest: ${response.statusText}`);
-      }
-
-      const manifest: LibraryManifest = await response.json();
-
-      // Fetch item counts for each library in parallel
-      const librariesWithCounts = await Promise.all(
-        manifest.libraries.map(async (lib) => {
-          try {
-            const libResponse = await fetch(lib.path);
-            const data: LibraryIndex = await libResponse.json();
-            return {
-              ...lib,
-              isEnabled: selectedLibraryIds.includes(lib.id),
-              itemCount: data.items?.length ?? 0,
-            };
-          } catch (err) {
-            console.error(`Failed to load item count for ${lib.id}:`, err);
-            return {
-              ...lib,
-              isEnabled: selectedLibraryIds.includes(lib.id),
-              itemCount: undefined,
-            };
-          }
-        })
-      );
-
-      setAvailableLibraries(librariesWithCounts);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Unknown error loading libraries'));
-      console.error('Failed to load library manifest:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedLibraryIds]);
-
-  // Load manifest on mount
-  useEffect(() => {
-    fetchLibraries();
-  }, [fetchLibraries]);
+  // Transform LibraryInfo[] into Library[] with isEnabled based on selection
+  const availableLibraries: Library[] = (libraryInfos ?? []).map((info) => ({
+    id: info.id,
+    name: info.name,
+    path: info.path,
+    isEnabled: selectedLibraryIds.includes(info.id),
+    itemCount: info.itemCount,
+  }));
 
   // Persist selected library IDs to localStorage
   useEffect(() => {
@@ -127,14 +94,14 @@ export function useLibraries(): UseLibrariesResult {
 
   // Refresh library manifest
   const refreshLibraries = useCallback(async () => {
-    await fetchLibraries();
-  }, [fetchLibraries]);
+    await queryClient.invalidateQueries({ queryKey: ['libraries'] });
+  }, [queryClient]);
 
   return {
     availableLibraries,
     selectedLibraryIds,
     isLoading,
-    error,
+    error: queryError ?? null,
     toggleLibrary,
     selectLibraries,
     refreshLibraries,

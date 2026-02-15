@@ -1,13 +1,22 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { createQueryClient } from './api/queryClient'
+import { DataSourceProvider } from './contexts/DataSourceContext'
 import './index.css'
 import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
+const queryClient = createQueryClient()
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      <App />
+      <QueryClientProvider client={queryClient}>
+        <DataSourceProvider>
+          <App />
+        </DataSourceProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   </StrictMode>,
 )
