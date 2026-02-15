@@ -3,6 +3,7 @@ import { AppError, ErrorCodes } from '@gridfinity/shared';
 import type { ApiLayout, ApiLayoutDetail, ApiPlacedItem } from '@gridfinity/shared';
 import { db } from '../db/connection.js';
 import { layouts, placedItems, userStorage } from '../db/schema.js';
+import * as referenceImageService from './referenceImage.service.js';
 
 interface CursorData {
   createdAt: string;
@@ -143,9 +144,12 @@ export async function getLayoutById(
     .where(eq(placedItems.layoutId, layoutId))
     .orderBy(placedItems.sortOrder);
 
+  const refImages = await referenceImageService.getReferenceImagesByLayout(layoutId);
+
   return {
     ...formatLayout(layout),
     placedItems: itemRows.map(formatPlacedItem),
+    referenceImages: refImages,
   };
 }
 

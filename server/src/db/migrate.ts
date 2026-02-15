@@ -168,6 +168,29 @@ export async function runMigrations(client: Client): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_shared_projects_slug ON shared_projects(slug);
   `);
 
+  // Reference images table
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS reference_images (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      layout_id INTEGER NOT NULL REFERENCES layouts(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      x REAL NOT NULL DEFAULT 10,
+      y REAL NOT NULL DEFAULT 10,
+      width REAL NOT NULL DEFAULT 50,
+      height REAL NOT NULL DEFAULT 50,
+      opacity REAL NOT NULL DEFAULT 0.5,
+      scale REAL NOT NULL DEFAULT 1.0,
+      is_locked INTEGER NOT NULL DEFAULT 0,
+      rotation INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
+
+  await client.execute(`
+    CREATE INDEX IF NOT EXISTS idx_reference_images_layout ON reference_images(layout_id);
+  `);
+
   // BOM submissions table
   await client.execute(`
     CREATE TABLE IF NOT EXISTS bom_submissions (

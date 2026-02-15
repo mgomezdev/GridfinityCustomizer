@@ -111,6 +111,25 @@ export const userStorage = sqliteTable('user_storage', {
   maxImageBytes: integer('max_image_bytes').notNull().default(52428800),
 });
 
+// Reference images table
+export const referenceImages = sqliteTable('reference_images', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  layoutId: integer('layout_id').notNull().references(() => layouts.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  filePath: text('file_path').notNull(),
+  x: real('x').notNull().default(10),
+  y: real('y').notNull().default(10),
+  width: real('width').notNull().default(50),
+  height: real('height').notNull().default(50),
+  opacity: real('opacity').notNull().default(0.5),
+  scale: real('scale').notNull().default(1.0),
+  isLocked: integer('is_locked', { mode: 'boolean' }).notNull().default(false),
+  rotation: integer('rotation').notNull().default(0),
+  createdAt: text('created_at').notNull().default(''),
+}, (table) => [
+  index('idx_reference_images_layout').on(table.layoutId),
+]);
+
 // Sharing tables
 export const sharedProjects = sqliteTable('shared_projects', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -185,6 +204,14 @@ export const layoutsRelations = relations(layouts, ({ one, many }) => ({
     references: [users.id],
   }),
   placedItems: many(placedItems),
+  referenceImages: many(referenceImages),
+}));
+
+export const referenceImagesRelations = relations(referenceImages, ({ one }) => ({
+  layout: one(layouts, {
+    fields: [referenceImages.layoutId],
+    references: [layouts.id],
+  }),
 }));
 
 export const placedItemsRelations = relations(placedItems, ({ one }) => ({

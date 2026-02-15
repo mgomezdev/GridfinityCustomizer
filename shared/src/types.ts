@@ -216,8 +216,25 @@ export interface ApiPlacedItem {
   sortOrder: number;
 }
 
+export interface ApiReferenceImage {
+  id: number;
+  layoutId: number;
+  name: string;
+  filePath: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  opacity: number;
+  scale: number;
+  isLocked: boolean;
+  rotation: number;
+  createdAt: string;
+}
+
 export interface ApiLayoutDetail extends ApiLayout {
   placedItems: ApiPlacedItem[];
+  referenceImages?: ApiReferenceImage[];
 }
 
 export interface CreateLayoutRequest {
