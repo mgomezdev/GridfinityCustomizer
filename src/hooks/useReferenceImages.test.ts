@@ -229,6 +229,7 @@ describe('useReferenceImages', () => {
     });
 
     it('should save updated position to localStorage', async () => {
+      vi.useFakeTimers();
       const { result } = renderHook(() => useReferenceImages());
 
       await act(async () => {
@@ -241,12 +242,16 @@ describe('useReferenceImages', () => {
         result.current.updateImagePosition(imageId, 40, 50);
       });
 
+      // Flush debounced save
+      act(() => { vi.advanceTimersByTime(300); });
+
       const stored = localStorage.getItem('gridfinity-reference-images');
       const parsed: ReferenceImage[] = JSON.parse(stored!);
       expect(parsed[0]).toMatchObject({
         x: 40,
         y: 50,
       });
+      vi.useRealTimers();
     });
 
     it('should not update position when image is locked', async () => {
@@ -333,6 +338,7 @@ describe('useReferenceImages', () => {
     });
 
     it('should save updated scale to localStorage', async () => {
+      vi.useFakeTimers();
       const { result } = renderHook(() => useReferenceImages());
 
       await act(async () => {
@@ -345,9 +351,13 @@ describe('useReferenceImages', () => {
         result.current.updateImageScale(imageId, 2);
       });
 
+      // Flush debounced save
+      act(() => { vi.advanceTimersByTime(300); });
+
       const stored = localStorage.getItem('gridfinity-reference-images');
       const parsed: ReferenceImage[] = JSON.parse(stored!);
       expect(parsed[0].scale).toBe(2);
+      vi.useRealTimers();
     });
 
     it('should handle updating scale of non-existent image gracefully', async () => {
@@ -406,6 +416,7 @@ describe('useReferenceImages', () => {
     });
 
     it('should save updated opacity to localStorage', async () => {
+      vi.useFakeTimers();
       const { result } = renderHook(() => useReferenceImages());
 
       await act(async () => {
@@ -418,9 +429,13 @@ describe('useReferenceImages', () => {
         result.current.updateImageOpacity(imageId, 0.3);
       });
 
+      // Flush debounced save
+      act(() => { vi.advanceTimersByTime(300); });
+
       const stored = localStorage.getItem('gridfinity-reference-images');
       const parsed: ReferenceImage[] = JSON.parse(stored!);
       expect(parsed[0].opacity).toBe(0.3);
+      vi.useRealTimers();
     });
 
     it('should handle updating opacity of non-existent image gracefully', async () => {

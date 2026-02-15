@@ -20,6 +20,7 @@ import { SpacerControls } from './components/SpacerControls';
 import { BillOfMaterials } from './components/BillOfMaterials';
 import { ReferenceImageUploader } from './components/ReferenceImageUploader';
 import { ZoomControls } from './components/ZoomControls';
+import { KeyboardShortcutsHelp } from './components/KeyboardShortcutsHelp';
 import './App.css';
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
     vertical: 'none',
   });
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
 
   // Run migrations on mount
   useEffect(() => {
@@ -106,7 +108,7 @@ function App() {
     setUnitSystem(newUnit);
   };
 
-  const gridResult = calculateGrid(width, depth, unitSystem);
+  const gridResult = useMemo(() => calculateGrid(width, depth, unitSystem), [width, depth, unitSystem]);
 
   const drawerWidth = unitSystem === 'metric' ? width : inchesToMm(width);
   const drawerDepth = unitSystem === 'metric' ? depth : inchesToMm(depth);
@@ -414,6 +416,13 @@ function App() {
         return;
       }
 
+      // ?: Show keyboard shortcuts help
+      if (event.key === '?') {
+        event.preventDefault();
+        setShowKeyboardHelp(prev => !prev);
+        return;
+      }
+
       // Space: Track for pan mode
       if (event.key === ' ') {
         event.preventDefault();
@@ -451,6 +460,14 @@ function App() {
       <header className="app-header">
         <h1>Gridfinity Bin Customizer</h1>
         <p className="subtitle">Design your modular storage layout</p>
+        <button
+          className="keyboard-help-button"
+          onClick={() => setShowKeyboardHelp(true)}
+          aria-label="Keyboard shortcuts"
+          title="Keyboard shortcuts (?)"
+        >
+          ?
+        </button>
       </header>
 
       <section className="grid-controls">
@@ -488,7 +505,7 @@ function App() {
 
         <div className="dimension-inputs-row">
           <DimensionInput
-            label="W"
+            label="Width"
             value={width}
             onChange={setWidth}
             unit={unitSystem}
@@ -496,7 +513,7 @@ function App() {
           />
           <span className="dimension-separator">x</span>
           <DimensionInput
-            label="D"
+            label="Depth"
             value={depth}
             onChange={setDepth}
             unit={unitSystem}
@@ -609,6 +626,11 @@ function App() {
           />
         </section>
       </main>
+
+      <KeyboardShortcutsHelp
+        isOpen={showKeyboardHelp}
+        onClose={() => setShowKeyboardHelp(false)}
+      />
     </div>
   );
 }

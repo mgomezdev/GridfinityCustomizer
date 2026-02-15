@@ -25,7 +25,7 @@ export function ZoomControls({
         onClick={onZoomOut}
         disabled={zoom <= MIN_ZOOM}
         aria-label="Zoom out"
-        title="Zoom out"
+        title="Zoom out (-)"
       >
         -
       </button>
@@ -37,7 +37,7 @@ export function ZoomControls({
         onClick={onZoomIn}
         disabled={zoom >= MAX_ZOOM}
         aria-label="Zoom in"
-        title="Zoom in"
+        title="Zoom in (+)"
       >
         +
       </button>
@@ -45,7 +45,7 @@ export function ZoomControls({
         className="zoom-control-btn"
         onClick={onResetZoom}
         aria-label="Reset zoom"
-        title="Reset to 100%"
+        title="Reset to 100% (Ctrl+0)"
       >
         1:1
       </button>

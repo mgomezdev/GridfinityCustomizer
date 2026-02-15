@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import type { ReferenceImage } from '../types/gridfinity';
 
 interface ReferenceImageOverlayProps {
@@ -30,7 +30,7 @@ const INITIAL_DRAG_STATE: DragState = {
   startImageY: 0,
 };
 
-export function ReferenceImageOverlay({
+export const ReferenceImageOverlay = memo(function ReferenceImageOverlay({
   image,
   isSelected,
   onPositionChange,
@@ -178,7 +178,7 @@ export function ReferenceImageOverlay({
           onPointerDown={handleToolbarPointerDown}
         >
           <label className="reference-image-overlay__toolbar-label">
-            Op
+            Opacity
             <input
               id="opacity-slider"
               type="range"
@@ -188,10 +188,11 @@ export function ReferenceImageOverlay({
               onChange={handleOpacityChange}
               className="reference-image-overlay__toolbar-slider"
               title={`Opacity: ${opacityPercentage}%`}
+              aria-label={`Opacity: ${opacityPercentage}%`}
             />
           </label>
           <label className="reference-image-overlay__toolbar-label">
-            Sc
+            Scale
             <input
               id="scale-slider"
               type="range"
@@ -201,12 +202,14 @@ export function ReferenceImageOverlay({
               onChange={handleScaleChange}
               className="reference-image-overlay__toolbar-slider"
               title={`Scale: ${scalePercentage}%`}
+              aria-label={`Scale: ${scalePercentage}%`}
             />
           </label>
           <button
             className="reference-image-overlay__toolbar-btn reference-image-overlay__toolbar-btn--lock"
             onClick={onToggleLock}
-            title={image.isLocked ? 'Unlock image' : 'Lock image'}
+            title={image.isLocked ? 'Unlock image (L)' : 'Lock image (L)'}
+            aria-label={image.isLocked ? 'Unlock image' : 'Lock image'}
           >
             {image.isLocked ? 'Unlock' : 'Lock'}
           </button>
@@ -214,7 +217,8 @@ export function ReferenceImageOverlay({
             <button
               className="reference-image-overlay__toolbar-btn reference-image-overlay__toolbar-btn--rotate"
               onClick={onRotateCcw}
-              title="Rotate counter-clockwise"
+              title="Rotate counter-clockwise (Shift+R)"
+              aria-label="Rotate counter-clockwise"
             >
               &#8634;
             </button>
@@ -223,7 +227,8 @@ export function ReferenceImageOverlay({
             <button
               className="reference-image-overlay__toolbar-btn reference-image-overlay__toolbar-btn--rotate"
               onClick={onRotateCw}
-              title="Rotate clockwise"
+              title="Rotate clockwise (R)"
+              aria-label="Rotate clockwise"
             >
               &#8635;
             </button>
@@ -231,7 +236,8 @@ export function ReferenceImageOverlay({
           <button
             className="reference-image-overlay__toolbar-btn reference-image-overlay__toolbar-btn--remove"
             onClick={onRemove}
-            title="Remove image"
+            title="Remove image (Delete)"
+            aria-label="Remove image"
           >
             ×
           </button>
@@ -274,4 +280,4 @@ export function ReferenceImageOverlay({
       </div>
     </div>
   );
-}
+});

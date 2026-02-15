@@ -118,6 +118,9 @@ export function GridPreview({
         <div
           ref={gridRef}
           className="grid-container"
+          role="application"
+          aria-label={`Grid layout, ${gridX} columns by ${gridY} rows`}
+          tabIndex={0}
           style={{
             gridTemplateColumns: `repeat(${gridX}, 1fr)`,
             gridTemplateRows: `repeat(${gridY}, 1fr)`,

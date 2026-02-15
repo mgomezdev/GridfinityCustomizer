@@ -1,6 +1,32 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
 import type { PlacedItem, PlacedItemWithValidity, DragData, LibraryItem, Rotation } from '../types/gridfinity';
 
+/**
+ * Grid-based occupancy count for O(n) collision detection.
+ * Each cell stores the number of items occupying it.
+ */
+function buildOccupancyCount(
+  items: PlacedItem[],
+  gridX: number,
+  gridY: number
+): number[][] {
+  const grid: number[][] = Array.from({ length: gridY }, () =>
+    new Array<number>(gridX).fill(0)
+  );
+  for (const item of items) {
+    for (let dy = 0; dy < item.height; dy++) {
+      for (let dx = 0; dx < item.width; dx++) {
+        const cx = item.x + dx;
+        const cy = item.y + dy;
+        if (cx >= 0 && cx < gridX && cy >= 0 && cy < gridY) {
+          grid[cy][cx]++;
+        }
+      }
+    }
+  }
+  return grid;
+}
+
 function hasCollision(
   items: PlacedItem[],
   x: number,
@@ -61,6 +87,9 @@ function isSideways(rotation: Rotation): boolean {
 let instanceCounter = 0;
 
 function generateInstanceId(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return `item-${crypto.randomUUID()}`;
+  }
   return `item-${++instanceCounter}-${Date.now()}`;
 }
 
@@ -147,11 +176,24 @@ export function useGridItems(
   }, [selectedItemIds, placedItems]);
 
   const placedItemsWithValidity: PlacedItemWithValidity[] = useMemo(() => {
-    return placedItems.map(item => ({
-      ...item,
-      isValid: !hasCollision(placedItems, item.x, item.y, item.width, item.height, item.instanceId) &&
-               !isOutOfBounds(item.x, item.y, item.width, item.height, gridX, gridY)
-    }));
+    // Build occupancy count grid once (O(total_cells)), then check each item (O(item_cells))
+    const occupancy = buildOccupancyCount(placedItems, gridX, gridY);
+    return placedItems.map(item => {
+      const oob = isOutOfBounds(item.x, item.y, item.width, item.height, gridX, gridY);
+      if (oob) return { ...item, isValid: false };
+      // A cell with count > 1 means multiple items overlap there
+      let collides = false;
+      for (let dy = 0; dy < item.height && !collides; dy++) {
+        for (let dx = 0; dx < item.width && !collides; dx++) {
+          const cx = item.x + dx;
+          const cy = item.y + dy;
+          if (cx >= 0 && cx < gridX && cy >= 0 && cy < gridY && occupancy[cy][cx] > 1) {
+            collides = true;
+          }
+        }
+      }
+      return { ...item, isValid: !collides };
+    });
   }, [placedItems, gridX, gridY]);
 
   const addItem = useCallback((itemId: string, x: number, y: number) => {

@@ -23,7 +23,6 @@ export function ReferenceImageUploader({ onUpload }: ReferenceImageUploaderProps
     // Validate file type
     if (!file.type.startsWith('image/')) {
       setError('Please select a valid image file');
-      setTimeout(() => setError(null), 3000);
       return;
     }
 
@@ -33,11 +32,6 @@ export function ReferenceImageUploader({ onUpload }: ReferenceImageUploaderProps
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to upload image';
       setError(errorMessage);
-      // Use longer timeout for storage quota errors (5s) vs validation errors (3s)
-      const isStorageError = errorMessage.toLowerCase().includes('storage') ||
-                            errorMessage.toLowerCase().includes('quota');
-      const timeout = isStorageError ? 5000 : 3000;
-      setTimeout(() => setError(null), timeout);
     } finally {
       setIsUploading(false);
       // Reset file input so same file can be re-selected
@@ -67,7 +61,14 @@ export function ReferenceImageUploader({ onUpload }: ReferenceImageUploaderProps
       </button>
       {error && (
         <div className="reference-image-uploader__error" role="alert">
-          {error}
+          <span>{error}</span>
+          <button
+            className="reference-image-uploader__error-dismiss"
+            onClick={() => setError(null)}
+            aria-label="Dismiss error"
+          >
+            &times;
+          </button>
         </div>
       )}
     </div>
