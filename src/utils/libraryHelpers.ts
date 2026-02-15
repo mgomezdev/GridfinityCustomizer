@@ -38,9 +38,10 @@ export function resolveImagePath(
 ): string | undefined {
   if (!imageUrl) return undefined;
 
-  // Security: Reject paths with parent directory traversal
-  if (imageUrl.includes('../')) {
-    console.error(`Invalid image path (parent directory traversal): ${imageUrl}`);
+  // Security: Reject paths with parent directory traversal (including URL-encoded variants)
+  const decodedUrl = decodeURIComponent(imageUrl);
+  if (decodedUrl.includes('..') || decodedUrl.includes('\0')) {
+    console.error(`Invalid image path (parent directory traversal or null byte): ${imageUrl}`);
     return undefined;
   }
 

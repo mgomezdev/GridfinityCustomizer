@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { LibraryItem, Category } from '../types/gridfinity';
 import { CategoryManager } from './CategoryManager';
 
@@ -35,9 +35,50 @@ export function LibraryManager({
   onUpdateItemCategories,
   getCategoryById,
 }: LibraryManagerProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
   const [formMode, setFormMode] = useState<FormMode>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
+
+  // Focus trap and restore
+  useEffect(() => {
+    previousFocusRef.current = document.activeElement as HTMLElement;
+    dialogRef.current?.focus();
+    return () => {
+      previousFocusRef.current?.focus();
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if (e.key === 'Tab') {
+        const dialog = dialogRef.current;
+        if (!dialog) return;
+        const focusable = dialog.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
   const [formData, setFormData] = useState<Partial<LibraryItem>>({
     id: '',
     name: '',
@@ -139,8 +180,16 @@ export function LibraryManager({
   };
 
   return (
-    <div className="library-manager-overlay" onClick={onClose}>
-      <div className="library-manager" onClick={(e) => e.stopPropagation()}>
+    <div className="library-manager-overlay" onClick={onClose} role="presentation">
+      <div
+        ref={dialogRef}
+        className="library-manager"
+        role="dialog"
+        aria-label="Manage Library"
+        aria-modal="true"
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="library-manager-header">
           <h2>Manage Library</h2>
           <button className="close-button" onClick={onClose} aria-label="Close">

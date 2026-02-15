@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Library, LibraryManifest, LibraryIndex } from '../types/gridfinity';
+import { STORAGE_KEYS } from '../utils/storageKeys';
 
-const SELECTED_LIBRARIES_KEY = 'gridfinity-selected-libraries';
+const SELECTED_LIBRARIES_KEY = STORAGE_KEYS.SELECTED_LIBRARIES;
 const MANIFEST_PATH = '/libraries/manifest.json';
 
 export interface UseLibrariesResult {
@@ -26,7 +27,12 @@ export function useLibraries(): UseLibrariesResult {
     try {
       const stored = localStorage.getItem(SELECTED_LIBRARIES_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        // Validate: must be a non-empty array of strings
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed.every((id: unknown) => typeof id === 'string')) {
+          return parsed;
+        }
+        console.warn('Invalid library selection in localStorage, using defaults');
       }
     } catch (err) {
       console.warn('Failed to load selected libraries from localStorage:', err);

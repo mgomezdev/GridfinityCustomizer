@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import type { LibraryItem, Category, Library } from '../types/gridfinity';
 import { LibraryItemCard } from './LibraryItemCard';
 import { LibrarySelector } from './LibrarySelector';
+import { STORAGE_KEYS } from '../utils/storageKeys';
 
-const STORAGE_KEY = 'gridfinity-collapsed-categories';
+const STORAGE_KEY = STORAGE_KEYS.COLLAPSED_CATEGORIES;
 
 interface ItemLibraryProps {
   items: LibraryItem[];

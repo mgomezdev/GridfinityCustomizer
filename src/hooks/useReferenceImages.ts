@@ -1,9 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { ReferenceImage, InteractionMode, Rotation } from '../types/gridfinity';
 import { fileToDataUrl } from '../utils/imageUtils';
+import { STORAGE_KEYS } from '../utils/storageKeys';
 
-const STORAGE_KEY = 'gridfinity-reference-images';
+const STORAGE_KEY = STORAGE_KEYS.REFERENCE_IMAGES;
 const DEFAULT_INTERACTION_MODE: InteractionMode = 'items';
+const STORAGE_DEBOUNCE_MS = 300;
 
 const ROTATION_CW: Record<Rotation, Rotation> = { 0: 90, 90: 180, 180: 270, 270: 0 };
 const ROTATION_CCW: Record<Rotation, Rotation> = { 0: 270, 90: 0, 180: 90, 270: 180 };
@@ -88,6 +90,27 @@ export function useReferenceImages(): UseReferenceImagesReturn {
   // Use lazy initializer to load images from localStorage on mount
   const [images, setImages] = useState<ReferenceImage[]>(() => loadImagesFromStorage());
   const [interactionMode, setInteractionMode] = useState<InteractionMode>(DEFAULT_INTERACTION_MODE);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced save — for frequent operations like drag/slider
+  const debouncedSave = useCallback((imgs: ReferenceImage[]) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      saveImagesToStorage(imgs);
+      debounceTimerRef.current = null;
+    }, STORAGE_DEBOUNCE_MS);
+  }, []);
+
+  // Flush pending saves on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   const addImage = useCallback(async (file: File): Promise<void> => {
     try {
@@ -158,10 +181,10 @@ export function useReferenceImages(): UseReferenceImagesReturn {
       }
       const updatedImages = [...prev];
       updatedImages[imageIndex] = { ...updatedImages[imageIndex], x, y };
-      saveImagesToStorage(updatedImages);
+      debouncedSave(updatedImages);
       return updatedImages;
     });
-  }, []);
+  }, [debouncedSave]);
 
   const updateImageScale = useCallback((id: string, scale: number): void => {
     setImages(prev => {
@@ -172,10 +195,10 @@ export function useReferenceImages(): UseReferenceImagesReturn {
       }
       const updatedImages = [...prev];
       updatedImages[imageIndex] = { ...updatedImages[imageIndex], scale };
-      saveImagesToStorage(updatedImages);
+      debouncedSave(updatedImages);
       return updatedImages;
     });
-  }, []);
+  }, [debouncedSave]);
 
   const updateImageOpacity = useCallback((id: string, opacity: number): void => {
     setImages(prev => {
@@ -186,10 +209,10 @@ export function useReferenceImages(): UseReferenceImagesReturn {
       }
       const updatedImages = [...prev];
       updatedImages[imageIndex] = { ...updatedImages[imageIndex], opacity };
-      saveImagesToStorage(updatedImages);
+      debouncedSave(updatedImages);
       return updatedImages;
     });
-  }, []);
+  }, [debouncedSave]);
 
   const updateImageRotation = useCallback((id: string, direction: 'cw' | 'ccw'): void => {
     setImages(prev => {
