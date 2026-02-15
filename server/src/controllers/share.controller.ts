@@ -18,7 +18,7 @@ export async function createShare(
       throw new AppError(ErrorCodes.AUTH_REQUIRED, 'Authentication required');
     }
 
-    const layoutId = parseInt(req.params.id, 10);
+    const layoutId = parseInt(req.params.id as string, 10);
     if (isNaN(layoutId)) {
       throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid layout ID');
     }
@@ -47,8 +47,8 @@ export async function getSharedLayout(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { slug } = req.params;
-    if (!slug || typeof slug !== 'string') {
+    const slug = req.params.slug as string;
+    if (!slug) {
       throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid slug');
     }
 
@@ -71,7 +71,7 @@ export async function deleteShare(
       throw new AppError(ErrorCodes.AUTH_REQUIRED, 'Authentication required');
     }
 
-    const shareId = parseInt(req.params.shareId, 10);
+    const shareId = parseInt(req.params.shareId as string, 10);
     if (isNaN(shareId)) {
       throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid share ID');
     }
@@ -93,7 +93,7 @@ export async function listSharesByLayout(
       throw new AppError(ErrorCodes.AUTH_REQUIRED, 'Authentication required');
     }
 
-    const layoutId = parseInt(req.params.id, 10);
+    const layoutId = parseInt(req.params.id as string, 10);
     if (isNaN(layoutId)) {
       throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid layout ID');
     }

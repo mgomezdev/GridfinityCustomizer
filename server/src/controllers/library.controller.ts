@@ -27,7 +27,7 @@ export async function getLibrary(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const library = await libraryService.getLibraryById(req.params.id);
+    const library = await libraryService.getLibraryById(req.params.id as string);
 
     const body: ApiResponse<ApiLibrary> = { data: library };
     res.json(body);
@@ -48,7 +48,7 @@ export async function listLibraryItems(
       height: req.query.height ? Number(req.query.height) : undefined,
     };
 
-    const items = await libraryService.getLibraryItems(req.params.libraryId, filters);
+    const items = await libraryService.getLibraryItems(req.params.libraryId as string, filters);
 
     const body: ApiListResponse<ApiLibraryItem> = { data: items };
     res.json(body);
@@ -64,8 +64,8 @@ export async function getLibraryItem(
 ): Promise<void> {
   try {
     const item = await libraryService.getLibraryItemById(
-      req.params.libraryId,
-      req.params.itemId,
+      req.params.libraryId as string,
+      req.params.itemId as string,
     );
 
     const body: ApiResponse<ApiLibraryItem> = { data: item };
@@ -166,7 +166,7 @@ export async function updateLibrary(
       throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Validation failed', parsed.error.flatten());
     }
 
-    const library = await libraryService.updateLibrary(req.params.id, parsed.data);
+    const library = await libraryService.updateLibrary(req.params.id as string, parsed.data);
 
     const body: ApiResponse<ApiLibrary> = { data: library };
     res.json(body);
@@ -181,7 +181,7 @@ export async function deleteLibrary(
   next: NextFunction,
 ): Promise<void> {
   try {
-    await libraryService.deleteLibrary(req.params.id);
+    await libraryService.deleteLibrary(req.params.id as string);
     res.status(204).send();
   } catch (err) {
     next(err);
@@ -199,7 +199,7 @@ export async function createItem(
       throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Validation failed', parsed.error.flatten());
     }
 
-    const item = await libraryService.createItem(req.params.libraryId, parsed.data);
+    const item = await libraryService.createItem(req.params.libraryId as string, parsed.data);
 
     const body: ApiResponse<ApiLibraryItem> = { data: item };
     res.status(201).json(body);
@@ -220,8 +220,8 @@ export async function updateItem(
     }
 
     const item = await libraryService.updateItem(
-      req.params.libraryId,
-      req.params.itemId,
+      req.params.libraryId as string,
+      req.params.itemId as string,
       parsed.data,
     );
 
@@ -238,7 +238,7 @@ export async function deleteItem(
   next: NextFunction,
 ): Promise<void> {
   try {
-    await libraryService.deleteItem(req.params.libraryId, req.params.itemId);
+    await libraryService.deleteItem(req.params.libraryId as string, req.params.itemId as string);
     res.status(204).send();
   } catch (err) {
     next(err);
@@ -256,7 +256,8 @@ export async function uploadItemImage(
       throw new AppError(ErrorCodes.VALIDATION_ERROR, 'No image file provided');
     }
 
-    const { libraryId, itemId } = req.params;
+    const libraryId = req.params.libraryId as string;
+    const itemId = req.params.itemId as string;
 
     // Verify item exists
     await libraryService.getLibraryItemById(libraryId, itemId);

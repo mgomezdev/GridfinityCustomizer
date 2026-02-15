@@ -46,12 +46,18 @@ function getCategoryName(id: string): string {
 }
 
 async function seed(): Promise<void> {
-  const projectRoot = resolve(__dirname, '..', '..', '..');
+  // Detect if running from compiled dist/ or source src/
+  const isRunningFromDist = __dirname.includes('dist');
+  // From src/db -> ../../.. = project root; from dist/db -> ../../../.. = project root
+  const projectRoot = isRunningFromDist
+    ? resolve(__dirname, '..', '..', '..', '..')
+    : resolve(__dirname, '..', '..', '..');
   const publicDir = resolve(projectRoot, 'public');
-  const serverDir = resolve(__dirname, '..', '..');
-  const dataDir = resolve(serverDir, 'data');
-  const imageDir = resolve(dataDir, 'images');
-  const dbPath = resolve(dataDir, 'gridfinity.db');
+
+  // Use environment variables if set (for Docker), otherwise use defaults
+  const dbPath = process.env.DB_PATH ?? resolve(projectRoot, 'server', 'data', 'gridfinity.db');
+  const imageDir = process.env.IMAGE_DIR ?? resolve(projectRoot, 'server', 'data', 'images');
+  const dataDir = dirname(dbPath);
 
   // Ensure directories exist
   mkdirSync(dataDir, { recursive: true });

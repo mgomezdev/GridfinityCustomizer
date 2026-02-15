@@ -13,7 +13,7 @@ export async function uploadReferenceImage(
       throw new AppError(ErrorCodes.AUTH_REQUIRED, 'Authentication required');
     }
 
-    const layoutId = parseInt(req.params.id, 10);
+    const layoutId = parseInt(req.params.id as string, 10);
     if (isNaN(layoutId)) {
       throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid layout ID');
     }
@@ -46,12 +46,12 @@ export async function deleteReferenceImage(
       throw new AppError(ErrorCodes.AUTH_REQUIRED, 'Authentication required');
     }
 
-    const layoutId = parseInt(req.params.id, 10);
+    const layoutId = parseInt(req.params.id as string, 10);
     if (isNaN(layoutId)) {
       throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid layout ID');
     }
 
-    const imageId = parseInt(req.params.imgId, 10);
+    const imageId = parseInt(req.params.imgId as string, 10);
     if (isNaN(imageId)) {
       throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid image ID');
     }

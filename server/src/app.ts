@@ -4,6 +4,7 @@ import pinoHttp from 'pino-http';
 import { logger } from './logger.js';
 import { requestIdMiddleware } from './middleware/requestId.js';
 import { corsMiddleware } from './middleware/cors.js';
+import { authLimiter, generalLimiter } from './middleware/rateLimiter.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import healthRoutes from './routes/health.routes.js';
 import authRoutes from './routes/auth.routes.js';
@@ -38,6 +39,10 @@ export function createApp(): express.Express {
       },
     }),
   );
+
+  // Rate limiting
+  app.use('/api/v1/auth', authLimiter);
+  app.use('/api/v1', generalLimiter);
 
   // Routes
   app.use('/api/v1', healthRoutes);

@@ -42,7 +42,7 @@ export async function downloadBom(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const id = parseInt(req.params.id, 10);
+    const id = parseInt(req.params.id as string, 10);
     if (isNaN(id)) {
       throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid BOM submission ID');
     }

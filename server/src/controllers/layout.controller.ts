@@ -71,7 +71,7 @@ export async function getLayout(
       throw new AppError(ErrorCodes.AUTH_REQUIRED, 'Authentication required');
     }
 
-    const layoutId = parseInt(req.params.id, 10);
+    const layoutId = parseInt(req.params.id as string, 10);
     if (isNaN(layoutId)) {
       throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid layout ID');
     }
@@ -119,7 +119,7 @@ export async function updateLayout(
       throw new AppError(ErrorCodes.AUTH_REQUIRED, 'Authentication required');
     }
 
-    const layoutId = parseInt(req.params.id, 10);
+    const layoutId = parseInt(req.params.id as string, 10);
     if (isNaN(layoutId)) {
       throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid layout ID');
     }
@@ -148,7 +148,7 @@ export async function updateLayoutMeta(
       throw new AppError(ErrorCodes.AUTH_REQUIRED, 'Authentication required');
     }
 
-    const layoutId = parseInt(req.params.id, 10);
+    const layoutId = parseInt(req.params.id as string, 10);
     if (isNaN(layoutId)) {
       throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid layout ID');
     }
@@ -177,7 +177,7 @@ export async function deleteLayout(
       throw new AppError(ErrorCodes.AUTH_REQUIRED, 'Authentication required');
     }
 
-    const layoutId = parseInt(req.params.id, 10);
+    const layoutId = parseInt(req.params.id as string, 10);
     if (isNaN(layoutId)) {
       throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid layout ID');
     }

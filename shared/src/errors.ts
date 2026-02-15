@@ -34,13 +34,18 @@ export const ErrorStatusMap: Record<ErrorCode, number> = {
 };
 
 export class AppError extends Error {
+  readonly code: ErrorCode;
+  readonly details?: unknown;
+
   constructor(
-    public readonly code: ErrorCode,
+    code: ErrorCode,
     message: string,
-    public readonly details?: unknown,
+    details?: unknown,
   ) {
     super(message);
     this.name = 'AppError';
+    this.code = code;
+    this.details = details;
   }
 
   get statusCode(): number {

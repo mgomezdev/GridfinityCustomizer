@@ -9,7 +9,8 @@ const router = Router();
 
 router.get('/:libraryId/:filename', (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { libraryId, filename } = req.params;
+    const libraryId = req.params.libraryId as string;
+    const filename = req.params.filename as string;
 
     // Validate path components against traversal attacks
     if (
