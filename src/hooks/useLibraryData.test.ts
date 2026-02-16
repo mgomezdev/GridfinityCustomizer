@@ -16,8 +16,8 @@ describe('useLibraryData', () => {
   ];
 
   // Stable array references for tests
-  const singleLibrary = ['default'];
-  const multipleLibraries = ['default', 'community'];
+  const singleLibrary = ['bins_standard'];
+  const multipleLibraries = ['bins_standard', 'community'];
   const emptyLibraries: string[] = [];
 
   function createAdapter(
@@ -39,15 +39,18 @@ describe('useLibraryData', () => {
         }
         return itemsByLibrary[libraryId] ?? [];
       },
-      resolveImageUrl(_libraryId: string, imagePath: string) {
-        return imagePath;
+      resolveImageUrl(libraryId: string, imagePath: string) {
+        if (imagePath.startsWith('/libraries/') || imagePath.startsWith('http')) {
+          return imagePath;
+        }
+        return `/libraries/${libraryId}/${imagePath}`;
       },
     };
   }
 
   describe('Multi-Library Loading', () => {
     it('should load single library', async () => {
-      const adapter = createAdapter({ default: mockDefaultItems });
+      const adapter = createAdapter({ bins_standard: mockDefaultItems });
       const wrapper = createTestWrapper(adapter);
 
       const { result } = renderHook(() => useLibraryData(singleLibrary), {
@@ -59,13 +62,13 @@ describe('useLibraryData', () => {
       });
 
       expect(result.current.items).toHaveLength(2);
-      expect(result.current.items[0].id).toBe('default:bin-1x1');
-      expect(result.current.items[1].id).toBe('default:bin-2x2');
+      expect(result.current.items[0].id).toBe('bins_standard:bin-1x1');
+      expect(result.current.items[1].id).toBe('bins_standard:bin-2x2');
     });
 
     it('should load multiple libraries in parallel', async () => {
       const adapter = createAdapter({
-        default: mockDefaultItems,
+        bins_standard: mockDefaultItems,
         community: mockCommunityItems,
       });
       const wrapper = createTestWrapper(adapter);
@@ -79,12 +82,12 @@ describe('useLibraryData', () => {
       });
 
       expect(result.current.items).toHaveLength(3);
-      expect(result.current.items.map((i) => i.id)).toContain('default:bin-1x1');
+      expect(result.current.items.map((i) => i.id)).toContain('bins_standard:bin-1x1');
       expect(result.current.items.map((i) => i.id)).toContain('community:custom-1x1');
     });
 
     it('should prefix item IDs with library name', async () => {
-      const adapter = createAdapter({ default: mockDefaultItems });
+      const adapter = createAdapter({ bins_standard: mockDefaultItems });
       const wrapper = createTestWrapper(adapter);
 
       const { result } = renderHook(() => useLibraryData(singleLibrary), {
@@ -96,7 +99,7 @@ describe('useLibraryData', () => {
       });
 
       result.current.items.forEach((item) => {
-        expect(item.id).toMatch(/^default:/);
+        expect(item.id).toMatch(/^bins_standard:/);
       });
     });
 
@@ -113,7 +116,7 @@ describe('useLibraryData', () => {
         },
       ];
 
-      const adapter = createAdapter({ default: itemsWithImages });
+      const adapter = createAdapter({ bins_standard: itemsWithImages });
       const wrapper = createTestWrapper(adapter);
 
       const { result } = renderHook(() => useLibraryData(singleLibrary), {
@@ -124,7 +127,7 @@ describe('useLibraryData', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(result.current.items[0].imageUrl).toBe('/libraries/default/bin-1x1.png');
+      expect(result.current.items[0].imageUrl).toBe('/libraries/bins_standard/bin-1x1.png');
     });
 
     it('should maintain backward compatibility with absolute paths', async () => {
@@ -136,11 +139,11 @@ describe('useLibraryData', () => {
           heightUnits: 1,
           color: '#3B82F6',
           categories: ['bin'],
-          imageUrl: '/libraries/default/images/bin-1x1.png',
+          imageUrl: '/libraries/bins_standard/images/bin-1x1.png',
         },
       ];
 
-      const adapter = createAdapter({ default: itemsWithAbsolutePaths });
+      const adapter = createAdapter({ bins_standard: itemsWithAbsolutePaths });
       const wrapper = createTestWrapper(adapter);
 
       const { result } = renderHook(() => useLibraryData(singleLibrary), {
@@ -152,7 +155,7 @@ describe('useLibraryData', () => {
       });
 
       // Should pass through unchanged
-      expect(result.current.items[0].imageUrl).toBe('/libraries/default/images/bin-1x1.png');
+      expect(result.current.items[0].imageUrl).toBe('/libraries/bins_standard/images/bin-1x1.png');
     });
 
     it('should handle empty library selection', async () => {
@@ -174,7 +177,7 @@ describe('useLibraryData', () => {
 
   describe('Error Handling', () => {
     it('should handle fetch errors gracefully', async () => {
-      const adapter = createAdapter({}, { failFor: ['default'] });
+      const adapter = createAdapter({}, { failFor: ['bins_standard'] });
       const wrapper = createTestWrapper(adapter);
 
       const { result } = renderHook(() => useLibraryData(singleLibrary), {
@@ -190,7 +193,7 @@ describe('useLibraryData', () => {
     });
 
     it('should skip libraries not in adapter (returns empty)', async () => {
-      const adapter = createAdapter({ default: mockDefaultItems });
+      const adapter = createAdapter({ bins_standard: mockDefaultItems });
       const wrapper = createTestWrapper(adapter);
       const nonExistentLibrary = ['non-existent'];
 
@@ -207,7 +210,7 @@ describe('useLibraryData', () => {
 
     it('should handle partial failures (some libraries load, others fail)', async () => {
       const adapter = createAdapter(
-        { default: mockDefaultItems, community: mockCommunityItems },
+        { bins_standard: mockDefaultItems, community: mockCommunityItems },
         { failFor: ['community'] }
       );
       const wrapper = createTestWrapper(adapter);
@@ -224,13 +227,13 @@ describe('useLibraryData', () => {
 
       // Default library items should still load
       expect(result.current.items.length).toBeGreaterThanOrEqual(2);
-      expect(result.current.items[0].id).toBe('default:bin-1x1');
+      expect(result.current.items[0].id).toBe('bins_standard:bin-1x1');
     });
   });
 
   describe('Helper Methods', () => {
     it('getItemById should find item by prefixed ID', async () => {
-      const adapter = createAdapter({ default: mockDefaultItems });
+      const adapter = createAdapter({ bins_standard: mockDefaultItems });
       const wrapper = createTestWrapper(adapter);
 
       const { result } = renderHook(() => useLibraryData(singleLibrary), {
@@ -241,13 +244,13 @@ describe('useLibraryData', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      const item = result.current.getItemById('default:bin-1x1');
+      const item = result.current.getItemById('bins_standard:bin-1x1');
       expect(item).toBeDefined();
       expect(item?.name).toBe('1x1 Bin');
     });
 
     it('getItemById should return undefined for non-existent item', async () => {
-      const adapter = createAdapter({ default: mockDefaultItems });
+      const adapter = createAdapter({ bins_standard: mockDefaultItems });
       const wrapper = createTestWrapper(adapter);
 
       const { result } = renderHook(() => useLibraryData(singleLibrary), {
@@ -263,7 +266,7 @@ describe('useLibraryData', () => {
     });
 
     it('getItemsByCategory should filter by category', async () => {
-      const adapter = createAdapter({ default: mockDefaultItems });
+      const adapter = createAdapter({ bins_standard: mockDefaultItems });
       const wrapper = createTestWrapper(adapter);
 
       const { result } = renderHook(() => useLibraryData(singleLibrary), {
@@ -281,7 +284,7 @@ describe('useLibraryData', () => {
 
     it('getItemsByLibrary should filter by library ID', async () => {
       const adapter = createAdapter({
-        default: mockDefaultItems,
+        bins_standard: mockDefaultItems,
         community: mockCommunityItems,
       });
       const wrapper = createTestWrapper(adapter);
@@ -294,9 +297,9 @@ describe('useLibraryData', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      const defaultItems = result.current.getItemsByLibrary('default');
+      const defaultItems = result.current.getItemsByLibrary('bins_standard');
       expect(defaultItems).toHaveLength(2);
-      expect(defaultItems.every((item) => item.id.startsWith('default:'))).toBe(true);
+      expect(defaultItems.every((item) => item.id.startsWith('bins_standard:'))).toBe(true);
 
       const communityItems = result.current.getItemsByLibrary('community');
       expect(communityItems).toHaveLength(1);
@@ -309,7 +312,7 @@ describe('useLibraryData', () => {
       let callCount = 0;
       const adapter: DataSourceAdapter = {
         async getLibraries() {
-          return [{ id: 'default', name: 'default', path: '/libraries/default/index.json' }];
+          return [{ id: 'bins_standard', name: 'bins_standard', path: '/libraries/bins_standard/index.json' }];
         },
         async getLibraryItems() {
           callCount++;
@@ -348,7 +351,7 @@ describe('useLibraryData', () => {
   describe('Library Selection Changes', () => {
     it('should reload when selected libraries change', async () => {
       const adapter = createAdapter({
-        default: mockDefaultItems,
+        bins_standard: mockDefaultItems,
         community: mockCommunityItems,
       });
       const wrapper = createTestWrapperWithAdapter(adapter);

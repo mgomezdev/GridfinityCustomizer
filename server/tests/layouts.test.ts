@@ -72,8 +72,8 @@ describe('Layout endpoints', () => {
           spacerHorizontal: 'none',
           spacerVertical: 'none',
           placedItems: [
-            { itemId: 'default:bin-1x1', x: 0, y: 0, width: 1, height: 1, rotation: 0 },
-            { itemId: 'default:bin-2x1', x: 1, y: 0, width: 2, height: 1, rotation: 0 },
+            { itemId: 'bins_standard:bin-1x1', x: 0, y: 0, width: 1, height: 1, rotation: 0 },
+            { itemId: 'bins_standard:bin-2x1', x: 1, y: 0, width: 2, height: 1, rotation: 0 },
           ],
         });
 
@@ -85,9 +85,9 @@ describe('Layout endpoints', () => {
       expect(res.body.data.widthMm).toBe(168);
       expect(res.body.data.depthMm).toBe(168);
       expect(res.body.data.placedItems).toHaveLength(2);
-      expect(res.body.data.placedItems[0].libraryId).toBe('default');
+      expect(res.body.data.placedItems[0].libraryId).toBe('bins_standard');
       expect(res.body.data.placedItems[0].itemId).toBe('bin-1x1');
-      expect(res.body.data.placedItems[1].libraryId).toBe('default');
+      expect(res.body.data.placedItems[1].libraryId).toBe('bins_standard');
       expect(res.body.data.placedItems[1].itemId).toBe('bin-2x1');
     });
 
@@ -152,7 +152,7 @@ describe('Layout endpoints', () => {
           widthMm: 168,
           depthMm: 168,
           placedItems: [
-            { itemId: 'default:bin-1x1', x: 0, y: 0, width: 1, height: 1, rotation: 45 },
+            { itemId: 'bins_standard:bin-1x1', x: 0, y: 0, width: 1, height: 1, rotation: 45 },
           ],
         });
 
@@ -256,7 +256,7 @@ describe('Layout endpoints', () => {
           widthMm: 126,
           depthMm: 126,
           placedItems: [
-            { itemId: 'default:bin-1x1', x: 0, y: 0, width: 1, height: 1, rotation: 0 },
+            { itemId: 'bins_standard:bin-1x1', x: 0, y: 0, width: 1, height: 1, rotation: 0 },
           ],
         });
       layoutId = res.body.data.id;
@@ -312,7 +312,7 @@ describe('Layout endpoints', () => {
           widthMm: 84,
           depthMm: 84,
           placedItems: [
-            { itemId: 'default:bin-1x1', x: 0, y: 0, width: 1, height: 1, rotation: 0 },
+            { itemId: 'bins_standard:bin-1x1', x: 0, y: 0, width: 1, height: 1, rotation: 0 },
           ],
         });
       layoutId = res.body.data.id;
@@ -332,8 +332,8 @@ describe('Layout endpoints', () => {
           spacerHorizontal: 'one-sided',
           spacerVertical: 'symmetrical',
           placedItems: [
-            { itemId: 'default:bin-2x2', x: 0, y: 0, width: 2, height: 2, rotation: 0 },
-            { itemId: 'default:bin-1x1', x: 3, y: 3, width: 1, height: 1, rotation: 90 },
+            { itemId: 'bins_standard:bin-2x2', x: 0, y: 0, width: 2, height: 2, rotation: 0 },
+            { itemId: 'bins_standard:bin-1x1', x: 3, y: 3, width: 1, height: 1, rotation: 90 },
           ],
         });
 
@@ -450,7 +450,7 @@ describe('Layout endpoints', () => {
           widthMm: 84,
           depthMm: 84,
           placedItems: [
-            { itemId: 'default:bin-1x1', x: 0, y: 0, width: 1, height: 1, rotation: 0 },
+            { itemId: 'bins_standard:bin-1x1', x: 0, y: 0, width: 1, height: 1, rotation: 0 },
           ],
         });
       layoutId = res.body.data.id;
@@ -558,7 +558,7 @@ describe('Layout endpoints', () => {
         });
 
       expect(res.status).toBe(201);
-      expect(res.body.data.placedItems[0].libraryId).toBe('default');
+      expect(res.body.data.placedItems[0].libraryId).toBe('bins_standard');
       expect(res.body.data.placedItems[0].itemId).toBe('simple-bin');
     });
   });

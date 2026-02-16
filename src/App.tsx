@@ -11,7 +11,6 @@ import { useReferenceImages } from './hooks/useReferenceImages';
 import { useGridTransform } from './hooks/useGridTransform';
 import { useSubmitBOM } from './hooks/useSubmitBOM';
 import { useAuth } from './contexts/AuthContext';
-import { migrateStoredItems, migrateLibrarySelection } from './utils/migration';
 import { DimensionInput } from './components/DimensionInput';
 import { GridPreview } from './components/GridPreview';
 import { GridSummary } from './components/GridSummary';
@@ -43,12 +42,6 @@ function App() {
   const [showLoadDialog, setShowLoadDialog] = useState(false);
 
   const { isAuthenticated } = useAuth();
-
-  // Run migrations on mount
-  useEffect(() => {
-    migrateStoredItems();
-    migrateLibrarySelection();
-  }, []);
 
   // Library selection and discovery
   const {

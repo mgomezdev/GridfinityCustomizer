@@ -65,7 +65,7 @@ function formatPlacedItem(row: typeof placedItems.$inferSelect): ApiPlacedItem {
 function unprefixItemId(prefixedId: string): { libraryId: string; itemId: string } {
   const colonIndex = prefixedId.indexOf(':');
   if (colonIndex === -1) {
-    return { libraryId: 'default', itemId: prefixedId };
+    return { libraryId: 'bins_standard', itemId: prefixedId };
   }
   return {
     libraryId: prefixedId.substring(0, colonIndex),

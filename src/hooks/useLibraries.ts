@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Library } from '../types/gridfinity';
 import { useDataSource } from '../contexts/DataSourceContext';
@@ -26,7 +26,7 @@ export function useLibraries(): UseLibrariesResult {
   const queryClient = useQueryClient();
 
   const [selectedLibraryIds, setSelectedLibraryIds] = useState<string[]>(() => {
-    // Load from localStorage or default to ['default']
+    // Load from localStorage or default to ['bins_standard']
     try {
       const stored = localStorage.getItem(SELECTED_LIBRARIES_KEY);
       if (stored) {
@@ -40,7 +40,7 @@ export function useLibraries(): UseLibrariesResult {
     } catch (err) {
       console.warn('Failed to load selected libraries from localStorage:', err);
     }
-    return ['default'];
+    return ['bins_standard'];
   });
 
   // Fetch libraries via adapter using TanStack Query
@@ -49,33 +49,39 @@ export function useLibraries(): UseLibrariesResult {
     queryFn: () => adapter.getLibraries(),
   });
 
-  // Transform LibraryInfo[] into Library[] with isEnabled based on selection
+  // Validate selected IDs against available libraries (derived state, no effect needed)
+  const validatedSelectedIds = useMemo(() => {
+    if (!libraryInfos || libraryInfos.length === 0) return selectedLibraryIds;
+    const validIds = new Set(libraryInfos.map(l => l.id));
+    const filtered = selectedLibraryIds.filter(id => validIds.has(id));
+    if (filtered.length === 0) {
+      return [libraryInfos[0].id];
+    }
+    return filtered.length === selectedLibraryIds.length ? selectedLibraryIds : filtered;
+  }, [libraryInfos, selectedLibraryIds]);
+
+  // Transform LibraryInfo[] into Library[] with isEnabled based on validated selection
   const availableLibraries: Library[] = (libraryInfos ?? []).map((info) => ({
     id: info.id,
     name: info.name,
     path: info.path,
-    isEnabled: selectedLibraryIds.includes(info.id),
+    isEnabled: validatedSelectedIds.includes(info.id),
     itemCount: info.itemCount,
   }));
 
-  // Persist selected library IDs to localStorage
+  // Persist validated selection to localStorage
   useEffect(() => {
     try {
-      localStorage.setItem(SELECTED_LIBRARIES_KEY, JSON.stringify(selectedLibraryIds));
+      localStorage.setItem(SELECTED_LIBRARIES_KEY, JSON.stringify(validatedSelectedIds));
     } catch (err) {
       console.warn('Failed to save selected libraries to localStorage:', err);
     }
-  }, [selectedLibraryIds]);
+  }, [validatedSelectedIds]);
 
   // Toggle a single library on/off
   const toggleLibrary = useCallback((libraryId: string) => {
     setSelectedLibraryIds(prev => {
       if (prev.includes(libraryId)) {
-        // Don't allow deselecting the last library
-        if (prev.length === 1) {
-          console.warn('Cannot deselect the last library');
-          return prev;
-        }
         return prev.filter(id => id !== libraryId);
       } else {
         return [...prev, libraryId];
@@ -85,10 +91,6 @@ export function useLibraries(): UseLibrariesResult {
 
   // Set multiple libraries at once
   const selectLibraries = useCallback((libraryIds: string[]) => {
-    if (libraryIds.length === 0) {
-      console.warn('Must select at least one library');
-      return;
-    }
     setSelectedLibraryIds(libraryIds);
   }, []);
 
@@ -99,7 +101,7 @@ export function useLibraries(): UseLibrariesResult {
 
   return {
     availableLibraries,
-    selectedLibraryIds,
+    selectedLibraryIds: validatedSelectedIds,
     isLoading,
     error: queryError ?? null,
     toggleLibrary,

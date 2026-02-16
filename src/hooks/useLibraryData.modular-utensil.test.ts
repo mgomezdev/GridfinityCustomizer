@@ -54,8 +54,11 @@ describe('useLibraryData - Modular Utensil Library', () => {
         if (libraryId === 'modular-utensil') return mockModularUtensilItems;
         return [];
       },
-      resolveImageUrl(_libraryId: string, imagePath: string) {
-        return imagePath;
+      resolveImageUrl(libraryId: string, imagePath: string) {
+        if (imagePath.startsWith('/libraries/') || imagePath.startsWith('http')) {
+          return imagePath;
+        }
+        return `/libraries/${libraryId}/${imagePath}`;
       },
     };
   }
@@ -124,8 +127,11 @@ describe('useLibraryData - Modular Utensil Library', () => {
         if (libraryId === 'modular-utensil') return specialItems;
         return [];
       },
-      resolveImageUrl(_libraryId: string, imagePath: string) {
-        return imagePath;
+      resolveImageUrl(libraryId: string, imagePath: string) {
+        if (imagePath.startsWith('/libraries/') || imagePath.startsWith('http')) {
+          return imagePath;
+        }
+        return `/libraries/${libraryId}/${imagePath}`;
       },
     };
     const wrapper = createTestWrapper(adapter);

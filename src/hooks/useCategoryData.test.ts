@@ -6,7 +6,7 @@ import type { LibraryItem } from '../types/gridfinity';
 describe('useCategoryData', () => {
   const mockLibraryItems: LibraryItem[] = [
     {
-      id: 'default:bin-1x1',
+      id: 'bins_standard:bin-1x1',
       name: '1x1 Bin',
       widthUnits: 1,
       heightUnits: 1,
@@ -14,7 +14,7 @@ describe('useCategoryData', () => {
       categories: ['bin'],
     },
     {
-      id: 'default:bin-2x2',
+      id: 'bins_standard:bin-2x2',
       name: '2x2 Bin',
       widthUnits: 2,
       heightUnits: 2,
@@ -22,7 +22,7 @@ describe('useCategoryData', () => {
       categories: ['bin'],
     },
     {
-      id: 'default:utensil-1x3',
+      id: 'bins_standard:utensil-1x3',
       name: '1x3 Utensil Tray',
       widthUnits: 1,
       heightUnits: 3,
@@ -30,7 +30,7 @@ describe('useCategoryData', () => {
       categories: ['utensil'],
     },
     {
-      id: 'default:bin-labeled-1x1',
+      id: 'bins_standard:bin-labeled-1x1',
       name: '1x1 Bin (labeled)',
       widthUnits: 1,
       heightUnits: 1,

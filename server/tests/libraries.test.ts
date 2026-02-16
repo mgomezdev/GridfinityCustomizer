@@ -45,7 +45,7 @@ async function seedTestData(): Promise<void> {
   await testClient.execute({
     sql: `INSERT INTO libraries (id, name, description, version, is_active, sort_order, created_at, updated_at)
           VALUES (?, ?, ?, ?, 1, ?, ?, ?)`,
-    args: ['default', 'Simple Bins', 'Default library', '1.0.0', 0, now, now],
+    args: ['bins_standard', 'Standard Bins', 'Standard bins library', '1.0.0', 0, now, now],
   });
   await testClient.execute({
     sql: `INSERT INTO libraries (id, name, description, version, is_active, sort_order, created_at, updated_at)
@@ -57,35 +57,35 @@ async function seedTestData(): Promise<void> {
   await testClient.execute({
     sql: `INSERT INTO library_items (library_id, id, name, width_units, height_units, color, image_path, is_active, sort_order, created_at, updated_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
-    args: ['default', 'bin-1x1', '1x1 Bin', 1, 1, '#3B82F6', null, 0, now, now],
+    args: ['bins_standard', 'bin-1x1', '1x1 Bin', 1, 1, '#3B82F6', null, 0, now, now],
   });
   await testClient.execute({
     sql: `INSERT INTO library_items (library_id, id, name, width_units, height_units, color, image_path, is_active, sort_order, created_at, updated_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
-    args: ['default', 'bin-2x3', '2x3 Bin', 2, 3, '#3B82F6', null, 1, now, now],
+    args: ['bins_standard', 'bin-2x3', '2x3 Bin', 2, 3, '#3B82F6', null, 1, now, now],
   });
   await testClient.execute({
     sql: `INSERT INTO library_items (library_id, id, name, width_units, height_units, color, image_path, is_active, sort_order, created_at, updated_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
-    args: ['default', 'bin-labeled-1x1', '1x1 Bin (w label)', 1, 1, '#3B82F6', null, 2, now, now],
+    args: ['bins_standard', 'bin-labeled-1x1', '1x1 Bin (w label)', 1, 1, '#3B82F6', null, 2, now, now],
   });
 
   // Insert item-category associations
   await testClient.execute({
     sql: `INSERT INTO item_categories (library_id, item_id, category_id) VALUES (?, ?, ?)`,
-    args: ['default', 'bin-1x1', 'bin'],
+    args: ['bins_standard', 'bin-1x1', 'bin'],
   });
   await testClient.execute({
     sql: `INSERT INTO item_categories (library_id, item_id, category_id) VALUES (?, ?, ?)`,
-    args: ['default', 'bin-2x3', 'bin'],
+    args: ['bins_standard', 'bin-2x3', 'bin'],
   });
   await testClient.execute({
     sql: `INSERT INTO item_categories (library_id, item_id, category_id) VALUES (?, ?, ?)`,
-    args: ['default', 'bin-labeled-1x1', 'bin'],
+    args: ['bins_standard', 'bin-labeled-1x1', 'bin'],
   });
   await testClient.execute({
     sql: `INSERT INTO item_categories (library_id, item_id, category_id) VALUES (?, ?, ?)`,
-    args: ['default', 'bin-labeled-1x1', 'labeled'],
+    args: ['bins_standard', 'bin-labeled-1x1', 'labeled'],
   });
 }
 
@@ -116,25 +116,25 @@ describe('Library endpoints', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.data.length).toBe(1);
-      expect(res.body.data[0].id).toBe('default');
+      expect(res.body.data[0].id).toBe('bins_standard');
     });
 
     it('includes item counts', async () => {
       const res = await request(app).get('/api/v1/libraries');
 
-      const defaultLib = res.body.data.find((l: { id: string }) => l.id === 'default');
-      expect(defaultLib).toBeDefined();
-      expect(defaultLib.itemCount).toBe(3);
+      const standardLib = res.body.data.find((l: { id: string }) => l.id === 'bins_standard');
+      expect(standardLib).toBeDefined();
+      expect(standardLib.itemCount).toBe(3);
     });
   });
 
   describe('GET /api/v1/libraries/:id', () => {
     it('returns single library', async () => {
-      const res = await request(app).get('/api/v1/libraries/default');
+      const res = await request(app).get('/api/v1/libraries/bins_standard');
 
       expect(res.status).toBe(200);
-      expect(res.body.data.id).toBe('default');
-      expect(res.body.data.name).toBe('Simple Bins');
+      expect(res.body.data.id).toBe('bins_standard');
+      expect(res.body.data.name).toBe('Standard Bins');
       expect(res.body.data.itemCount).toBe(3);
     });
 
@@ -148,7 +148,7 @@ describe('Library endpoints', () => {
 
   describe('GET /api/v1/libraries/:libraryId/items', () => {
     it('returns items for a library', async () => {
-      const res = await request(app).get('/api/v1/libraries/default/items');
+      const res = await request(app).get('/api/v1/libraries/bins_standard/items');
 
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body.data)).toBe(true);
@@ -156,7 +156,7 @@ describe('Library endpoints', () => {
     });
 
     it('includes categories for each item', async () => {
-      const res = await request(app).get('/api/v1/libraries/default/items');
+      const res = await request(app).get('/api/v1/libraries/bins_standard/items');
 
       const labeledItem = res.body.data.find(
         (i: { id: string }) => i.id === 'bin-labeled-1x1',
@@ -168,7 +168,7 @@ describe('Library endpoints', () => {
 
     it('filters by category', async () => {
       const res = await request(app).get(
-        '/api/v1/libraries/default/items?category=labeled',
+        '/api/v1/libraries/bins_standard/items?category=labeled',
       );
 
       expect(res.status).toBe(200);
@@ -178,7 +178,7 @@ describe('Library endpoints', () => {
 
     it('filters by width', async () => {
       const res = await request(app).get(
-        '/api/v1/libraries/default/items?width=2',
+        '/api/v1/libraries/bins_standard/items?width=2',
       );
 
       expect(res.status).toBe(200);
@@ -188,7 +188,7 @@ describe('Library endpoints', () => {
 
     it('filters by height', async () => {
       const res = await request(app).get(
-        '/api/v1/libraries/default/items?height=3',
+        '/api/v1/libraries/bins_standard/items?height=3',
       );
 
       expect(res.status).toBe(200);
@@ -207,7 +207,7 @@ describe('Library endpoints', () => {
   describe('GET /api/v1/libraries/:libraryId/items/:itemId', () => {
     it('returns a single item', async () => {
       const res = await request(app).get(
-        '/api/v1/libraries/default/items/bin-1x1',
+        '/api/v1/libraries/bins_standard/items/bin-1x1',
       );
 
       expect(res.status).toBe(200);
@@ -218,7 +218,7 @@ describe('Library endpoints', () => {
 
     it('returns 404 for non-existent item', async () => {
       const res = await request(app).get(
-        '/api/v1/libraries/default/items/non-existent',
+        '/api/v1/libraries/bins_standard/items/non-existent',
       );
 
       expect(res.status).toBe(404);

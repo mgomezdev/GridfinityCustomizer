@@ -65,8 +65,8 @@ describe('Sharing endpoints', () => {
         widthMm: 168,
         depthMm: 168,
         placedItems: [
-          { itemId: 'default:bin-1x1', x: 0, y: 0, width: 1, height: 1, rotation: 0 },
-          { itemId: 'default:bin-2x1', x: 1, y: 0, width: 2, height: 1, rotation: 0 },
+          { itemId: 'bins_standard:bin-1x1', x: 0, y: 0, width: 1, height: 1, rotation: 0 },
+          { itemId: 'bins_standard:bin-2x1', x: 1, y: 0, width: 2, height: 1, rotation: 0 },
         ],
       });
     layoutId = layoutRes.body.data.id;

@@ -5,17 +5,17 @@ import type { GridSummaryData } from '../utils/bomFormatter';
 import type { BOMItem, PlacedItem, LibraryItem } from '../types/gridfinity';
 
 const mockBOMItems: BOMItem[] = [
-  { itemId: 'default:bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#3B82F6', categories: ['bin'], quantity: 3 },
+  { itemId: 'bins_standard:bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#3B82F6', categories: ['bin'], quantity: 3 },
 ];
 
 const mockPlacedItems: PlacedItem[] = [
-  { instanceId: 'item-1-1000', itemId: 'default:bin-1x1', x: 0, y: 0, width: 1, height: 1, rotation: 0 },
-  { instanceId: 'item-2-1001', itemId: 'default:bin-1x1', x: 1, y: 0, width: 1, height: 1, rotation: 0 },
-  { instanceId: 'item-3-1002', itemId: 'default:bin-1x1', x: 2, y: 0, width: 1, height: 1, rotation: 90 },
+  { instanceId: 'item-1-1000', itemId: 'bins_standard:bin-1x1', x: 0, y: 0, width: 1, height: 1, rotation: 0 },
+  { instanceId: 'item-2-1001', itemId: 'bins_standard:bin-1x1', x: 1, y: 0, width: 1, height: 1, rotation: 0 },
+  { instanceId: 'item-3-1002', itemId: 'bins_standard:bin-1x1', x: 2, y: 0, width: 1, height: 1, rotation: 90 },
 ];
 
 const mockLibraryItems: Record<string, LibraryItem> = {
-  'default:bin-1x1': { id: 'default:bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#3B82F6', categories: ['bin'] },
+  'bins_standard:bin-1x1': { id: 'bins_standard:bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#3B82F6', categories: ['bin'] },
 };
 
 const mockGetItemById = (id: string): LibraryItem | undefined => mockLibraryItems[id];
@@ -32,7 +32,7 @@ const defaultSummary: GridSummaryData = {
   spacerConfig: { horizontal: 'none', vertical: 'none' },
 };
 
-const mockLibraryNames = new Map([['default', 'Simple Bins']]);
+const mockLibraryNames = new Map([['bins_standard', 'Standard Bins']]);
 
 describe('useSubmitBOM', () => {
   let mockCreateObjectURL: ReturnType<typeof vi.fn>;

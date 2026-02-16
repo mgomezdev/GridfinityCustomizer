@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import type { LibraryItem } from '../types/gridfinity';
 import { useDataSource } from '../contexts/DataSourceContext';
-import { prefixItemId, resolveImagePath } from '../utils/libraryHelpers';
+import { prefixItemId } from '../utils/libraryHelpers';
 
 interface UseLibraryDataResult {
   items: LibraryItem[];
@@ -17,7 +17,7 @@ interface UseLibraryDataResult {
 /**
  * Hook for loading library items from multiple library sources
  *
- * @param selectedLibraryIds - Array of library IDs to load (e.g., ['default', 'community'])
+ * @param selectedLibraryIds - Array of library IDs to load (e.g., ['bins_standard', 'simple-utensils'])
  * @returns Library items with prefixed IDs and resolved image paths
  */
 export function useLibraryData(
@@ -35,10 +35,9 @@ export function useLibraryData(
         rawItems.map((item) => ({
           ...item,
           id: prefixItemId(libraryId, item.id),
-          imageUrl: resolveImagePath(
-            `/libraries/${libraryId}`,
-            item.imageUrl
-          ),
+          imageUrl: item.imageUrl
+            ? adapter.resolveImageUrl(libraryId, item.imageUrl)
+            : undefined,
         })),
     })),
   });

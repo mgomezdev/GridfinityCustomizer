@@ -12,8 +12,11 @@ export const defaultMockAdapter: DataSourceAdapter = {
   async getLibraryItems() {
     return [];
   },
-  resolveImageUrl(_libraryId: string, imagePath: string) {
-    return imagePath;
+  resolveImageUrl(libraryId: string, imagePath: string) {
+    if (imagePath.startsWith('/libraries/') || imagePath.startsWith('http')) {
+      return imagePath;
+    }
+    return `/libraries/${libraryId}/${imagePath}`;
   },
 };
 

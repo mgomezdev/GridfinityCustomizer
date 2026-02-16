@@ -2,9 +2,14 @@
   "version": "1.0.0",
   "libraries": [
     {
-      "id": "default",
-      "name": "Simple Bins",
-      "path": "/libraries/default/index.json"
+      "id": "bins_standard",
+      "name": "Standard Bins",
+      "path": "/libraries/bins_standard/index.json"
+    },
+    {
+      "id": "bins_labeled",
+      "name": "Labeled Bins",
+      "path": "/libraries/bins_labeled/index.json"
     },
     {
       "id": "simple-utensils",
