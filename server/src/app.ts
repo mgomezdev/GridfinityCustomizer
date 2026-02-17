@@ -30,6 +30,9 @@ export function createApp(): express.Express {
   // CORS
   app.use(corsMiddleware);
 
+  // Trust first proxy hop (nginx) so req.ip reflects the real client IP
+  app.set('trust proxy', 1);
+
   // Request logging
   app.use(
     pinoHttp({
@@ -40,6 +43,9 @@ export function createApp(): express.Express {
     }),
   );
 
+  // Image routes (before rate limiter — read-only static assets, no auth)
+  app.use('/api/v1/images', imagesRoutes);
+
   // Rate limiting
   app.use('/api/v1/auth', authLimiter);
   app.use('/api/v1', generalLimiter);
@@ -49,7 +55,6 @@ export function createApp(): express.Express {
   app.use('/api/v1/auth', authRoutes);
   app.use('/api/v1/libraries', librariesRoutes);
   app.use('/api/v1/categories', categoriesRoutes);
-  app.use('/api/v1/images', imagesRoutes);
   app.use('/api/v1/layouts', layoutsRoutes);
   app.use('/api/v1', sharedRoutes);
   app.use('/api/v1/bom', bomRoutes);
