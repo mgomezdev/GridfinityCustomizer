@@ -38,6 +38,9 @@ export function useLibraryData(
           imageUrl: item.imageUrl
             ? adapter.resolveImageUrl(libraryId, item.imageUrl)
             : undefined,
+          perspectiveImageUrl: item.perspectiveImageUrl
+            ? adapter.resolveImageUrl(libraryId, item.perspectiveImageUrl)
+            : undefined,
         })),
     })),
   });

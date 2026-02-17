@@ -26,6 +26,7 @@ export async function runMigrations(client: Client): Promise<void> {
       height_units INTEGER NOT NULL,
       color TEXT NOT NULL DEFAULT '#3B82F6',
       image_path TEXT,
+      perspective_image_path TEXT,
       is_active INTEGER NOT NULL DEFAULT 1,
       sort_order INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT '',
@@ -33,6 +34,13 @@ export async function runMigrations(client: Client): Promise<void> {
       PRIMARY KEY (library_id, id)
     );
   `);
+
+  // Add perspective_image_path column if missing (existing databases)
+  try {
+    await client.execute(`ALTER TABLE library_items ADD COLUMN perspective_image_path TEXT;`);
+  } catch {
+    // Column already exists — ignore
+  }
 
   await client.execute(`
     CREATE TABLE IF NOT EXISTS categories (

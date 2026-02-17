@@ -8,7 +8,7 @@
       "heightUnits": 3,
       "color": "#3B82F6",
       "categories": ["utensil"],
-      "imageUrl": "/libraries/simple-utensils/Utensils 1x3.png"
+      "imageUrl": "/libraries/simple-utensils/Utensils1x3.png"
     },
     {
       "id": "utensils-1x4",
@@ -17,7 +17,7 @@
       "heightUnits": 4,
       "color": "#3B82F6",
       "categories": ["utensil"],
-      "imageUrl": "/libraries/simple-utensils/Utensils 1x4.png"
+      "imageUrl": "/libraries/simple-utensils/Utensils1x4.png"
     },
     {
       "id": "utensils-1x5",
@@ -26,7 +26,7 @@
       "heightUnits": 5,
       "color": "#3B82F6",
       "categories": ["utensil"],
-      "imageUrl": "/libraries/simple-utensils/Utensils 1x5.png"
+      "imageUrl": "/libraries/simple-utensils/Utensils1x5.png"
     },
     {
       "id": "utensils-1x6",
@@ -35,7 +35,7 @@
       "heightUnits": 6,
       "color": "#3B82F6",
       "categories": ["utensil"],
-      "imageUrl": "/libraries/simple-utensils/Utensils 1x6.png"
+      "imageUrl": "/libraries/simple-utensils/Utensils1x6.png"
     },
     {
       "id": "utensils-2x4",
@@ -44,7 +44,7 @@
       "heightUnits": 4,
       "color": "#3B82F6",
       "categories": ["utensil"],
-      "imageUrl": "/libraries/simple-utensils/Utensils 2x4.png"
+      "imageUrl": "/libraries/simple-utensils/Utensils2x4.png"
     },
     {
       "id": "utensils-2x5",
@@ -53,7 +53,7 @@
       "heightUnits": 5,
       "color": "#3B82F6",
       "categories": ["utensil"],
-      "imageUrl": "/libraries/simple-utensils/Utensils 2x5.png"
+      "imageUrl": "/libraries/simple-utensils/Utensils2x5.png"
     },
     {
       "id": "utensils-2x6",
@@ -62,7 +62,7 @@
       "heightUnits": 6,
       "color": "#3B82F6",
       "categories": ["utensil"],
-      "imageUrl": "/libraries/simple-utensils/Utensils 2x6.png"
+      "imageUrl": "/libraries/simple-utensils/Utensils2x6.png"
     },
     {
       "id": "utensils-offset-2x4",
@@ -71,7 +71,7 @@
       "heightUnits": 4,
       "color": "#3B82F6",
       "categories": ["utensil"],
-      "imageUrl": "/libraries/simple-utensils/Utensils offset 2x4.png"
+      "imageUrl": "/libraries/simple-utensils/Utensilsoffset2x4.png"
     }
   ]
 }

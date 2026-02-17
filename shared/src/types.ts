@@ -55,6 +55,7 @@ export interface LibraryItem {
   color: string;
   categories: string[];
   imageUrl?: string;
+  perspectiveImageUrl?: string;
 }
 
 export interface PlacedItem {
@@ -158,6 +159,7 @@ export interface ApiLibraryItem {
   heightUnits: number;
   color: string;
   imagePath: string | null;
+  perspectiveImagePath: string | null;
   isActive: boolean;
   sortOrder: number;
   categories: string[];

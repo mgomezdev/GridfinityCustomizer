@@ -51,6 +51,7 @@ export interface LibraryItem {
   color: string;
   categories: string[];
   imageUrl?: string;
+  perspectiveImageUrl?: string;
 }
 
 export interface PlacedItem {

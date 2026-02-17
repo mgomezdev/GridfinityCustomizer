@@ -20,6 +20,7 @@ export const libraryItems = sqliteTable('library_items', {
   heightUnits: integer('height_units').notNull(),
   color: text('color').notNull().default('#3B82F6'),
   imagePath: text('image_path'),
+  perspectiveImagePath: text('perspective_image_path'),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: text('created_at').notNull().default(''),

@@ -107,6 +107,7 @@ export async function getLibraryItems(
         heightUnits: libraryItems.heightUnits,
         color: libraryItems.color,
         imagePath: libraryItems.imagePath,
+        perspectiveImagePath: libraryItems.perspectiveImagePath,
         isActive: libraryItems.isActive,
         sortOrder: libraryItems.sortOrder,
       })
@@ -130,6 +131,7 @@ export async function getLibraryItems(
         heightUnits: libraryItems.heightUnits,
         color: libraryItems.color,
         imagePath: libraryItems.imagePath,
+        perspectiveImagePath: libraryItems.perspectiveImagePath,
         isActive: libraryItems.isActive,
         sortOrder: libraryItems.sortOrder,
       })
@@ -170,6 +172,7 @@ export async function getLibraryItems(
     heightUnits: item.heightUnits,
     color: item.color,
     imagePath: item.imagePath,
+    perspectiveImagePath: item.perspectiveImagePath,
     isActive: item.isActive,
     sortOrder: item.sortOrder,
     categories: catMap.get(`${item.libraryId}:${item.id}`) ?? [],
@@ -189,6 +192,7 @@ export async function getLibraryItemById(
       heightUnits: libraryItems.heightUnits,
       color: libraryItems.color,
       imagePath: libraryItems.imagePath,
+      perspectiveImagePath: libraryItems.perspectiveImagePath,
       isActive: libraryItems.isActive,
       sortOrder: libraryItems.sortOrder,
     })
@@ -224,6 +228,7 @@ export async function getLibraryItemById(
     heightUnits: item.heightUnits,
     color: item.color,
     imagePath: item.imagePath,
+    perspectiveImagePath: item.perspectiveImagePath,
     isActive: item.isActive,
     sortOrder: item.sortOrder,
     categories: catRows.map((r) => r.categoryId),
@@ -375,6 +380,7 @@ interface CreateItemData {
   heightUnits: number;
   color?: string;
   imagePath?: string;
+  perspectiveImagePath?: string;
   sortOrder?: number;
   categories?: string[];
 }
@@ -420,6 +426,7 @@ export async function createItem(
       heightUnits: data.heightUnits,
       color: data.color ?? '#3B82F6',
       imagePath: data.imagePath ?? null,
+      perspectiveImagePath: data.perspectiveImagePath ?? null,
       isActive: true,
       sortOrder: data.sortOrder ?? 0,
       createdAt: now,
@@ -442,6 +449,7 @@ export async function createItem(
     heightUnits: data.heightUnits,
     color: data.color ?? '#3B82F6',
     imagePath: data.imagePath ?? null,
+    perspectiveImagePath: data.perspectiveImagePath ?? null,
     isActive: true,
     sortOrder: data.sortOrder ?? 0,
     categories: categoryIds,
@@ -454,6 +462,7 @@ interface UpdateItemData {
   heightUnits?: number;
   color?: string;
   imagePath?: string;
+  perspectiveImagePath?: string;
   isActive?: boolean;
   sortOrder?: number;
   categories?: string[];
@@ -485,6 +494,7 @@ export async function updateItem(
   if (data.heightUnits !== undefined) setValues.heightUnits = data.heightUnits;
   if (data.color !== undefined) setValues.color = data.color;
   if (data.imagePath !== undefined) setValues.imagePath = data.imagePath;
+  if (data.perspectiveImagePath !== undefined) setValues.perspectiveImagePath = data.perspectiveImagePath;
   if (data.isActive !== undefined) setValues.isActive = data.isActive;
   if (data.sortOrder !== undefined) setValues.sortOrder = data.sortOrder;
 

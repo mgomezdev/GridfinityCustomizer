@@ -26,6 +26,7 @@ export interface LibraryItemJson {
   color: string;
   categories: string[];
   imageUrl?: string;
+  perspectiveImageUrl?: string;
 }
 
 export interface LibraryIndex {
@@ -130,11 +131,33 @@ export async function reseedLibraryData(client: Client, logger: Logger): Promise
         }
       }
 
+      // Handle perspective image copying
+      let perspectiveImagePath: string | null = null;
+      if (item.perspectiveImageUrl) {
+        let sourcePerspectivePath: string;
+        if (item.perspectiveImageUrl.startsWith('/')) {
+          sourcePerspectivePath = resolve(publicDir, item.perspectiveImageUrl.slice(1));
+        } else {
+          sourcePerspectivePath = resolve(libDir, item.perspectiveImageUrl);
+        }
+
+        if (existsSync(sourcePerspectivePath)) {
+          const destDir = resolve(imageDir, lib.id);
+          mkdirSync(destDir, { recursive: true });
+          const destFilename = basename(sourcePerspectivePath);
+          const destPath = resolve(destDir, destFilename);
+          copyFileSync(sourcePerspectivePath, destPath);
+          perspectiveImagePath = `${lib.id}/${destFilename}`;
+        } else {
+          logger.warn(`Perspective image not found: ${sourcePerspectivePath}`);
+        }
+      }
+
       // Insert item
       await client.execute({
-        sql: `INSERT INTO library_items (library_id, id, name, width_units, height_units, color, image_path, is_active, sort_order, created_at, updated_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
-        args: [lib.id, item.id, item.name, item.widthUnits, item.heightUnits, item.color, imagePath, itemIdx, now, now],
+        sql: `INSERT INTO library_items (library_id, id, name, width_units, height_units, color, image_path, perspective_image_path, is_active, sort_order, created_at, updated_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
+        args: [lib.id, item.id, item.name, item.widthUnits, item.heightUnits, item.color, imagePath, perspectiveImagePath, itemIdx, now, now],
       });
     }
   }

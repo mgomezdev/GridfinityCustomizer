@@ -130,6 +130,61 @@ describe('useLibraryData', () => {
       expect(result.current.items[0].imageUrl).toBe('/libraries/bins_standard/bin-1x1.png');
     });
 
+    it('should resolve perspectiveImageUrl paths', async () => {
+      const itemsWithPerspective: LibraryItem[] = [
+        {
+          id: 'bin-1x1',
+          name: '1x1 Bin',
+          widthUnits: 1,
+          heightUnits: 1,
+          color: '#3B82F6',
+          categories: ['bin'],
+          imageUrl: 'bin-1x1.png',
+          perspectiveImageUrl: 'bin-1x1-perspective.png',
+        },
+      ];
+
+      const adapter = createAdapter({ bins_standard: itemsWithPerspective });
+      const wrapper = createTestWrapper(adapter);
+
+      const { result } = renderHook(() => useLibraryData(singleLibrary), {
+        wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.items[0].perspectiveImageUrl).toBe('/libraries/bins_standard/bin-1x1-perspective.png');
+    });
+
+    it('should leave perspectiveImageUrl undefined when not present', async () => {
+      const itemsWithoutPerspective: LibraryItem[] = [
+        {
+          id: 'bin-1x1',
+          name: '1x1 Bin',
+          widthUnits: 1,
+          heightUnits: 1,
+          color: '#3B82F6',
+          categories: ['bin'],
+          imageUrl: 'bin-1x1.png',
+        },
+      ];
+
+      const adapter = createAdapter({ bins_standard: itemsWithoutPerspective });
+      const wrapper = createTestWrapper(adapter);
+
+      const { result } = renderHook(() => useLibraryData(singleLibrary), {
+        wrapper,
+      });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      expect(result.current.items[0].perspectiveImageUrl).toBeUndefined();
+    });
+
     it('should maintain backward compatibility with absolute paths', async () => {
       const itemsWithAbsolutePaths: LibraryItem[] = [
         {

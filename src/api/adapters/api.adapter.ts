@@ -33,6 +33,7 @@ export class ApiAdapter implements DataSourceAdapter {
       color: item.color as string,
       categories: item.categories as string[],
       imageUrl: item.imagePath as string | undefined,
+      perspectiveImageUrl: item.perspectiveImagePath as string | undefined,
     }));
   }
 
