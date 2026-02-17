@@ -4,8 +4,8 @@ import { BillOfMaterials } from './BillOfMaterials';
 import type { BOMItem } from '../types/gridfinity';
 
 const mockBOMItems: BOMItem[] = [
-  { itemId: 'default:bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#3B82F6', categories: ['bin'], quantity: 3 },
-  { itemId: 'default:bin-2x1', name: '2x1 Bin', widthUnits: 2, heightUnits: 1, color: '#10B981', categories: ['bin'], quantity: 2 },
+  { itemId: 'bins_standard:bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#3B82F6', categories: ['bin'], quantity: 3 },
+  { itemId: 'bins_standard:bin-2x1', name: '2x1 Bin', widthUnits: 2, heightUnits: 1, color: '#10B981', categories: ['bin'], quantity: 2 },
 ];
 
 describe('BillOfMaterials', () => {
@@ -28,7 +28,7 @@ describe('BillOfMaterials', () => {
 
     it('should show singular item text', () => {
       const singleItem: BOMItem[] = [
-        { itemId: 'default:bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#3B82F6', categories: ['bin'], quantity: 1 },
+        { itemId: 'bins_standard:bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#3B82F6', categories: ['bin'], quantity: 1 },
       ];
       render(<BillOfMaterials items={singleItem} />);
       expect(screen.getByText('1 item')).toBeInTheDocument();

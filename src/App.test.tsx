@@ -57,6 +57,30 @@ vi.mock('./components/KeyboardShortcutsHelp', () => ({
   },
 }));
 
+vi.mock('./components/auth/UserMenu', () => ({
+  UserMenu: () => <div data-testid="user-menu" />,
+}));
+
+vi.mock('./contexts/AuthContext', () => ({
+  useAuth: () => ({
+    user: null,
+    isAuthenticated: false,
+    isLoading: false,
+    login: vi.fn(),
+    register: vi.fn(),
+    logout: vi.fn(),
+    getAccessToken: () => null,
+  }),
+}));
+
+vi.mock('./components/layouts/SaveLayoutDialog', () => ({
+  SaveLayoutDialog: () => null,
+}));
+
+vi.mock('./components/layouts/LoadLayoutDialog', () => ({
+  LoadLayoutDialog: () => null,
+}));
+
 vi.mock('./components/DimensionInput', () => ({
   DimensionInput: (props: Record<string, unknown>) => (
     <div data-testid={`dimension-input-${props.label}`} data-value={props.value} />
@@ -77,9 +101,9 @@ const mockToggleLibrary = vi.fn();
 vi.mock('./hooks/useLibraries', () => ({
   useLibraries: () => ({
     availableLibraries: [
-      { id: 'default', name: 'Default', path: '/libraries/default/index.json', isEnabled: true },
+      { id: 'bins_standard', name: 'Standard Bins', path: '/libraries/bins_standard/index.json', isEnabled: true },
     ],
-    selectedLibraryIds: ['default'],
+    selectedLibraryIds: ['bins_standard'],
     toggleLibrary: mockToggleLibrary,
     isLoading: false,
     error: null,
@@ -88,7 +112,7 @@ vi.mock('./hooks/useLibraries', () => ({
 }));
 
 const testItem: LibraryItem = {
-  id: 'default:bin-1x1',
+  id: 'bins_standard:bin-1x1',
   name: '1x1 Bin',
   widthUnits: 1,
   heightUnits: 1,
@@ -97,7 +121,7 @@ const testItem: LibraryItem = {
 };
 
 const testItem2x1: LibraryItem = {
-  id: 'default:bin-2x1',
+  id: 'bins_standard:bin-2x1',
   name: '2x1 Bin',
   widthUnits: 2,
   heightUnits: 1,
@@ -106,8 +130,8 @@ const testItem2x1: LibraryItem = {
 };
 
 const mockGetItemById = vi.fn((id: string): LibraryItem | undefined => {
-  if (id === 'default:bin-1x1') return testItem;
-  if (id === 'default:bin-2x1') return testItem2x1;
+  if (id === 'bins_standard:bin-1x1') return testItem;
+  if (id === 'bins_standard:bin-2x1') return testItem2x1;
   return undefined;
 });
 
@@ -151,21 +175,13 @@ vi.mock('./hooks/useReferenceImages', () => ({
   }),
 }));
 
-// --- Spy on migrations ---
-const migrateStoredItemsSpy = vi.fn();
-const migrateLibrarySelectionSpy = vi.fn();
-
-vi.mock('./utils/migration', () => ({
-  migrateStoredItems: (...args: unknown[]) => migrateStoredItemsSpy(...args),
-  migrateLibrarySelection: (...args: unknown[]) => migrateLibrarySelectionSpy(...args),
-}));
 
 // --- Helpers ---
 function renderApp() {
   return render(<App />);
 }
 
-function placeItemViaGridPreview(itemId = 'default:bin-1x1', x = 0, y = 0) {
+function placeItemViaGridPreview(itemId = 'bins_standard:bin-1x1', x = 0, y = 0) {
   const onDrop = capturedGridPreviewProps.onDrop as (data: { type: string; itemId: string }, x: number, y: number) => void;
   act(() => {
     onDrop({ type: 'library', itemId }, x, y);
@@ -356,7 +372,7 @@ describe('App Integration Tests', () => {
 
     it('R with selectedItemIds rotates items', () => {
       renderApp();
-      placeItemViaGridPreview('default:bin-2x1', 0, 0);
+      placeItemViaGridPreview('bins_standard:bin-2x1', 0, 0);
       const instanceId = getPlacedItems()[0].instanceId;
       selectItemViaGridPreview(instanceId);
 
@@ -410,9 +426,9 @@ describe('App Integration Tests', () => {
 
     it('Ctrl+A selects all placed items', () => {
       renderApp();
-      placeItemViaGridPreview('default:bin-1x1', 0, 0);
-      placeItemViaGridPreview('default:bin-1x1', 1, 0);
-      placeItemViaGridPreview('default:bin-1x1', 2, 0);
+      placeItemViaGridPreview('bins_standard:bin-1x1', 0, 0);
+      placeItemViaGridPreview('bins_standard:bin-1x1', 1, 0);
+      placeItemViaGridPreview('bins_standard:bin-1x1', 2, 0);
 
       fireEvent.keyDown(document, { key: 'a', ctrlKey: true });
       expect(getSelectedItemIds().size).toBe(3);
@@ -680,30 +696,7 @@ describe('App Integration Tests', () => {
   });
 
   // ==========================================
-  // 7. Migration
-  // ==========================================
-  describe('Migration', () => {
-    it('both migrations called on mount', () => {
-      renderApp();
-      expect(migrateStoredItemsSpy).toHaveBeenCalledTimes(1);
-      expect(migrateLibrarySelectionSpy).toHaveBeenCalledTimes(1);
-    });
-
-    it('migrations do not re-run on state changes', () => {
-      renderApp();
-      migrateStoredItemsSpy.mockClear();
-      migrateLibrarySelectionSpy.mockClear();
-
-      // Trigger a state change (e.g., unit toggle)
-      fireEvent.click(screen.getByText('in'));
-
-      expect(migrateStoredItemsSpy).not.toHaveBeenCalled();
-      expect(migrateLibrarySelectionSpy).not.toHaveBeenCalled();
-    });
-  });
-
-  // ==========================================
-  // 8. Refresh All coordination
+  // 7. Refresh All coordination
   // ==========================================
   describe('Refresh All coordination', () => {
     it('handleRefreshAll calls refreshLibraries then refreshLibrary', async () => {

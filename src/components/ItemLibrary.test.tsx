@@ -18,9 +18,9 @@ const mockLibraryItems: LibraryItem[] = [
 
 const mockLibraries: Library[] = [
   {
-    id: 'default',
-    name: 'Simple Bins',
-    path: '/libraries/default/index.json',
+    id: 'bins_standard',
+    name: 'Standard Bins',
+    path: '/libraries/bins_standard/index.json',
     isEnabled: true,
     itemCount: 40,
   },
@@ -29,7 +29,7 @@ const mockLibraries: Library[] = [
 const mockProps = {
   onRefreshLibrary: vi.fn().mockResolvedValue(undefined),
   availableLibraries: mockLibraries,
-  selectedLibraryIds: ['default'],
+  selectedLibraryIds: ['bins_standard'],
   onToggleLibrary: vi.fn(),
   isLibrariesLoading: false,
 };
@@ -357,7 +357,7 @@ describe('ItemLibrary', () => {
   it('should show active indicator when multiple libraries selected', () => {
     const multiLibraryProps = {
       ...mockProps,
-      selectedLibraryIds: ['default', 'simple-utensils'],
+      selectedLibraryIds: ['bins_standard', 'simple-utensils'],
     };
 
     render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...multiLibraryProps} />);

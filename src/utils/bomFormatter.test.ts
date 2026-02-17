@@ -8,30 +8,30 @@ import type { GridSummaryData, GridLayoutExport } from './bomFormatter';
 import type { BOMItem, PlacedItem, LibraryItem } from '../types/gridfinity';
 
 const mockBOMItems: BOMItem[] = [
-  { itemId: 'default:bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#3B82F6', categories: ['bin'], quantity: 3 },
-  { itemId: 'default:bin-2x1', name: '2x1 Bin', widthUnits: 2, heightUnits: 1, color: '#10B981', categories: ['bin'], quantity: 2 },
-  { itemId: 'default:bin-3x2', name: '3x2 Bin', widthUnits: 3, heightUnits: 2, color: '#EF4444', categories: ['bin'], quantity: 1 },
+  { itemId: 'bins_standard:bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#3B82F6', categories: ['bin'], quantity: 3 },
+  { itemId: 'bins_standard:bin-2x1', name: '2x1 Bin', widthUnits: 2, heightUnits: 1, color: '#10B981', categories: ['bin'], quantity: 2 },
+  { itemId: 'bins_standard:bin-3x2', name: '3x2 Bin', widthUnits: 3, heightUnits: 2, color: '#EF4444', categories: ['bin'], quantity: 1 },
 ];
 
 const mockPlacedItems: PlacedItem[] = [
-  { instanceId: 'item-1-1000', itemId: 'default:bin-1x1', x: 0, y: 0, width: 1, height: 1, rotation: 0 },
-  { instanceId: 'item-2-1001', itemId: 'default:bin-1x1', x: 1, y: 0, width: 1, height: 1, rotation: 0 },
-  { instanceId: 'item-3-1002', itemId: 'default:bin-1x1', x: 2, y: 0, width: 1, height: 1, rotation: 90 },
-  { instanceId: 'item-4-1003', itemId: 'default:bin-2x1', x: 0, y: 1, width: 2, height: 1, rotation: 0 },
-  { instanceId: 'item-5-1004', itemId: 'default:bin-2x1', x: 0, y: 2, width: 1, height: 2, rotation: 90 },
-  { instanceId: 'item-6-1005', itemId: 'default:bin-3x2', x: 1, y: 2, width: 3, height: 2, rotation: 0 },
+  { instanceId: 'item-1-1000', itemId: 'bins_standard:bin-1x1', x: 0, y: 0, width: 1, height: 1, rotation: 0 },
+  { instanceId: 'item-2-1001', itemId: 'bins_standard:bin-1x1', x: 1, y: 0, width: 1, height: 1, rotation: 0 },
+  { instanceId: 'item-3-1002', itemId: 'bins_standard:bin-1x1', x: 2, y: 0, width: 1, height: 1, rotation: 90 },
+  { instanceId: 'item-4-1003', itemId: 'bins_standard:bin-2x1', x: 0, y: 1, width: 2, height: 1, rotation: 0 },
+  { instanceId: 'item-5-1004', itemId: 'bins_standard:bin-2x1', x: 0, y: 2, width: 1, height: 2, rotation: 90 },
+  { instanceId: 'item-6-1005', itemId: 'bins_standard:bin-3x2', x: 1, y: 2, width: 3, height: 2, rotation: 0 },
 ];
 
 const mockLibraryItems: Record<string, LibraryItem> = {
-  'default:bin-1x1': { id: 'default:bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#3B82F6', categories: ['bin'] },
-  'default:bin-2x1': { id: 'default:bin-2x1', name: '2x1 Bin', widthUnits: 2, heightUnits: 1, color: '#10B981', categories: ['bin'] },
-  'default:bin-3x2': { id: 'default:bin-3x2', name: '3x2 Bin', widthUnits: 3, heightUnits: 2, color: '#EF4444', categories: ['bin'] },
+  'bins_standard:bin-1x1': { id: 'bins_standard:bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#3B82F6', categories: ['bin'] },
+  'bins_standard:bin-2x1': { id: 'bins_standard:bin-2x1', name: '2x1 Bin', widthUnits: 2, heightUnits: 1, color: '#10B981', categories: ['bin'] },
+  'bins_standard:bin-3x2': { id: 'bins_standard:bin-3x2', name: '3x2 Bin', widthUnits: 3, heightUnits: 2, color: '#EF4444', categories: ['bin'] },
 };
 
 const mockGetItemById = (id: string): LibraryItem | undefined => mockLibraryItems[id];
 
 const mockLibraryNames = new Map([
-  ['default', 'Simple Bins'],
+  ['bins_standard', 'Standard Bins'],
   ['simple-utensils', 'Simple Utensils'],
 ]);
 
@@ -127,9 +127,9 @@ describe('bomFormatter', () => {
       expect(body).toContain('1x1 Bin');
       expect(body).toContain('2x1 Bin');
       expect(body).toContain('3x2 Bin');
-      expect(body).toContain('Simple Bins/bin-1x1');
-      expect(body).toContain('Simple Bins/bin-2x1');
-      expect(body).toContain('Simple Bins/bin-3x2');
+      expect(body).toContain('Standard Bins/bin-1x1');
+      expect(body).toContain('Standard Bins/bin-2x1');
+      expect(body).toContain('Standard Bins/bin-3x2');
       expect(body).toContain('3');  // quantity
       expect(body).toContain('2');  // quantity
       expect(body).toContain('1');  // quantity
@@ -149,7 +149,7 @@ describe('bomFormatter', () => {
 
     it('should handle single item BOM', () => {
       const singleItem: BOMItem[] = [
-        { itemId: 'default:bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#3B82F6', categories: ['bin'], quantity: 1 },
+        { itemId: 'bins_standard:bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#3B82F6', categories: ['bin'], quantity: 1 },
       ];
       const body = formatBOMEmailBody(defaultSummary, singleItem, mockLibraryNames);
       expect(body).toContain('1 unique');
@@ -176,8 +176,8 @@ describe('bomFormatter', () => {
 
     it('should format part IDs as library name/part id', () => {
       const body = formatBOMEmailBody(defaultSummary, mockBOMItems, mockLibraryNames);
-      expect(body).toContain('Simple Bins/bin-1x1');
-      expect(body).not.toContain('default:bin-1x1');
+      expect(body).toContain('Standard Bins/bin-1x1');
+      expect(body).not.toContain('bins_standard:bin-1x1');
     });
 
     it('should fall back to library ID when library name is unknown', () => {
@@ -239,7 +239,7 @@ describe('bomFormatter', () => {
     it('should include all placed items with positions and rotations', () => {
       expect(result.items).toHaveLength(6);
       expect(result.items[0]).toEqual({
-        itemId: 'Simple Bins/bin-1x1',
+        itemId: 'Standard Bins/bin-1x1',
         name: '1x1 Bin',
         x: 0,
         y: 0,
@@ -252,7 +252,7 @@ describe('bomFormatter', () => {
     it('should preserve rotation values in items', () => {
       const rotated90 = result.items.find(i => i.rotation === 90);
       expect(rotated90).toBeDefined();
-      expect(rotated90!.itemId).toBe('Simple Bins/bin-1x1');
+      expect(rotated90!.itemId).toBe('Standard Bins/bin-1x1');
       expect(rotated90!.x).toBe(2);
       expect(rotated90!.y).toBe(0);
     });
@@ -269,9 +269,9 @@ describe('bomFormatter', () => {
 
     it('should include aggregated BOM', () => {
       expect(result.bom).toHaveLength(3);
-      const bin1x1 = result.bom.find(b => b.itemId === 'Simple Bins/bin-1x1');
+      const bin1x1 = result.bom.find(b => b.itemId === 'Standard Bins/bin-1x1');
       expect(bin1x1).toEqual({
-        itemId: 'Simple Bins/bin-1x1',
+        itemId: 'Standard Bins/bin-1x1',
         name: '1x1 Bin',
         widthUnits: 1,
         heightUnits: 1,

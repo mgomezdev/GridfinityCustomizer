@@ -6,9 +6,9 @@ import type { Library } from '../types/gridfinity';
 describe('LibrarySelector', () => {
   const mockLibraries: Library[] = [
     {
-      id: 'default',
-      name: 'Simple Bins',
-      path: '/libraries/default/index.json',
+      id: 'bins_standard',
+      name: 'Standard Bins',
+      path: '/libraries/bins_standard/index.json',
       isEnabled: true,
       itemCount: 40,
     },
@@ -25,13 +25,13 @@ describe('LibrarySelector', () => {
     render(
       <LibrarySelector
         availableLibraries={mockLibraries}
-        selectedLibraryIds={['default', 'simple-utensils']}
+        selectedLibraryIds={['bins_standard', 'simple-utensils']}
         onToggleLibrary={vi.fn()}
         isLoading={false}
       />
     );
 
-    expect(screen.getByText(/Simple Bins/)).toBeInTheDocument();
+    expect(screen.getByText(/Standard Bins/)).toBeInTheDocument();
     expect(screen.getByText(/Simple Utensils/)).toBeInTheDocument();
   });
 
@@ -39,7 +39,7 @@ describe('LibrarySelector', () => {
     render(
       <LibrarySelector
         availableLibraries={mockLibraries}
-        selectedLibraryIds={['default', 'simple-utensils']}
+        selectedLibraryIds={['bins_standard', 'simple-utensils']}
         onToggleLibrary={vi.fn()}
         isLoading={false}
       />
@@ -53,7 +53,7 @@ describe('LibrarySelector', () => {
     render(
       <LibrarySelector
         availableLibraries={mockLibraries}
-        selectedLibraryIds={['default', 'simple-utensils']}
+        selectedLibraryIds={['bins_standard', 'simple-utensils']}
         onToggleLibrary={vi.fn()}
         isLoading={false}
       />
@@ -68,7 +68,7 @@ describe('LibrarySelector', () => {
     render(
       <LibrarySelector
         availableLibraries={mockLibraries}
-        selectedLibraryIds={['default']}
+        selectedLibraryIds={['bins_standard']}
         onToggleLibrary={vi.fn()}
         isLoading={false}
       />
@@ -85,7 +85,7 @@ describe('LibrarySelector', () => {
     render(
       <LibrarySelector
         availableLibraries={mockLibraries}
-        selectedLibraryIds={['default', 'simple-utensils']}
+        selectedLibraryIds={['bins_standard', 'simple-utensils']}
         onToggleLibrary={onToggleLibrary}
         isLoading={false}
       />
@@ -101,7 +101,7 @@ describe('LibrarySelector', () => {
     render(
       <LibrarySelector
         availableLibraries={mockLibraries}
-        selectedLibraryIds={['default', 'simple-utensils']}
+        selectedLibraryIds={['bins_standard', 'simple-utensils']}
         onToggleLibrary={vi.fn()}
         isLoading={true}
       />
@@ -117,7 +117,7 @@ describe('LibrarySelector', () => {
     render(
       <LibrarySelector
         availableLibraries={mockLibraries}
-        selectedLibraryIds={['default']}
+        selectedLibraryIds={['bins_standard']}
         onToggleLibrary={vi.fn()}
         isLoading={false}
       />
@@ -132,7 +132,7 @@ describe('LibrarySelector', () => {
     render(
       <LibrarySelector
         availableLibraries={mockLibraries}
-        selectedLibraryIds={['default', 'simple-utensils']}
+        selectedLibraryIds={['bins_standard', 'simple-utensils']}
         onToggleLibrary={vi.fn()}
         isLoading={false}
       />
@@ -146,9 +146,9 @@ describe('LibrarySelector', () => {
   it('does not display item count when undefined', () => {
     const librariesWithoutCounts: Library[] = [
       {
-        id: 'default',
-        name: 'Simple Bins',
-        path: '/libraries/default/index.json',
+        id: 'bins_standard',
+        name: 'Standard Bins',
+        path: '/libraries/bins_standard/index.json',
         isEnabled: true,
       },
     ];
@@ -156,7 +156,7 @@ describe('LibrarySelector', () => {
     render(
       <LibrarySelector
         availableLibraries={librariesWithoutCounts}
-        selectedLibraryIds={['default']}
+        selectedLibraryIds={['bins_standard']}
         onToggleLibrary={vi.fn()}
         isLoading={false}
       />

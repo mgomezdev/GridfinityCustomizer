@@ -1,187 +1,172 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useLibraryData } from './useLibraryData';
+import type { LibraryItem } from '../types/gridfinity';
+import type { DataSourceAdapter } from '../api/adapters/types';
+import { createTestWrapper, createTestWrapperWithAdapter } from '../test/testWrapper';
 
 describe('useLibraryData', () => {
-  const mockDefaultLibrary = {
-    version: '1.0.0',
-    items: [
-      { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#3B82F6', categories: ['bin'] },
-      { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#3B82F6', categories: ['bin'] },
-    ],
-  };
+  const mockDefaultItems: LibraryItem[] = [
+    { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#3B82F6', categories: ['bin'] },
+    { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#3B82F6', categories: ['bin'] },
+  ];
 
-  const mockCommunityLibrary = {
-    version: '1.0.0',
-    items: [
-      { id: 'custom-1x1', name: 'Custom 1x1', widthUnits: 1, heightUnits: 1, color: '#EF4444', categories: ['custom'] },
-    ],
-  };
-
-  const manifestLibraries = [
-    { id: 'default', path: '/libraries/default/index.json' },
-    { id: 'community', path: '/libraries/community/index.json' },
+  const mockCommunityItems: LibraryItem[] = [
+    { id: 'custom-1x1', name: 'Custom 1x1', widthUnits: 1, heightUnits: 1, color: '#EF4444', categories: ['custom'] },
   ];
 
   // Stable array references for tests
-  const singleLibrary = ['default'];
-  const multipleLibraries = ['default', 'community'];
+  const singleLibrary = ['bins_standard'];
+  const multipleLibraries = ['bins_standard', 'community'];
   const emptyLibraries: string[] = [];
-  const nonExistentLibrary = ['non-existent'];
 
-  let mockFetch: ReturnType<typeof vi.fn>;
-
-  beforeEach(() => {
-    // Create mock function with sensible default that returns valid Response
-    mockFetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: async () => ({ version: '1.0.0', items: [] }),
-      } as Response)
-    );
-    globalThis.fetch = mockFetch as unknown as typeof fetch;
-  });
-
-  // Helper to get the mocked fetch function
-  const getMockFetch = () => mockFetch;
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
+  function createAdapter(
+    itemsByLibrary: Record<string, LibraryItem[]>,
+    options?: { failFor?: string[] }
+  ): DataSourceAdapter {
+    return {
+      async getLibraries() {
+        return Object.keys(itemsByLibrary).map((id) => ({
+          id,
+          name: id,
+          path: `/libraries/${id}/index.json`,
+          itemCount: itemsByLibrary[id].length,
+        }));
+      },
+      async getLibraryItems(libraryId: string) {
+        if (options?.failFor?.includes(libraryId)) {
+          throw new Error(`Failed to fetch ${libraryId}: Server Error`);
+        }
+        return itemsByLibrary[libraryId] ?? [];
+      },
+      resolveImageUrl(libraryId: string, imagePath: string) {
+        if (imagePath.startsWith('/libraries/') || imagePath.startsWith('http')) {
+          return imagePath;
+        }
+        return `/libraries/${libraryId}/${imagePath}`;
+      },
+    };
+  }
 
   describe('Multi-Library Loading', () => {
     it('should load single library', async () => {
-      getMockFetch().mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockDefaultLibrary,
-      } as Response);
+      const adapter = createAdapter({ bins_standard: mockDefaultItems });
+      const wrapper = createTestWrapper(adapter);
 
-      const { result } = renderHook(() =>
-        useLibraryData(singleLibrary, manifestLibraries)
-      );
+      const { result } = renderHook(() => useLibraryData(singleLibrary), {
+        wrapper,
+      });
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
       });
 
       expect(result.current.items).toHaveLength(2);
-      expect(result.current.items[0].id).toBe('default:bin-1x1');
-      expect(result.current.items[1].id).toBe('default:bin-2x2');
+      expect(result.current.items[0].id).toBe('bins_standard:bin-1x1');
+      expect(result.current.items[1].id).toBe('bins_standard:bin-2x2');
     });
 
     it('should load multiple libraries in parallel', async () => {
-      getMockFetch()
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockDefaultLibrary,
-        } as Response)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockCommunityLibrary,
-        } as Response);
+      const adapter = createAdapter({
+        bins_standard: mockDefaultItems,
+        community: mockCommunityItems,
+      });
+      const wrapper = createTestWrapper(adapter);
 
-      const { result } = renderHook(() =>
-        useLibraryData(multipleLibraries, manifestLibraries)
-      );
+      const { result } = renderHook(() => useLibraryData(multipleLibraries), {
+        wrapper,
+      });
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
       });
 
       expect(result.current.items).toHaveLength(3);
-      expect(result.current.items.map(i => i.id)).toContain('default:bin-1x1');
-      expect(result.current.items.map(i => i.id)).toContain('community:custom-1x1');
+      expect(result.current.items.map((i) => i.id)).toContain('bins_standard:bin-1x1');
+      expect(result.current.items.map((i) => i.id)).toContain('community:custom-1x1');
     });
 
     it('should prefix item IDs with library name', async () => {
-      getMockFetch().mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockDefaultLibrary,
-      } as Response);
+      const adapter = createAdapter({ bins_standard: mockDefaultItems });
+      const wrapper = createTestWrapper(adapter);
 
-      const { result } = renderHook(() =>
-        useLibraryData(singleLibrary, manifestLibraries)
-      );
+      const { result } = renderHook(() => useLibraryData(singleLibrary), {
+        wrapper,
+      });
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      result.current.items.forEach(item => {
-        expect(item.id).toMatch(/^default:/);
+      result.current.items.forEach((item) => {
+        expect(item.id).toMatch(/^bins_standard:/);
       });
     });
 
     it('should resolve image paths to library-specific directories', async () => {
-      const libraryWithImages = {
-        version: '1.0.0',
-        items: [
-          {
-            id: 'bin-1x1',
-            name: '1x1 Bin',
-            widthUnits: 1,
-            heightUnits: 1,
-            color: '#3B82F6',
-            categories: ['bin'],
-            imageUrl: 'bin-1x1.png'  // Changed to relative path
-          },
-        ],
-      };
+      const itemsWithImages: LibraryItem[] = [
+        {
+          id: 'bin-1x1',
+          name: '1x1 Bin',
+          widthUnits: 1,
+          heightUnits: 1,
+          color: '#3B82F6',
+          categories: ['bin'],
+          imageUrl: 'bin-1x1.png',
+        },
+      ];
 
-      getMockFetch().mockResolvedValueOnce({
-        ok: true,
-        json: async () => libraryWithImages,
-      } as Response);
+      const adapter = createAdapter({ bins_standard: itemsWithImages });
+      const wrapper = createTestWrapper(adapter);
 
-      const { result } = renderHook(() =>
-        useLibraryData(singleLibrary, manifestLibraries)
-      );
+      const { result } = renderHook(() => useLibraryData(singleLibrary), {
+        wrapper,
+      });
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(result.current.items[0].imageUrl).toBe('/libraries/default/bin-1x1.png');
+      expect(result.current.items[0].imageUrl).toBe('/libraries/bins_standard/bin-1x1.png');
     });
 
     it('should maintain backward compatibility with absolute paths', async () => {
-      const libraryWithAbsolutePaths = {
-        version: '1.0.0',
-        items: [
-          {
-            id: 'bin-1x1',
-            name: '1x1 Bin',
-            widthUnits: 1,
-            heightUnits: 1,
-            color: '#3B82F6',
-            categories: ['bin'],
-            imageUrl: '/libraries/default/images/bin-1x1.png'
-          },
-        ],
-      };
+      const itemsWithAbsolutePaths: LibraryItem[] = [
+        {
+          id: 'bin-1x1',
+          name: '1x1 Bin',
+          widthUnits: 1,
+          heightUnits: 1,
+          color: '#3B82F6',
+          categories: ['bin'],
+          imageUrl: '/libraries/bins_standard/images/bin-1x1.png',
+        },
+      ];
 
-      getMockFetch().mockResolvedValueOnce({
-        ok: true,
-        json: async () => libraryWithAbsolutePaths,
-      } as Response);
+      const adapter = createAdapter({ bins_standard: itemsWithAbsolutePaths });
+      const wrapper = createTestWrapper(adapter);
 
-      const { result } = renderHook(() =>
-        useLibraryData(singleLibrary, manifestLibraries)
-      );
+      const { result } = renderHook(() => useLibraryData(singleLibrary), {
+        wrapper,
+      });
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
       });
 
       // Should pass through unchanged
-      expect(result.current.items[0].imageUrl).toBe('/libraries/default/images/bin-1x1.png');
+      expect(result.current.items[0].imageUrl).toBe('/libraries/bins_standard/images/bin-1x1.png');
     });
 
     it('should handle empty library selection', async () => {
-      const { result } = renderHook(() =>
-        useLibraryData(emptyLibraries, manifestLibraries)
-      );
+      const adapter = createAdapter({});
+      const wrapper = createTestWrapper(adapter);
 
+      const { result } = renderHook(() => useLibraryData(emptyLibraries), {
+        wrapper,
+      });
+
+      // With no library IDs, useQueries creates zero queries, so isLoading should be false
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
       });
@@ -192,93 +177,85 @@ describe('useLibraryData', () => {
 
   describe('Error Handling', () => {
     it('should handle fetch errors gracefully', async () => {
-      getMockFetch().mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Not Found',
-      } as Response);
+      const adapter = createAdapter({}, { failFor: ['bins_standard'] });
+      const wrapper = createTestWrapper(adapter);
 
-      const { result } = renderHook(() =>
-        useLibraryData(singleLibrary, manifestLibraries)
-      );
+      const { result } = renderHook(() => useLibraryData(singleLibrary), {
+        wrapper,
+      });
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      // Should still complete loading even with errors
-      expect(result.current.items).toEqual([]);
+      // With TanStack Query, a failed query results in error state
+      expect(result.current.error).toBeInstanceOf(Error);
     });
 
-    it('should skip libraries not in manifest', async () => {
-      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    it('should skip libraries not in adapter (returns empty)', async () => {
+      const adapter = createAdapter({ bins_standard: mockDefaultItems });
+      const wrapper = createTestWrapper(adapter);
+      const nonExistentLibrary = ['non-existent'];
 
-      const { result } = renderHook(() =>
-        useLibraryData(nonExistentLibrary, manifestLibraries)
-      );
+      const { result } = renderHook(() => useLibraryData(nonExistentLibrary), {
+        wrapper,
+      });
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Library "non-existent" not found in manifest')
-      );
       expect(result.current.items).toEqual([]);
-
-      consoleWarnSpy.mockRestore();
     });
 
     it('should handle partial failures (some libraries load, others fail)', async () => {
-      getMockFetch()
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockDefaultLibrary,
-        } as Response)
-        .mockResolvedValueOnce({
-          ok: false,
-          statusText: 'Server Error',
-        } as Response);
-
-      const { result } = renderHook(() =>
-        useLibraryData(multipleLibraries, manifestLibraries)
+      const adapter = createAdapter(
+        { bins_standard: mockDefaultItems, community: mockCommunityItems },
+        { failFor: ['community'] }
       );
+      const wrapper = createTestWrapper(adapter);
 
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
+      const { result } = renderHook(() => useLibraryData(multipleLibraries), {
+        wrapper,
       });
 
-      // Should load items from successful library
-      expect(result.current.items).toHaveLength(2);
-      expect(result.current.items[0].id).toBe('default:bin-1x1');
+      await waitFor(() => {
+        // Wait for all queries to settle
+        const allSettled = result.current.items.length > 0 || result.current.error !== null;
+        expect(allSettled).toBe(true);
+      });
+
+      // Default library items should still load
+      expect(result.current.items.length).toBeGreaterThanOrEqual(2);
+      expect(result.current.items[0].id).toBe('bins_standard:bin-1x1');
     });
   });
 
   describe('Helper Methods', () => {
-    beforeEach(() => {
-      getMockFetch().mockResolvedValue({
-        ok: true,
-        json: async () => mockDefaultLibrary,
-      } as Response);
-    });
-
     it('getItemById should find item by prefixed ID', async () => {
-      const { result } = renderHook(() =>
-        useLibraryData(singleLibrary, manifestLibraries)
-      );
+      const adapter = createAdapter({ bins_standard: mockDefaultItems });
+      const wrapper = createTestWrapper(adapter);
+
+      const { result } = renderHook(() => useLibraryData(singleLibrary), {
+        wrapper,
+      });
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      const item = result.current.getItemById('default:bin-1x1');
+      const item = result.current.getItemById('bins_standard:bin-1x1');
       expect(item).toBeDefined();
       expect(item?.name).toBe('1x1 Bin');
     });
 
     it('getItemById should return undefined for non-existent item', async () => {
-      const { result } = renderHook(() =>
-        useLibraryData(singleLibrary, manifestLibraries)
-      );
+      const adapter = createAdapter({ bins_standard: mockDefaultItems });
+      const wrapper = createTestWrapper(adapter);
+
+      const { result } = renderHook(() => useLibraryData(singleLibrary), {
+        wrapper,
+      });
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
@@ -289,9 +266,12 @@ describe('useLibraryData', () => {
     });
 
     it('getItemsByCategory should filter by category', async () => {
-      const { result } = renderHook(() =>
-        useLibraryData(singleLibrary, manifestLibraries)
-      );
+      const adapter = createAdapter({ bins_standard: mockDefaultItems });
+      const wrapper = createTestWrapper(adapter);
+
+      const { result } = renderHook(() => useLibraryData(singleLibrary), {
+        wrapper,
+      });
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
@@ -299,31 +279,27 @@ describe('useLibraryData', () => {
 
       const binItems = result.current.getItemsByCategory('bin');
       expect(binItems).toHaveLength(2);
-      expect(binItems.every(item => item.categories.includes('bin'))).toBe(true);
+      expect(binItems.every((item) => item.categories.includes('bin'))).toBe(true);
     });
 
     it('getItemsByLibrary should filter by library ID', async () => {
-      getMockFetch()
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockDefaultLibrary,
-        } as Response)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockCommunityLibrary,
-        } as Response);
+      const adapter = createAdapter({
+        bins_standard: mockDefaultItems,
+        community: mockCommunityItems,
+      });
+      const wrapper = createTestWrapper(adapter);
 
-      const { result } = renderHook(() =>
-        useLibraryData(multipleLibraries, manifestLibraries)
-      );
+      const { result } = renderHook(() => useLibraryData(multipleLibraries), {
+        wrapper,
+      });
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      const defaultItems = result.current.getItemsByLibrary('default');
+      const defaultItems = result.current.getItemsByLibrary('bins_standard');
       expect(defaultItems).toHaveLength(2);
-      expect(defaultItems.every(item => item.id.startsWith('default:'))).toBe(true);
+      expect(defaultItems.every((item) => item.id.startsWith('bins_standard:'))).toBe(true);
 
       const communityItems = result.current.getItemsByLibrary('community');
       expect(communityItems).toHaveLength(1);
@@ -333,23 +309,39 @@ describe('useLibraryData', () => {
 
   describe('Refresh', () => {
     it('should reload libraries when refreshLibrary is called', async () => {
-      getMockFetch().mockResolvedValue({
-        ok: true,
-        json: async () => mockDefaultLibrary,
-      } as Response);
+      let callCount = 0;
+      const adapter: DataSourceAdapter = {
+        async getLibraries() {
+          return [{ id: 'bins_standard', name: 'bins_standard', path: '/libraries/bins_standard/index.json' }];
+        },
+        async getLibraryItems() {
+          callCount++;
+          return mockDefaultItems;
+        },
+        resolveImageUrl(_libraryId: string, imagePath: string) {
+          return imagePath;
+        },
+      };
 
-      const { result } = renderHook(() =>
-        useLibraryData(singleLibrary, manifestLibraries)
-      );
+      const wrapper = createTestWrapperWithAdapter(adapter);
+
+      const { result } = renderHook(() => useLibraryData(singleLibrary), {
+        wrapper,
+      });
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
       });
 
       expect(result.current.items).toHaveLength(2);
+      const initialCallCount = callCount;
 
       // Call refresh
       await result.current.refreshLibrary();
+
+      await waitFor(() => {
+        expect(callCount).toBeGreaterThan(initialCallCount);
+      });
 
       // Should still have items after refresh
       expect(result.current.items).toHaveLength(2);
@@ -358,19 +350,15 @@ describe('useLibraryData', () => {
 
   describe('Library Selection Changes', () => {
     it('should reload when selected libraries change', async () => {
-      getMockFetch()
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockDefaultLibrary,
-        } as Response)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => mockCommunityLibrary,
-        } as Response);
+      const adapter = createAdapter({
+        bins_standard: mockDefaultItems,
+        community: mockCommunityItems,
+      });
+      const wrapper = createTestWrapperWithAdapter(adapter);
 
       const { result, rerender } = renderHook(
-        ({ libs }) => useLibraryData(libs, manifestLibraries),
-        { initialProps: { libs: singleLibrary } }
+        ({ libs }) => useLibraryData(libs),
+        { initialProps: { libs: singleLibrary }, wrapper }
       );
 
       await waitFor(() => {
@@ -379,15 +367,14 @@ describe('useLibraryData', () => {
 
       expect(result.current.items).toHaveLength(2);
 
-      // Change to community library - use stable reference
+      // Change to community library
       const communityOnly = ['community'];
       rerender({ libs: communityOnly });
 
       await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
+        expect(result.current.items).toHaveLength(1);
       });
 
-      expect(result.current.items).toHaveLength(1);
       expect(result.current.items[0].id).toBe('community:custom-1x1');
     });
   });

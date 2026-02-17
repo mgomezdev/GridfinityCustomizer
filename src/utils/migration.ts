@@ -5,7 +5,7 @@ const MIGRATION_FLAG_KEY = 'gridfinity-migrated-to-multi-library';
 
 /**
  * Migrate placed items from single-library format to multi-library format
- * Adds 'default:' prefix to item IDs that don't already have a library prefix
+ * Adds 'bins_standard:' prefix to item IDs that don't already have a library prefix
  *
  * This runs automatically on app startup and is idempotent (safe to run multiple times)
  */
@@ -31,10 +31,10 @@ export function migrateStoredItems(): void {
       // Check if itemId is already prefixed (contains ':')
       if (!item.itemId.includes(':')) {
         needsMigration = true;
-        // Add 'default:' prefix to unprefixed items
+        // Add 'bins_standard:' prefix to unprefixed items
         return {
           ...item,
-          itemId: `default:${item.itemId}`,
+          itemId: `bins_standard:${item.itemId}`,
         };
       }
       return item;
@@ -54,28 +54,31 @@ export function migrateStoredItems(): void {
 }
 
 /**
- * Migrate library selection to include simple-utensils for existing users
- * If user only has 'default' selected, add 'simple-utensils' to maintain access to utensil items
+ * Migrates library selection:
+ * - Renames 'default' to 'bins_standard'
+ * - Adds 'simple-utensils' if only one library was selected
  */
 export function migrateLibrarySelection(): void {
   const STORAGE_KEY = 'gridfinity-selected-libraries';
   const MIGRATION_KEY = 'gridfinity-migration-library-selection';
 
   const migrated = localStorage.getItem(MIGRATION_KEY);
-  if (migrated === 'v1') return;
+  if (migrated === 'v2') return;
 
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    const selectedLibraries: string[] = stored ? JSON.parse(stored) : ['default'];
+    let selectedLibraries: string[] = stored ? JSON.parse(stored) : ['bins_standard'];
 
-    // If user only has 'default', add 'simple-utensils'
-    if (selectedLibraries.length === 1 && selectedLibraries[0] === 'default') {
+    // Rename 'default' to 'bins_standard'
+    selectedLibraries = selectedLibraries.map(id => id === 'default' ? 'bins_standard' : id);
+
+    // If user only has one library, add 'simple-utensils'
+    if (selectedLibraries.length === 1) {
       selectedLibraries.push('simple-utensils');
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedLibraries));
-      console.log('✓ Auto-selected simple-utensils library for existing user');
     }
 
-    localStorage.setItem(MIGRATION_KEY, 'v1');
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedLibraries));
+    localStorage.setItem(MIGRATION_KEY, 'v2');
   } catch (err) {
     console.warn('Failed to migrate library selection:', err);
   }
