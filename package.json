@@ -20,6 +20,10 @@
   ],
   "author": "mgomezdev",
   "type": "module",
+  "workspaces": [
+    "shared",
+    "server"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -29,9 +33,13 @@
     "test:run": "vitest run --exclude '**/e2e/**'",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:debug": "playwright test --debug"
+    "test:e2e:debug": "playwright test --debug",
+    "server:dev": "npm run dev --workspace=server",
+    "server:build": "npm run build --workspace=server",
+    "server:seed": "npm run seed --workspace=server"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.90.21",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

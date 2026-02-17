@@ -65,19 +65,19 @@ describe('libraryHelpers', () => {
 
   describe('prefixItemId', () => {
     it('should prefix item ID with library ID', () => {
-      expect(prefixItemId('default', 'bin-1x1')).toBe('default:bin-1x1');
+      expect(prefixItemId('bins_standard', 'bin-1x1')).toBe('bins_standard:bin-1x1');
     });
   });
 
   describe('unprefixItemId', () => {
     it('should extract library and item ID from prefixed ID', () => {
-      const result = unprefixItemId('default:bin-1x1');
-      expect(result).toEqual({ libraryId: 'default', itemId: 'bin-1x1' });
+      const result = unprefixItemId('bins_standard:bin-1x1');
+      expect(result).toEqual({ libraryId: 'bins_standard', itemId: 'bin-1x1' });
     });
 
     it('should handle unprefixed IDs (backward compat)', () => {
       const result = unprefixItemId('bin-1x1');
-      expect(result).toEqual({ libraryId: 'default', itemId: 'bin-1x1' });
+      expect(result).toEqual({ libraryId: 'bins_standard', itemId: 'bin-1x1' });
     });
   });
 });

@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
-import type { Library, LibraryManifest, LibraryIndex } from '../types/gridfinity';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { Library } from '../types/gridfinity';
+import { useDataSource } from '../contexts/DataSourceContext';
 import { STORAGE_KEYS } from '../utils/storageKeys';
 
 const SELECTED_LIBRARIES_KEY = STORAGE_KEYS.SELECTED_LIBRARIES;
-const MANIFEST_PATH = '/libraries/manifest.json';
 
 export interface UseLibrariesResult {
   availableLibraries: Library[];
@@ -17,13 +18,15 @@ export interface UseLibrariesResult {
 
 /**
  * Hook for managing library discovery and selection
- * Loads manifest.json to discover available libraries
+ * Loads libraries via the DataSourceAdapter
  * Persists user's library selection to localStorage
  */
 export function useLibraries(): UseLibrariesResult {
-  const [availableLibraries, setAvailableLibraries] = useState<Library[]>([]);
+  const adapter = useDataSource();
+  const queryClient = useQueryClient();
+
   const [selectedLibraryIds, setSelectedLibraryIds] = useState<string[]>(() => {
-    // Load from localStorage or default to ['default']
+    // Load from localStorage or default to ['bins_standard']
     try {
       const stored = localStorage.getItem(SELECTED_LIBRARIES_KEY);
       if (stored) {
@@ -37,78 +40,48 @@ export function useLibraries(): UseLibrariesResult {
     } catch (err) {
       console.warn('Failed to load selected libraries from localStorage:', err);
     }
-    return ['default'];
+    return ['bins_standard'];
   });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
 
-  // Fetch manifest and build library list
-  const fetchLibraries = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  // Fetch libraries via adapter using TanStack Query
+  const { data: libraryInfos, isLoading, error: queryError } = useQuery({
+    queryKey: ['libraries'],
+    queryFn: () => adapter.getLibraries(),
+  });
 
-    try {
-      const response = await fetch(MANIFEST_PATH);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch manifest: ${response.statusText}`);
-      }
-
-      const manifest: LibraryManifest = await response.json();
-
-      // Fetch item counts for each library in parallel
-      const librariesWithCounts = await Promise.all(
-        manifest.libraries.map(async (lib) => {
-          try {
-            const libResponse = await fetch(lib.path);
-            const data: LibraryIndex = await libResponse.json();
-            return {
-              ...lib,
-              isEnabled: selectedLibraryIds.includes(lib.id),
-              itemCount: data.items?.length ?? 0,
-            };
-          } catch (err) {
-            console.error(`Failed to load item count for ${lib.id}:`, err);
-            return {
-              ...lib,
-              isEnabled: selectedLibraryIds.includes(lib.id),
-              itemCount: undefined,
-            };
-          }
-        })
-      );
-
-      setAvailableLibraries(librariesWithCounts);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Unknown error loading libraries'));
-      console.error('Failed to load library manifest:', err);
-    } finally {
-      setIsLoading(false);
+  // Validate selected IDs against available libraries (derived state, no effect needed)
+  const validatedSelectedIds = useMemo(() => {
+    if (!libraryInfos || libraryInfos.length === 0) return selectedLibraryIds;
+    const validIds = new Set(libraryInfos.map(l => l.id));
+    const filtered = selectedLibraryIds.filter(id => validIds.has(id));
+    if (filtered.length === 0) {
+      return [libraryInfos[0].id];
     }
-  }, [selectedLibraryIds]);
+    return filtered.length === selectedLibraryIds.length ? selectedLibraryIds : filtered;
+  }, [libraryInfos, selectedLibraryIds]);
 
-  // Load manifest on mount
-  useEffect(() => {
-    fetchLibraries();
-  }, [fetchLibraries]);
+  // Transform LibraryInfo[] into Library[] with isEnabled based on validated selection
+  const availableLibraries: Library[] = (libraryInfos ?? []).map((info) => ({
+    id: info.id,
+    name: info.name,
+    path: info.path,
+    isEnabled: validatedSelectedIds.includes(info.id),
+    itemCount: info.itemCount,
+  }));
 
-  // Persist selected library IDs to localStorage
+  // Persist validated selection to localStorage
   useEffect(() => {
     try {
-      localStorage.setItem(SELECTED_LIBRARIES_KEY, JSON.stringify(selectedLibraryIds));
+      localStorage.setItem(SELECTED_LIBRARIES_KEY, JSON.stringify(validatedSelectedIds));
     } catch (err) {
       console.warn('Failed to save selected libraries to localStorage:', err);
     }
-  }, [selectedLibraryIds]);
+  }, [validatedSelectedIds]);
 
   // Toggle a single library on/off
   const toggleLibrary = useCallback((libraryId: string) => {
     setSelectedLibraryIds(prev => {
       if (prev.includes(libraryId)) {
-        // Don't allow deselecting the last library
-        if (prev.length === 1) {
-          console.warn('Cannot deselect the last library');
-          return prev;
-        }
         return prev.filter(id => id !== libraryId);
       } else {
         return [...prev, libraryId];
@@ -118,23 +91,19 @@ export function useLibraries(): UseLibrariesResult {
 
   // Set multiple libraries at once
   const selectLibraries = useCallback((libraryIds: string[]) => {
-    if (libraryIds.length === 0) {
-      console.warn('Must select at least one library');
-      return;
-    }
     setSelectedLibraryIds(libraryIds);
   }, []);
 
   // Refresh library manifest
   const refreshLibraries = useCallback(async () => {
-    await fetchLibraries();
-  }, [fetchLibraries]);
+    await queryClient.invalidateQueries({ queryKey: ['libraries'] });
+  }, [queryClient]);
 
   return {
     availableLibraries,
-    selectedLibraryIds,
+    selectedLibraryIds: validatedSelectedIds,
     isLoading,
-    error,
+    error: queryError ?? null,
     toggleLibrary,
     selectLibraries,
     refreshLibraries,

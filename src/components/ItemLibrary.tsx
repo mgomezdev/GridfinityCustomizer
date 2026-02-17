@@ -71,8 +71,13 @@ export function ItemLibrary({
     (a.category.order || 0) - (b.category.order || 0)
   );
 
-  // Load collapsed state from localStorage, default all to COLLAPSED
-  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(() => {
+  // Whether user has interacted with collapse state (true if localStorage had stored prefs)
+  const [hasCollapseInteraction, setHasCollapseInteraction] = useState(() => {
+    try { return localStorage.getItem(STORAGE_KEY) !== null; } catch { return false; }
+  });
+
+  // User's explicit collapse/expand state (from localStorage or empty)
+  const [userCollapsedState, setUserCollapsedState] = useState<Set<string>>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
@@ -81,29 +86,45 @@ export function ItemLibrary({
     } catch (e) {
       console.warn('Failed to load collapsed categories from localStorage', e);
     }
-    // Default: all categories collapsed (add all category IDs to the Set)
-    return new Set(categories.map(c => c.id));
+    return new Set();
   });
 
-  // Save to localStorage whenever state changes
+  // Derive effective collapsed state: default all collapsed until user interacts
+  const collapsedCategories = useMemo(() => {
+    if (hasCollapseInteraction) return userCollapsedState;
+    if (categories.length > 0) return new Set(categories.map(c => c.id));
+    return userCollapsedState;
+  }, [hasCollapseInteraction, userCollapsedState, categories]);
+
+  // Persist user's collapse state to localStorage
   useEffect(() => {
+    if (!hasCollapseInteraction) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(collapsedCategories)));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(userCollapsedState)));
     } catch (e) {
       console.warn('Failed to save collapsed categories to localStorage', e);
     }
-  }, [collapsedCategories]);
+  }, [userCollapsedState, hasCollapseInteraction]);
 
   const toggleCategory = (categoryId: string) => {
-    setCollapsedCategories(prev => {
-      const next = new Set(prev);
-      if (next.has(categoryId)) {
-        next.delete(categoryId);
-      } else {
-        next.add(categoryId);
-      }
-      return next;
-    });
+    if (!hasCollapseInteraction) {
+      // First interaction: materialize the default "all collapsed" state, then toggle
+      const base = new Set(categories.map(c => c.id));
+      if (base.has(categoryId)) base.delete(categoryId);
+      else base.add(categoryId);
+      setUserCollapsedState(base);
+      setHasCollapseInteraction(true);
+    } else {
+      setUserCollapsedState(prev => {
+        const next = new Set(prev);
+        if (next.has(categoryId)) {
+          next.delete(categoryId);
+        } else {
+          next.add(categoryId);
+        }
+        return next;
+      });
+    }
   };
 
   const renderCategory = (
@@ -143,29 +164,6 @@ export function ItemLibrary({
     );
   };
 
-  if (error) {
-    return (
-      <div className="item-library">
-        <h3 className="item-library-title">Item Library</h3>
-        <div className="library-error">
-          <p>Failed to load library</p>
-          <p className="error-message">{error.message}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="item-library">
-        <h3 className="item-library-title">Item Library</h3>
-        <div className="library-loading">
-          <p>Loading library...</p>
-        </div>
-      </div>
-    );
-  }
-
   const hasResults = filteredItems.length > 0;
 
   return (
@@ -193,124 +191,147 @@ export function ItemLibrary({
         />
       )}
 
-      <button
-        className="refresh-library-button"
-        onClick={() => {
-          if (window.confirm('Refresh all libraries from files?')) {
-            onRefreshLibrary();
-          }
-        }}
-        title="Re-fetch all selected libraries from files"
-      >
-        Refresh Library
-      </button>
-
-      <div className="library-search">
-        <input
-          type="text"
-          className="library-search-input"
-          placeholder="Search items..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        {searchQuery && (
-          <button
-            className="library-search-clear"
-            onClick={() => setSearchQuery('')}
-            aria-label="Clear search"
-          >
-            ×
-          </button>
-        )}
-      </div>
-
-      <button
-        className="toggle-filters-button"
-        onClick={() => setShowFilters(!showFilters)}
-        aria-expanded={showFilters}
-      >
-        {showFilters ? '▼' : '▶'} Filter by Size
-        {(selectedWidths.size > 0 || selectedHeights.size > 0) && (
-          <span className="filter-active-indicator">●</span>
-        )}
-      </button>
-
-      {showFilters && (
-        <div className="library-filters">
-        <div className="filter-group">
-          <label className="filter-label">Width:</label>
-          <div className="filter-options">
-            {[1, 2, 3, 4, 5].map(width => (
-              <button
-                key={width}
-                className={`filter-chip ${selectedWidths.has(width) ? 'active' : ''}`}
-                onClick={() => {
-                  setSelectedWidths(prev => {
-                    const next = new Set(prev);
-                    if (next.has(width)) {
-                      next.delete(width);
-                    } else {
-                      next.add(width);
-                    }
-                    return next;
-                  });
-                }}
-                aria-pressed={selectedWidths.has(width)}
-              >
-                {width}x
-              </button>
-            ))}
-          </div>
+      {error && (
+        <div className="library-error">
+          <p>Failed to load library</p>
+          <p className="error-message">{error.message}</p>
         </div>
+      )}
 
-        <div className="filter-group">
-          <label className="filter-label">Height:</label>
-          <div className="filter-options">
-            {[1, 2, 3, 4, 5].map(height => (
-              <button
-                key={height}
-                className={`filter-chip ${selectedHeights.has(height) ? 'active' : ''}`}
-                onClick={() => {
-                  setSelectedHeights(prev => {
-                    const next = new Set(prev);
-                    if (next.has(height)) {
-                      next.delete(height);
-                    } else {
-                      next.add(height);
-                    }
-                    return next;
-                  });
-                }}
-                aria-pressed={selectedHeights.has(height)}
-              >
-                {height}x
-              </button>
-            ))}
-          </div>
+      {!error && isLoading && (
+        <div className="library-loading">
+          <p>Loading library...</p>
         </div>
+      )}
 
-        {(selectedWidths.size > 0 || selectedHeights.size > 0) && (
+      {!error && !isLoading && selectedLibraryIds.length === 0 && (
+        <div className="library-empty-selection">
+          <p>No libraries selected. Use Library Selection above to choose libraries.</p>
+        </div>
+      )}
+
+      {!error && !isLoading && selectedLibraryIds.length > 0 && (
+        <>
           <button
-            className="filter-clear-all"
+            className="refresh-library-button"
             onClick={() => {
-              setSelectedWidths(new Set());
-              setSelectedHeights(new Set());
+              if (window.confirm('Refresh all libraries from files?')) {
+                onRefreshLibrary();
+              }
             }}
+            title="Re-fetch all selected libraries from files"
           >
-            Clear Filters
+            Refresh Library
           </button>
-        )}
-        </div>
-      )}
 
-      {!hasResults && (searchQuery || selectedWidths.size > 0 || selectedHeights.size > 0) && (
-        <div className="library-no-results">
-          <p>No items found{searchQuery && ` matching "${searchQuery}"`}</p>
-        </div>
-      )}
+          <div className="library-search">
+            <input
+              type="text"
+              className="library-search-input"
+              placeholder="Search items..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                className="library-search-clear"
+                onClick={() => setSearchQuery('')}
+                aria-label="Clear search"
+              >
+                ×
+              </button>
+            )}
+          </div>
 
-      {sortedCategories.map(({ category, items: categoryItems }) =>
-        renderCategory(category, categoryItems)
+          <button
+            className="toggle-filters-button"
+            onClick={() => setShowFilters(!showFilters)}
+            aria-expanded={showFilters}
+          >
+            {showFilters ? '▼' : '▶'} Filter by Size
+            {(selectedWidths.size > 0 || selectedHeights.size > 0) && (
+              <span className="filter-active-indicator">●</span>
+            )}
+          </button>
+
+          {showFilters && (
+            <div className="library-filters">
+            <div className="filter-group">
+              <label className="filter-label">Width:</label>
+              <div className="filter-options">
+                {[1, 2, 3, 4, 5].map(width => (
+                  <button
+                    key={width}
+                    className={`filter-chip ${selectedWidths.has(width) ? 'active' : ''}`}
+                    onClick={() => {
+                      setSelectedWidths(prev => {
+                        const next = new Set(prev);
+                        if (next.has(width)) {
+                          next.delete(width);
+                        } else {
+                          next.add(width);
+                        }
+                        return next;
+                      });
+                    }}
+                    aria-pressed={selectedWidths.has(width)}
+                  >
+                    {width}x
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="filter-group">
+              <label className="filter-label">Height:</label>
+              <div className="filter-options">
+                {[1, 2, 3, 4, 5].map(height => (
+                  <button
+                    key={height}
+                    className={`filter-chip ${selectedHeights.has(height) ? 'active' : ''}`}
+                    onClick={() => {
+                      setSelectedHeights(prev => {
+                        const next = new Set(prev);
+                        if (next.has(height)) {
+                          next.delete(height);
+                        } else {
+                          next.add(height);
+                        }
+                        return next;
+                      });
+                    }}
+                    aria-pressed={selectedHeights.has(height)}
+                  >
+                    {height}x
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {(selectedWidths.size > 0 || selectedHeights.size > 0) && (
+              <button
+                className="filter-clear-all"
+                onClick={() => {
+                  setSelectedWidths(new Set());
+                  setSelectedHeights(new Set());
+                }}
+              >
+                Clear Filters
+              </button>
+            )}
+            </div>
+          )}
+
+          {!hasResults && (searchQuery || selectedWidths.size > 0 || selectedHeights.size > 0) && (
+            <div className="library-no-results">
+              <p>No items found{searchQuery && ` matching "${searchQuery}"`}</p>
+            </div>
+          )}
+
+          {sortedCategories.map(({ category, items: categoryItems }) =>
+            renderCategory(category, categoryItems)
+          )}
+        </>
       )}
     </div>
   );
