@@ -50,6 +50,12 @@ vi.mock('./components/ZoomControls', () => ({
   },
 }));
 
+vi.mock('./components/ImageViewToggle', () => ({
+  ImageViewToggle: (props: Record<string, unknown>) => {
+    return <button data-testid="image-view-toggle" onClick={props.onToggle as () => void}>{props.mode === 'ortho' ? 'Top' : '3D'}</button>;
+  },
+}));
+
 vi.mock('./components/KeyboardShortcutsHelp', () => ({
   KeyboardShortcutsHelp: (props: Record<string, unknown>) => {
     if (!props.isOpen) return null;
@@ -211,6 +217,7 @@ describe('App Integration Tests', () => {
     capturedItemLibraryProps = {};
     capturedZoomControlsProps = {};
     mockImages = [];
+    localStorage.removeItem('gridfinity-image-view-mode');
   });
 
   // ==========================================
@@ -500,6 +507,49 @@ describe('App Integration Tests', () => {
       fireEvent.keyUp(document, { key: ' ' });
       expect(viewport.style.cursor).toBe('');
     });
+
+    it('V key toggles imageViewMode from ortho to perspective', () => {
+      renderApp();
+      expect(capturedGridPreviewProps.imageViewMode).toBe('ortho');
+
+      fireEvent.keyDown(document, { key: 'v' });
+      expect(capturedGridPreviewProps.imageViewMode).toBe('perspective');
+    });
+
+    it('V key toggles imageViewMode back to ortho', () => {
+      renderApp();
+      fireEvent.keyDown(document, { key: 'v' });
+      expect(capturedGridPreviewProps.imageViewMode).toBe('perspective');
+
+      fireEvent.keyDown(document, { key: 'v' });
+      expect(capturedGridPreviewProps.imageViewMode).toBe('ortho');
+    });
+
+    it('V key does NOT toggle when Ctrl is held (Ctrl+V is paste)', () => {
+      renderApp();
+      placeItemViaGridPreview();
+      const instanceId = getPlacedItems()[0].instanceId;
+      selectItemViaGridPreview(instanceId);
+
+      fireEvent.keyDown(document, { key: 'c', ctrlKey: true });
+      fireEvent.keyDown(document, { key: 'v', ctrlKey: true });
+
+      // Should still be ortho (Ctrl+V is paste, not view toggle)
+      expect(capturedGridPreviewProps.imageViewMode).toBe('ortho');
+    });
+
+    it('V key does NOT toggle when focus is on INPUT', () => {
+      renderApp();
+
+      const input = document.createElement('input');
+      document.body.appendChild(input);
+      input.focus();
+
+      fireEvent.keyDown(document, { key: 'v' });
+      expect(capturedGridPreviewProps.imageViewMode).toBe('ortho');
+
+      document.body.removeChild(input);
+    });
   });
 
   // ==========================================
@@ -654,6 +704,27 @@ describe('App Integration Tests', () => {
     it('ZoomControls receives zoom from useGridTransform', () => {
       renderApp();
       expect(capturedZoomControlsProps.zoom).toBe(1);
+    });
+
+    it('ImageViewToggle is rendered in the toolbar', () => {
+      renderApp();
+      expect(screen.getByTestId('image-view-toggle')).toBeInTheDocument();
+    });
+
+    it('GridPreview receives imageViewMode prop', () => {
+      renderApp();
+      expect(capturedGridPreviewProps.imageViewMode).toBe('ortho');
+    });
+
+    it('clicking ImageViewToggle toggles imageViewMode on GridPreview', () => {
+      renderApp();
+      expect(capturedGridPreviewProps.imageViewMode).toBe('ortho');
+
+      fireEvent.click(screen.getByTestId('image-view-toggle'));
+      expect(capturedGridPreviewProps.imageViewMode).toBe('perspective');
+
+      fireEvent.click(screen.getByTestId('image-view-toggle'));
+      expect(capturedGridPreviewProps.imageViewMode).toBe('ortho');
     });
   });
 

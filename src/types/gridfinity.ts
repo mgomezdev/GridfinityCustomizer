@@ -98,6 +98,8 @@ export interface ReferenceImage {
   rotation: Rotation;
 }
 
+export type ImageViewMode = 'ortho' | 'perspective';
+
 export type InteractionMode = 'items' | 'images';
 
 // Multi-library system types

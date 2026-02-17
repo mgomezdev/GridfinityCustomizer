@@ -6,7 +6,7 @@ import type React from 'react';
 
 // Mock the PlacedItemOverlay component
 vi.mock('./PlacedItemOverlay', () => ({
-  PlacedItemOverlay: ({ item, gridX, gridY, isSelected }: { item: { instanceId: string; itemId: string; x: number; y: number; width: number; height: number }; gridX: number; gridY: number; isSelected: boolean }) => (
+  PlacedItemOverlay: ({ item, gridX, gridY, isSelected, imageViewMode }: { item: { instanceId: string; itemId: string; x: number; y: number; width: number; height: number }; gridX: number; gridY: number; isSelected: boolean; imageViewMode?: string }) => (
     <div
       data-testid={`placed-item-${item.instanceId}`}
       data-grid-x={gridX}
@@ -16,6 +16,7 @@ vi.mock('./PlacedItemOverlay', () => ({
       data-y={item.y}
       data-width={item.width}
       data-height={item.height}
+      data-image-view-mode={imageViewMode || 'ortho'}
     >
       {item.itemId}
     </div>
@@ -781,6 +782,45 @@ describe('GridPreview', () => {
         top: '12%',
         height: '68%', // 100 - 12 (top) - 20 (bottom)
       });
+    });
+  });
+
+  describe('Image View Mode', () => {
+    it('should pass imageViewMode to PlacedItemOverlay', () => {
+      const items = [createMockItem({ instanceId: 'item-1' })];
+      render(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={items}
+          selectedItemIds={new Set()}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+          imageViewMode="perspective"
+        />
+      );
+
+      const placedItem = screen.getByTestId('placed-item-item-1');
+      expect(placedItem).toHaveAttribute('data-image-view-mode', 'perspective');
+    });
+
+    it('should default imageViewMode to ortho when not provided', () => {
+      const items = [createMockItem({ instanceId: 'item-1' })];
+      render(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={items}
+          selectedItemIds={new Set()}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const placedItem = screen.getByTestId('placed-item-item-1');
+      expect(placedItem).toHaveAttribute('data-image-view-mode', 'ortho');
     });
   });
 

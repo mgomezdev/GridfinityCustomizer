@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import type { PlacedItemWithValidity, LibraryItem } from '../types/gridfinity';
+import type { PlacedItemWithValidity, LibraryItem, ImageViewMode } from '../types/gridfinity';
 import { usePointerDragSource } from '../hooks/usePointerDrag';
 import { useImageLoadState } from '../hooks/useImageLoadState';
 
@@ -13,17 +13,22 @@ interface PlacedItemOverlayProps {
   onDelete?: (instanceId: string) => void;
   onRotateCw?: (instanceId: string) => void;
   onRotateCcw?: (instanceId: string) => void;
+  imageViewMode?: ImageViewMode;
 }
 
 const DEFAULT_VALID_COLOR = '#3B82F6';
 const INVALID_COLOR = '#EF4444';
 
-export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, getItemById, onDelete, onRotateCw, onRotateCcw }: PlacedItemOverlayProps) {
+export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, getItemById, onDelete, onRotateCw, onRotateCcw, imageViewMode = 'ortho' }: PlacedItemOverlayProps) {
   const libraryItem = getItemById(item.itemId);
   const color = item.isValid ? (libraryItem?.color || DEFAULT_VALID_COLOR) : INVALID_COLOR;
 
+  const imageSrc = imageViewMode === 'perspective'
+    ? (libraryItem?.perspectiveImageUrl || libraryItem?.imageUrl)
+    : libraryItem?.imageUrl;
+
   const { imageError, shouldShowImage, handleImageLoad, handleImageError } =
-    useImageLoadState(libraryItem?.imageUrl);
+    useImageLoadState(imageSrc);
 
   // Calculate image dimensions for rotation
   // When rotated 90° or 270°, we need to swap dimensions to fill the container
@@ -111,11 +116,11 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
         }
       }}
     >
-      {libraryItem?.imageUrl && !imageError && (
+      {imageSrc && !imageError && (
         <div className="placed-item-image-container">
           <img
-            src={libraryItem.imageUrl}
-            alt={libraryItem.name}
+            src={imageSrc}
+            alt={libraryItem?.name ?? 'Item'}
             className={`placed-item-image ${shouldShowImage ? 'visible' : 'hidden'}`}
             loading="lazy"
             onLoad={handleImageLoad}

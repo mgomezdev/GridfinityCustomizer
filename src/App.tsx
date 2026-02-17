@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import type { UnitSystem, ImperialFormat, GridSpacerConfig } from './types/gridfinity';
+import type { UnitSystem, ImperialFormat, GridSpacerConfig, ImageViewMode } from './types/gridfinity';
 import { calculateGrid, mmToInches, inchesToMm } from './utils/conversions';
 import { useGridItems } from './hooks/useGridItems';
 import { useSpacerCalculation } from './hooks/useSpacerCalculation';
@@ -20,6 +20,7 @@ import { SpacerControls } from './components/SpacerControls';
 import { BillOfMaterials } from './components/BillOfMaterials';
 import { ReferenceImageUploader } from './components/ReferenceImageUploader';
 import { ZoomControls } from './components/ZoomControls';
+import { ImageViewToggle } from './components/ImageViewToggle';
 import { KeyboardShortcutsHelp } from './components/KeyboardShortcutsHelp';
 import { UserMenu } from './components/auth/UserMenu';
 import { SaveLayoutDialog } from './components/layouts/SaveLayoutDialog';
@@ -40,6 +41,9 @@ function App() {
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showLoadDialog, setShowLoadDialog] = useState(false);
+  const [imageViewMode, setImageViewMode] = useState<ImageViewMode>(
+    () => (localStorage.getItem('gridfinity-image-view-mode') as ImageViewMode) || 'ortho'
+  );
 
   const { isAuthenticated } = useAuth();
 
@@ -319,6 +323,14 @@ function App() {
     }
   };
 
+  const toggleImageViewMode = useCallback(() => {
+    setImageViewMode(prev => {
+      const next = prev === 'ortho' ? 'perspective' : 'ortho';
+      localStorage.setItem('gridfinity-image-view-mode', next);
+      return next;
+    });
+  }, []);
+
   // Keyboard shortcuts — use ref to avoid re-registering listener on every state change
   const keyDownHandlerRef = useRef<((event: KeyboardEvent) => void) | undefined>(undefined);
 
@@ -385,6 +397,13 @@ function App() {
       if ((event.key === 'v' || event.key === 'V') && (event.ctrlKey || event.metaKey)) {
         event.preventDefault();
         pasteItems();
+        return;
+      }
+
+      // V (no modifier): Toggle image view mode
+      if ((event.key === 'v' || event.key === 'V') && !event.ctrlKey && !event.metaKey) {
+        event.preventDefault();
+        toggleImageViewMode();
         return;
       }
 
@@ -601,6 +620,7 @@ function App() {
                 </button>
               )}
             </div>
+            <ImageViewToggle mode={imageViewMode} onToggle={toggleImageViewMode} />
             <ZoomControls
               zoom={transform.zoom}
               onZoomIn={zoomIn}
@@ -627,6 +647,7 @@ function App() {
                 placedItems={placedItems}
                 selectedItemIds={selectedItemIds}
                 spacers={spacers}
+                imageViewMode={imageViewMode}
                 onDrop={handleDrop}
                 onSelectItem={(id, mods) => { selectItem(id, mods); if (id) setSelectedImageId(null); }}
                 getItemById={getItemById}

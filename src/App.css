@@ -572,6 +572,13 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Image View Toggle */
+.image-view-toggle-btn.active {
+  background: var(--grid-primary);
+  border-color: var(--grid-primary);
+  color: var(--bg-primary);
+}
+
 /* Zoom Viewport */
 .preview-viewport {
   width: 100%;

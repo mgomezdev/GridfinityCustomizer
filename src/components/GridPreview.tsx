@@ -1,5 +1,5 @@
 import { useRef, useMemo } from 'react';
-import type { PlacedItemWithValidity, DragData, ComputedSpacer, LibraryItem, ReferenceImage } from '../types/gridfinity';
+import type { PlacedItemWithValidity, DragData, ComputedSpacer, LibraryItem, ReferenceImage, ImageViewMode } from '../types/gridfinity';
 import { PlacedItemOverlay } from './PlacedItemOverlay';
 import { SpacerOverlay } from './SpacerOverlay';
 import { ReferenceImageOverlay } from './ReferenceImageOverlay';
@@ -27,6 +27,7 @@ interface GridPreviewProps {
   onImageToggleLock?: (id: string) => void;
   onImageRotateCw?: (id: string) => void;
   onImageRotateCcw?: (id: string) => void;
+  imageViewMode?: ImageViewMode;
 }
 
 export function GridPreview({
@@ -51,6 +52,7 @@ export function GridPreview({
   onImageToggleLock,
   onImageRotateCw,
   onImageRotateCcw,
+  imageViewMode = 'ortho',
 }: GridPreviewProps) {
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -159,6 +161,7 @@ export function GridPreview({
               onDelete={onDeleteItem}
               onRotateCw={onRotateItemCw}
               onRotateCcw={onRotateItemCcw}
+              imageViewMode={imageViewMode}
             />
           ))}
         </div>

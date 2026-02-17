@@ -17,6 +17,7 @@ const SHORTCUTS = [
     { keys: ['Escape'], description: 'Deselect all' },
   ]},
   { category: 'View', shortcuts: [
+    { keys: ['V'], description: 'Toggle top/3D image view' },
     { keys: ['+'], description: 'Zoom in' },
     { keys: ['-'], description: 'Zoom out' },
     { keys: ['Ctrl', '0'], description: 'Reset zoom' },

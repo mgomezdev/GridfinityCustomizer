@@ -1207,4 +1207,161 @@ describe('PlacedItemOverlay', () => {
       expect(label?.textContent).toBe('Bin with Image');
     });
   });
+
+  describe('Image View Mode (ortho/perspective)', () => {
+    const mockGetItemByIdWithBothImages = (id: string): LibraryItem | undefined => {
+      const items: Record<string, LibraryItem> = {
+        'bin-both-images': {
+          id: 'bin-both-images',
+          name: 'Bin Both',
+          widthUnits: 1,
+          heightUnits: 1,
+          color: '#3B82F6',
+          categories: ['bin'],
+          imageUrl: 'https://example.com/ortho.png',
+          perspectiveImageUrl: 'https://example.com/perspective.png',
+        },
+        'bin-ortho-only': {
+          id: 'bin-ortho-only',
+          name: 'Bin Ortho Only',
+          widthUnits: 1,
+          heightUnits: 1,
+          color: '#3B82F6',
+          categories: ['bin'],
+          imageUrl: 'https://example.com/ortho.png',
+        },
+        'bin-no-images': {
+          id: 'bin-no-images',
+          name: 'Bin No Images',
+          widthUnits: 1,
+          heightUnits: 1,
+          color: '#3B82F6',
+          categories: ['bin'],
+        },
+      };
+      return items[id];
+    };
+
+    it('should use ortho imageUrl when imageViewMode is ortho', () => {
+      const item = createMockItem({ itemId: 'bin-both-images' });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithBothImages}
+          imageViewMode="ortho"
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image');
+      expect(image).toHaveAttribute('src', 'https://example.com/ortho.png');
+    });
+
+    it('should use perspectiveImageUrl when imageViewMode is perspective', () => {
+      const item = createMockItem({ itemId: 'bin-both-images' });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithBothImages}
+          imageViewMode="perspective"
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image');
+      expect(image).toHaveAttribute('src', 'https://example.com/perspective.png');
+    });
+
+    it('should fall back to ortho imageUrl when perspective mode but no perspectiveImageUrl', () => {
+      const item = createMockItem({ itemId: 'bin-ortho-only' });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithBothImages}
+          imageViewMode="perspective"
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image');
+      expect(image).toHaveAttribute('src', 'https://example.com/ortho.png');
+    });
+
+    it('should render no image when item has no imageUrl regardless of mode', () => {
+      const item = createMockItem({ itemId: 'bin-no-images' });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithBothImages}
+          imageViewMode="perspective"
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image');
+      expect(image).not.toBeInTheDocument();
+    });
+
+    it('should default to ortho when imageViewMode is not provided', () => {
+      const item = createMockItem({ itemId: 'bin-both-images' });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithBothImages}
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image');
+      expect(image).toHaveAttribute('src', 'https://example.com/ortho.png');
+    });
+
+    it('should switch images when imageViewMode changes', () => {
+      const item = createMockItem({ itemId: 'bin-both-images' });
+      const { container, rerender } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithBothImages}
+          imageViewMode="ortho"
+        />
+      );
+
+      let image = container.querySelector('.placed-item-image');
+      expect(image).toHaveAttribute('src', 'https://example.com/ortho.png');
+
+      rerender(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithBothImages}
+          imageViewMode="perspective"
+        />
+      );
+
+      image = container.querySelector('.placed-item-image');
+      expect(image).toHaveAttribute('src', 'https://example.com/perspective.png');
+    });
+  });
 });
