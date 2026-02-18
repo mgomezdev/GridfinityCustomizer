@@ -31,6 +31,7 @@ describe('ReferenceImageOverlay', () => {
     opacity: 0.5,
     scale: 1,
     isLocked: false,
+    rotation: 0,
     ...overrides,
   });
 
@@ -792,6 +793,307 @@ describe('ReferenceImageOverlay', () => {
       fireEvent.pointerMove(document, { clientX: 600, clientY: 500 });
 
       expect(mockOnPositionChange).toHaveBeenCalledWith(20, 32.5);
+    });
+  });
+
+  describe('Broken State (isBroken prop)', () => {
+    it('should render broken placeholder when isBroken=true', () => {
+      const image = createMockImage({ name: 'deleted-image.jpg' });
+      const { container } = render(
+        <ReferenceImageOverlay image={image} {...defaultProps} isBroken={true} />
+      );
+
+      const brokenPlaceholder = container.querySelector('.ref-image-broken');
+      expect(brokenPlaceholder).toBeInTheDocument();
+      expect(brokenPlaceholder).toHaveTextContent('Image Removed');
+      expect(brokenPlaceholder).toHaveTextContent('deleted-image.jpg');
+    });
+
+    it('should NOT render img element when isBroken=true', () => {
+      const image = createMockImage();
+      const { container } = render(
+        <ReferenceImageOverlay image={image} {...defaultProps} isBroken={true} />
+      );
+
+      const imgElement = container.querySelector('img');
+      expect(imgElement).not.toBeInTheDocument();
+    });
+
+    it('should render img element when isBroken=false (default)', () => {
+      const image = createMockImage();
+      const { container } = render(
+        <ReferenceImageOverlay image={image} {...defaultProps} isBroken={false} />
+      );
+
+      const imgElement = container.querySelector('img');
+      expect(imgElement).toBeInTheDocument();
+    });
+
+    it('should still show toolbar when isBroken and isSelected', () => {
+      const image = createMockImage();
+      const { container } = render(
+        <ReferenceImageOverlay image={image} {...defaultProps} isBroken={true} isSelected={true} />
+      );
+
+      const toolbar = container.querySelector('.reference-image-overlay__toolbar');
+      expect(toolbar).toBeInTheDocument();
+    });
+  });
+
+  describe('imageUrl prop', () => {
+    it('should use imageUrl instead of dataUrl when provided', () => {
+      const image = createMockImage({ dataUrl: 'data:image/png;base64,oldData' });
+      const { container } = render(
+        <ReferenceImageOverlay image={image} {...defaultProps} imageUrl="https://example.com/image.jpg" />
+      );
+
+      const imgElement = container.querySelector('img');
+      expect(imgElement).toHaveAttribute('src', 'https://example.com/image.jpg');
+    });
+
+    it('should fall back to dataUrl when imageUrl is null', () => {
+      const image = createMockImage({ dataUrl: 'data:image/png;base64,fallbackData' });
+      const { container } = render(
+        <ReferenceImageOverlay image={image} {...defaultProps} imageUrl={null} />
+      );
+
+      const imgElement = container.querySelector('img');
+      expect(imgElement).toHaveAttribute('src', 'data:image/png;base64,fallbackData');
+    });
+
+    it('should fall back to dataUrl when imageUrl is not provided', () => {
+      const image = createMockImage({ dataUrl: 'data:image/png;base64,defaultData' });
+      const { container } = render(
+        <ReferenceImageOverlay image={image} {...defaultProps} />
+      );
+
+      const imgElement = container.querySelector('img');
+      expect(imgElement).toHaveAttribute('src', 'data:image/png;base64,defaultData');
+    });
+  });
+
+  describe('Rebind Button', () => {
+    const mockOnRebind = vi.fn();
+
+    beforeEach(() => {
+      mockOnRebind.mockClear();
+    });
+
+    it('should show Rebind button when isBroken=true AND onRebind is provided AND isSelected', () => {
+      const image = createMockImage();
+      const { container } = render(
+        <ReferenceImageOverlay
+          image={image}
+          {...defaultProps}
+          isBroken={true}
+          onRebind={mockOnRebind}
+          isSelected={true}
+        />
+      );
+
+      const rebindButton = container.querySelector('.ref-image-rebind-btn');
+      expect(rebindButton).toBeInTheDocument();
+      expect(rebindButton).toHaveTextContent('Rebind');
+    });
+
+    it('should NOT show Rebind button when isBroken=false', () => {
+      const image = createMockImage();
+      const { container } = render(
+        <ReferenceImageOverlay
+          image={image}
+          {...defaultProps}
+          isBroken={false}
+          onRebind={mockOnRebind}
+          isSelected={true}
+        />
+      );
+
+      const rebindButton = container.querySelector('.ref-image-rebind-btn');
+      expect(rebindButton).not.toBeInTheDocument();
+    });
+
+    it('should NOT show Rebind button when onRebind is undefined', () => {
+      const image = createMockImage();
+      const { container } = render(
+        <ReferenceImageOverlay
+          image={image}
+          {...defaultProps}
+          isBroken={true}
+          isSelected={true}
+        />
+      );
+
+      const rebindButton = container.querySelector('.ref-image-rebind-btn');
+      expect(rebindButton).not.toBeInTheDocument();
+    });
+
+    it('should NOT show Rebind button when not selected', () => {
+      const image = createMockImage();
+      const { container } = render(
+        <ReferenceImageOverlay
+          image={image}
+          {...defaultProps}
+          isBroken={true}
+          onRebind={mockOnRebind}
+          isSelected={false}
+        />
+      );
+
+      const rebindButton = container.querySelector('.ref-image-rebind-btn');
+      expect(rebindButton).not.toBeInTheDocument();
+    });
+
+    it('should call onRebind when Rebind button is clicked', () => {
+      const image = createMockImage();
+      const { container } = render(
+        <ReferenceImageOverlay
+          image={image}
+          {...defaultProps}
+          isBroken={true}
+          onRebind={mockOnRebind}
+          isSelected={true}
+        />
+      );
+
+      const rebindButton = container.querySelector('.ref-image-rebind-btn');
+      fireEvent.click(rebindButton!);
+
+      expect(mockOnRebind).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('Rotation Buttons', () => {
+    const mockOnRotateCw = vi.fn();
+    const mockOnRotateCcw = vi.fn();
+
+    beforeEach(() => {
+      mockOnRotateCw.mockClear();
+      mockOnRotateCcw.mockClear();
+    });
+
+    it('should show rotate CW button when onRotateCw is provided and isSelected', () => {
+      const image = createMockImage();
+      const { container } = render(
+        <ReferenceImageOverlay
+          image={image}
+          {...defaultProps}
+          onRotateCw={mockOnRotateCw}
+          isSelected={true}
+        />
+      );
+
+      const rotateCwButton = container.querySelector('.reference-image-overlay__toolbar-btn--rotate[aria-label="Rotate clockwise"]');
+      expect(rotateCwButton).toBeInTheDocument();
+      expect(rotateCwButton).toHaveTextContent('↻');
+    });
+
+    it('should show rotate CCW button when onRotateCcw is provided and isSelected', () => {
+      const image = createMockImage();
+      const { container } = render(
+        <ReferenceImageOverlay
+          image={image}
+          {...defaultProps}
+          onRotateCcw={mockOnRotateCcw}
+          isSelected={true}
+        />
+      );
+
+      const rotateCcwButton = container.querySelector('.reference-image-overlay__toolbar-btn--rotate[aria-label="Rotate counter-clockwise"]');
+      expect(rotateCcwButton).toBeInTheDocument();
+      expect(rotateCcwButton).toHaveTextContent('↺');
+    });
+
+    it('should NOT show rotate buttons when callbacks are not provided', () => {
+      const image = createMockImage();
+      const { container } = render(
+        <ReferenceImageOverlay
+          image={image}
+          {...defaultProps}
+          isSelected={true}
+        />
+      );
+
+      const rotateCwButton = container.querySelector('.reference-image-overlay__toolbar-btn--rotate[aria-label="Rotate clockwise"]');
+      const rotateCcwButton = container.querySelector('.reference-image-overlay__toolbar-btn--rotate[aria-label="Rotate counter-clockwise"]');
+
+      expect(rotateCwButton).not.toBeInTheDocument();
+      expect(rotateCcwButton).not.toBeInTheDocument();
+    });
+
+    it('should call onRotateCw when CW button is clicked', () => {
+      const image = createMockImage();
+      const { container } = render(
+        <ReferenceImageOverlay
+          image={image}
+          {...defaultProps}
+          onRotateCw={mockOnRotateCw}
+          isSelected={true}
+        />
+      );
+
+      const rotateCwButton = container.querySelector('.reference-image-overlay__toolbar-btn--rotate[aria-label="Rotate clockwise"]');
+      fireEvent.click(rotateCwButton!);
+
+      expect(mockOnRotateCw).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call onRotateCcw when CCW button is clicked', () => {
+      const image = createMockImage();
+      const { container } = render(
+        <ReferenceImageOverlay
+          image={image}
+          {...defaultProps}
+          onRotateCcw={mockOnRotateCcw}
+          isSelected={true}
+        />
+      );
+
+      const rotateCcwButton = container.querySelector('.reference-image-overlay__toolbar-btn--rotate[aria-label="Rotate counter-clockwise"]');
+      fireEvent.click(rotateCcwButton!);
+
+      expect(mockOnRotateCcw).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('Rotation Transform', () => {
+    it('should apply rotation in transform when image.rotation is non-zero', () => {
+      const image = createMockImage({ rotation: 90, scale: 1 });
+      const { container } = render(
+        <ReferenceImageOverlay image={image} {...defaultProps} />
+      );
+
+      const contentElement = container.querySelector('.reference-image-overlay__content');
+      expect(contentElement).toHaveStyle({ transform: 'scale(1) rotate(90deg)' });
+    });
+
+    it('should not add rotation when image.rotation is 0', () => {
+      const image = createMockImage({ rotation: 0, scale: 1 });
+      const { container } = render(
+        <ReferenceImageOverlay image={image} {...defaultProps} />
+      );
+
+      const contentElement = container.querySelector('.reference-image-overlay__content');
+      expect(contentElement).toHaveStyle({ transform: 'scale(1)' });
+    });
+
+    it('should combine scale and rotation transforms correctly', () => {
+      const image = createMockImage({ rotation: 180, scale: 1.5 });
+      const { container } = render(
+        <ReferenceImageOverlay image={image} {...defaultProps} />
+      );
+
+      const contentElement = container.querySelector('.reference-image-overlay__content');
+      expect(contentElement).toHaveStyle({ transform: 'scale(1.5) rotate(180deg)' });
+    });
+
+    it('should handle rotation of 270 degrees', () => {
+      const image = createMockImage({ rotation: 270, scale: 1 });
+      const { container } = render(
+        <ReferenceImageOverlay image={image} {...defaultProps} />
+      );
+
+      const contentElement = container.querySelector('.reference-image-overlay__content');
+      expect(contentElement).toHaveStyle({ transform: 'scale(1) rotate(270deg)' });
     });
   });
 });
