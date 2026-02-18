@@ -19,6 +19,15 @@ vi.mock('../src/logger.js', () => ({
   logger: pino({ level: 'silent' }),
 }));
 
+// Mock image service
+vi.mock('../src/services/image.service.js', () => ({
+  processAndSaveImage: vi.fn().mockResolvedValue({
+    filePath: 'ref-lib/test-image.png',
+    sizeBytes: 2048,
+  }),
+  deleteImage: vi.fn().mockResolvedValue(2048),
+}));
+
 // Import after mocks
 const { createApp } = await import('../src/app.js');
 const { client: testClient } = await import('../src/db/connection.js');
@@ -560,6 +569,369 @@ describe('Layout endpoints', () => {
       expect(res.status).toBe(201);
       expect(res.body.data.placedItems[0].libraryId).toBe('bins_standard');
       expect(res.body.data.placedItems[0].itemId).toBe('simple-bin');
+    });
+  });
+
+  describe('Layouts with ref image placements', () => {
+    let adminToken: string;
+    const pngBuffer = Buffer.from(
+      '89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489' +
+      '0000000a49444154789c626000000002000198e195280000000049454e44ae426082',
+      'hex',
+    );
+
+    beforeAll(async () => {
+      // Register and promote admin user
+      await request(app)
+        .post('/api/v1/auth/register')
+        .send({ email: 'layout-admin@example.com', username: 'layoutadmin', password: 'password123' });
+
+      await testClient.execute({
+        sql: "UPDATE users SET role = 'admin' WHERE username = 'layoutadmin'",
+        args: []
+      });
+
+      const adminLoginRes = await request(app)
+        .post('/api/v1/auth/login')
+        .send({ email: 'layout-admin@example.com', password: 'password123' });
+
+      adminToken = adminLoginRes.body.data.accessToken;
+    });
+
+    it('creates a layout with refImagePlacements', async () => {
+      // First upload a ref image
+      const uploadRes = await request(app)
+        .post('/api/v1/ref-images')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('image', pngBuffer, 'layout-ref.png');
+
+      expect(uploadRes.status).toBe(201);
+      const refImageId = uploadRes.body.data.id;
+
+      // Create layout with both placed items and ref image placements
+      const res = await request(app)
+        .post('/api/v1/layouts')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          name: 'Layout with Ref Images',
+          description: 'Testing ref image placements',
+          gridX: 4,
+          gridY: 4,
+          widthMm: 168,
+          depthMm: 168,
+          spacerHorizontal: 'none',
+          spacerVertical: 'none',
+          placedItems: [
+            { itemId: 'bins_standard:bin-1x1', x: 0, y: 0, width: 1, height: 1, rotation: 0 },
+          ],
+          refImagePlacements: [
+            {
+              refImageId,
+              name: 'Blueprint Layer',
+              x: 10,
+              y: 20,
+              width: 50,
+              height: 40,
+              opacity: 0.7,
+              scale: 1.5,
+              isLocked: false,
+              rotation: 0,
+            },
+          ],
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.name).toBe('Layout with Ref Images');
+      expect(res.body.data.refImagePlacements).toHaveLength(1);
+      expect(res.body.data.refImagePlacements[0].refImageId).toBe(refImageId);
+      expect(res.body.data.refImagePlacements[0].name).toBe('Blueprint Layer');
+      expect(res.body.data.refImagePlacements[0].x).toBe(10);
+      expect(res.body.data.refImagePlacements[0].y).toBe(20);
+      expect(res.body.data.refImagePlacements[0].width).toBe(50);
+      expect(res.body.data.refImagePlacements[0].height).toBe(40);
+      expect(res.body.data.refImagePlacements[0].opacity).toBe(0.7);
+      expect(res.body.data.refImagePlacements[0].scale).toBe(1.5);
+      expect(res.body.data.refImagePlacements[0].isLocked).toBe(false);
+      expect(res.body.data.refImagePlacements[0].rotation).toBe(0);
+    });
+
+    it('returns refImagePlacements in layout detail', async () => {
+      // Upload ref image
+      const uploadRes = await request(app)
+        .post('/api/v1/ref-images')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('image', pngBuffer, 'detail-ref.png');
+
+      const refImageId = uploadRes.body.data.id;
+
+      // Create layout with ref image placement
+      const createRes = await request(app)
+        .post('/api/v1/layouts')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          name: 'Detail Test Layout',
+          gridX: 3,
+          gridY: 3,
+          widthMm: 126,
+          depthMm: 126,
+          placedItems: [],
+          refImagePlacements: [
+            {
+              refImageId,
+              name: 'Reference Blueprint',
+              x: 5,
+              y: 5,
+              width: 80,
+              height: 60,
+              opacity: 0.5,
+              scale: 1.0,
+              isLocked: true,
+              rotation: 90,
+            },
+          ],
+        });
+
+      const layoutId = createRes.body.data.id;
+
+      // Get layout detail
+      const res = await request(app)
+        .get(`/api/v1/layouts/${layoutId}`)
+        .set('Authorization', `Bearer ${accessToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.refImagePlacements).toHaveLength(1);
+      expect(res.body.data.refImagePlacements[0].refImageId).toBe(refImageId);
+      expect(res.body.data.refImagePlacements[0].x).toBe(5);
+      expect(res.body.data.refImagePlacements[0].y).toBe(5);
+      expect(res.body.data.refImagePlacements[0].rotation).toBe(90);
+      expect(res.body.data.refImagePlacements[0].isLocked).toBe(true);
+    });
+
+    it('handles broken state when ref image is deleted', async () => {
+      // Upload ref image
+      const uploadRes = await request(app)
+        .post('/api/v1/ref-images')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('image', pngBuffer, 'to-delete.png');
+
+      const refImageId = uploadRes.body.data.id;
+
+      // Create layout referencing the image
+      const createRes = await request(app)
+        .post('/api/v1/layouts')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          name: 'Layout with Orphaned Ref',
+          gridX: 4,
+          gridY: 4,
+          widthMm: 168,
+          depthMm: 168,
+          placedItems: [],
+          refImagePlacements: [
+            {
+              refImageId,
+              name: 'Soon to be orphaned',
+              x: 0,
+              y: 0,
+              width: 100,
+              height: 100,
+              opacity: 1.0,
+              scale: 1.0,
+              isLocked: false,
+              rotation: 0,
+            },
+          ],
+        });
+
+      const layoutId = createRes.body.data.id;
+
+      // Delete the ref image
+      const deleteRes = await request(app)
+        .delete(`/api/v1/ref-images/${refImageId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(deleteRes.status).toBe(204);
+
+      // Get layout and verify broken state
+      const res = await request(app)
+        .get(`/api/v1/layouts/${layoutId}`)
+        .set('Authorization', `Bearer ${accessToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.refImagePlacements).toHaveLength(1);
+      expect(res.body.data.refImagePlacements[0].refImageId).toBeNull();
+      expect(res.body.data.refImagePlacements[0].imageUrl).toBeNull();
+    });
+
+    it('updates layout replaces refImagePlacements', async () => {
+      // Upload two ref images
+      const upload1 = await request(app)
+        .post('/api/v1/ref-images')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('image', pngBuffer, 'ref-1.png');
+
+      const upload2 = await request(app)
+        .post('/api/v1/ref-images')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('image', pngBuffer, 'ref-2.png');
+
+      const refImageId1 = upload1.body.data.id;
+      const refImageId2 = upload2.body.data.id;
+
+      // Create layout with first ref image
+      const createRes = await request(app)
+        .post('/api/v1/layouts')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          name: 'Update Test Layout',
+          gridX: 4,
+          gridY: 4,
+          widthMm: 168,
+          depthMm: 168,
+          placedItems: [],
+          refImagePlacements: [
+            {
+              refImageId: refImageId1,
+              name: 'Original Image',
+              x: 0,
+              y: 0,
+              width: 50,
+              height: 50,
+              opacity: 0.8,
+              scale: 1.0,
+              isLocked: false,
+              rotation: 0,
+            },
+          ],
+        });
+
+      const layoutId = createRes.body.data.id;
+
+      // Update with new ref image placements
+      const res = await request(app)
+        .put(`/api/v1/layouts/${layoutId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          name: 'Updated Layout',
+          gridX: 4,
+          gridY: 4,
+          widthMm: 168,
+          depthMm: 168,
+          placedItems: [],
+          refImagePlacements: [
+            {
+              refImageId: refImageId2,
+              name: 'New Image',
+              x: 10,
+              y: 10,
+              width: 60,
+              height: 60,
+              opacity: 0.9,
+              scale: 2.0,
+              isLocked: true,
+              rotation: 180,
+            },
+          ],
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.refImagePlacements).toHaveLength(1);
+      expect(res.body.data.refImagePlacements[0].refImageId).toBe(refImageId2);
+      expect(res.body.data.refImagePlacements[0].name).toBe('New Image');
+      expect(res.body.data.refImagePlacements[0].x).toBe(10);
+      expect(res.body.data.refImagePlacements[0].rotation).toBe(180);
+      expect(res.body.data.refImagePlacements[0].isLocked).toBe(true);
+    });
+
+    it('creates layout with no refImagePlacements (backward compat)', async () => {
+      const res = await request(app)
+        .post('/api/v1/layouts')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          name: 'Legacy Layout',
+          gridX: 4,
+          gridY: 4,
+          widthMm: 168,
+          depthMm: 168,
+          placedItems: [
+            { itemId: 'bins_standard:bin-1x1', x: 0, y: 0, width: 1, height: 1, rotation: 0 },
+          ],
+          // Omit refImagePlacements entirely
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.name).toBe('Legacy Layout');
+      expect(res.body.data.refImagePlacements).toEqual([]);
+    });
+
+    it('validates refImagePlacement fields', async () => {
+      // Upload ref image
+      const uploadRes = await request(app)
+        .post('/api/v1/ref-images')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .attach('image', pngBuffer, 'validation-ref.png');
+
+      const refImageId = uploadRes.body.data.id;
+
+      // Test invalid opacity (> 1)
+      const res1 = await request(app)
+        .post('/api/v1/layouts')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          name: 'Invalid Opacity',
+          gridX: 4,
+          gridY: 4,
+          widthMm: 168,
+          depthMm: 168,
+          placedItems: [],
+          refImagePlacements: [
+            {
+              refImageId,
+              name: 'Bad Opacity',
+              x: 0,
+              y: 0,
+              width: 50,
+              height: 50,
+              opacity: 1.5, // Invalid: > 1
+              scale: 1.0,
+              isLocked: false,
+              rotation: 0,
+            },
+          ],
+        });
+
+      expect(res1.status).toBe(400);
+      expect(res1.body.error.code).toBe('VALIDATION_ERROR');
+
+      // Test invalid rotation (not 0, 90, 180, 270)
+      const res2 = await request(app)
+        .post('/api/v1/layouts')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          name: 'Invalid Rotation',
+          gridX: 4,
+          gridY: 4,
+          widthMm: 168,
+          depthMm: 168,
+          placedItems: [],
+          refImagePlacements: [
+            {
+              refImageId,
+              name: 'Bad Rotation',
+              x: 0,
+              y: 0,
+              width: 50,
+              height: 50,
+              opacity: 0.5,
+              scale: 1.0,
+              isLocked: false,
+              rotation: 45, // Invalid: not 0, 90, 180, or 270
+            },
+          ],
+        });
+
+      expect(res2.status).toBe(400);
+      expect(res2.body.error.code).toBe('VALIDATION_ERROR');
     });
   });
 });
