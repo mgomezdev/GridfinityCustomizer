@@ -2168,7 +2168,7 @@
 /* Reference Image Overlay */
 .reference-image-overlay {
   position: absolute;
-  z-index: 0;
+  z-index: 2;
   box-sizing: border-box;
   overflow: visible;
 }

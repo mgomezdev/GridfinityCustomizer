@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { GridPreview } from './GridPreview';
-import type { PlacedItemWithValidity, LibraryItem, ComputedSpacer } from '../types/gridfinity';
+import type { PlacedItemWithValidity, LibraryItem, ComputedSpacer, ReferenceImage } from '../types/gridfinity';
 import type React from 'react';
 
 // Mock the PlacedItemOverlay component
@@ -9,6 +9,7 @@ vi.mock('./PlacedItemOverlay', () => ({
   PlacedItemOverlay: ({ item, gridX, gridY, isSelected, imageViewMode }: { item: { instanceId: string; itemId: string; x: number; y: number; width: number; height: number }; gridX: number; gridY: number; isSelected: boolean; imageViewMode?: string }) => (
     <div
       data-testid={`placed-item-${item.instanceId}`}
+      className="placed-item"
       data-grid-x={gridX}
       data-grid-y={gridY}
       data-selected={isSelected}
@@ -19,6 +20,19 @@ vi.mock('./PlacedItemOverlay', () => ({
       data-image-view-mode={imageViewMode || 'ortho'}
     >
       {item.itemId}
+    </div>
+  ),
+}));
+
+// Mock the ReferenceImageOverlay component
+vi.mock('./ReferenceImageOverlay', () => ({
+  ReferenceImageOverlay: ({ image, isSelected }: { image: { id: string; name: string }; isSelected: boolean }) => (
+    <div
+      data-testid={`ref-image-${image.id}`}
+      className="reference-image-overlay"
+      data-selected={isSelected}
+    >
+      {image.name}
     </div>
   ),
 }));
@@ -958,6 +972,89 @@ describe('GridPreview', () => {
       );
 
       expect(gridPreview).toHaveStyle({ aspectRatio: '2 / 5' });
+    });
+  });
+
+  describe('Stacking Order — Reference Images Above Placed Items', () => {
+    const createMockRefImage = (overrides?: Partial<ReferenceImage>): ReferenceImage => ({
+      id: 'ref-img-1',
+      name: 'test-ref.png',
+      dataUrl: 'data:image/png;base64,mockBase64',
+      x: 10,
+      y: 10,
+      width: 50,
+      height: 50,
+      opacity: 0.5,
+      scale: 1,
+      isLocked: false,
+      rotation: 0,
+      ...overrides,
+    });
+
+    it('should render reference images after placed items in DOM order (above them visually)', () => {
+      const items = [createMockItem({ instanceId: 'item-1' })];
+      const refImages = [createMockRefImage({ id: 'ref-1' })];
+
+      const { container } = render(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={items}
+          selectedItemIds={new Set()}
+          referenceImages={refImages}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const gridContainer = container.querySelector('.grid-container')!;
+      const placedItem = gridContainer.querySelector('[data-testid="placed-item-item-1"]')!;
+      const refImage = gridContainer.querySelector('[data-testid="ref-image-ref-1"]')!;
+
+      // Both should exist
+      expect(placedItem).toBeInTheDocument();
+      expect(refImage).toBeInTheDocument();
+
+      // Reference image should come AFTER placed item in DOM order.
+      // In CSS stacking, later DOM siblings render on top of earlier ones
+      // (at the same z-index level).
+      // compareDocumentPosition returns bitmask; bit 4 (DOCUMENT_POSITION_FOLLOWING)
+      // means the other node follows this one.
+      const position = placedItem.compareDocumentPosition(refImage);
+      expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('should render all reference images after all placed items', () => {
+      const items = [
+        createMockItem({ instanceId: 'item-1' }),
+        createMockItem({ instanceId: 'item-2', x: 1, y: 0 }),
+      ];
+      const refImages = [
+        createMockRefImage({ id: 'ref-1' }),
+        createMockRefImage({ id: 'ref-2', name: 'second-ref.png' }),
+      ];
+
+      const { container } = render(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={items}
+          selectedItemIds={new Set()}
+          referenceImages={refImages}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const gridContainer = container.querySelector('.grid-container')!;
+      const lastPlacedItem = gridContainer.querySelector('[data-testid="placed-item-item-2"]')!;
+      const firstRefImage = gridContainer.querySelector('[data-testid="ref-image-ref-1"]')!;
+
+      // The first reference image should come after the last placed item
+      const position = lastPlacedItem.compareDocumentPosition(firstRefImage);
+      expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
   });
 });
