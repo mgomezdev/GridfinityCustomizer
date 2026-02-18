@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { PlacedItemWithValidity, GridSpacerConfig } from '../../types/gridfinity';
+import type { RefImagePlacement } from '../../hooks/useRefImagePlacements';
 import { useSaveLayoutMutation } from '../../hooks/useLayouts';
 
 interface SaveLayoutDialogProps {
@@ -11,6 +12,7 @@ interface SaveLayoutDialogProps {
   depthMm: number;
   spacerConfig: GridSpacerConfig;
   placedItems: PlacedItemWithValidity[];
+  refImagePlacements?: RefImagePlacement[];
 }
 
 interface SaveLayoutFormProps {
@@ -21,6 +23,7 @@ interface SaveLayoutFormProps {
   depthMm: number;
   spacerConfig: GridSpacerConfig;
   placedItems: PlacedItemWithValidity[];
+  refImagePlacements?: RefImagePlacement[];
 }
 
 function SaveLayoutForm({
@@ -31,6 +34,7 @@ function SaveLayoutForm({
   depthMm,
   spacerConfig,
   placedItems,
+  refImagePlacements = [],
 }: SaveLayoutFormProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -42,6 +46,22 @@ function SaveLayoutForm({
     if (!name.trim()) return;
 
     try {
+      // Only include non-broken ref image placements
+      const validPlacements = refImagePlacements
+        .filter(p => p.refImageId !== null)
+        .map(p => ({
+          refImageId: p.refImageId!,
+          name: p.name,
+          x: p.x,
+          y: p.y,
+          width: p.width,
+          height: p.height,
+          opacity: p.opacity,
+          scale: p.scale,
+          isLocked: p.isLocked,
+          rotation: p.rotation,
+        }));
+
       await saveLayoutMutation.mutateAsync({
         name: name.trim(),
         description: description.trim() || undefined,
@@ -59,6 +79,7 @@ function SaveLayoutForm({
           height: item.height,
           rotation: item.rotation,
         })),
+        ...(validPlacements.length > 0 ? { refImagePlacements: validPlacements } : {}),
       });
 
       setSuccessMessage('Layout saved successfully!');
@@ -140,6 +161,9 @@ function SaveLayoutForm({
               <div className="layout-dialog-info">
                 <span>Grid: {gridX} x {gridY}</span>
                 <span>Items: {placedItems.length}</span>
+                {refImagePlacements.filter(p => p.refImageId !== null).length > 0 && (
+                  <span>Images: {refImagePlacements.filter(p => p.refImageId !== null).length}</span>
+                )}
               </div>
 
               {saveLayoutMutation.isError && (
@@ -182,6 +206,7 @@ export function SaveLayoutDialog({
   depthMm,
   spacerConfig,
   placedItems,
+  refImagePlacements,
 }: SaveLayoutDialogProps) {
   if (!isOpen) return null;
 
@@ -195,6 +220,7 @@ export function SaveLayoutDialog({
       depthMm={depthMm}
       spacerConfig={spacerConfig}
       placedItems={placedItems}
+      refImagePlacements={refImagePlacements}
     />
   );
 }

@@ -5,6 +5,11 @@ import { SpacerOverlay } from './SpacerOverlay';
 import { ReferenceImageOverlay } from './ReferenceImageOverlay';
 import { usePointerDropTarget } from '../hooks/usePointerDrag';
 
+interface RefImageMeta {
+  isBroken: boolean;
+  imageUrl: string | null;
+}
+
 interface GridPreviewProps {
   gridX: number;
   gridY: number;
@@ -28,6 +33,8 @@ interface GridPreviewProps {
   onImageRotateCw?: (id: string) => void;
   onImageRotateCcw?: (id: string) => void;
   imageViewMode?: ImageViewMode;
+  refImageMetadata?: Map<string, RefImageMeta>;
+  onRefImageRebind?: (id: string) => void;
 }
 
 export function GridPreview({
@@ -53,6 +60,8 @@ export function GridPreview({
   onImageRotateCw,
   onImageRotateCcw,
   imageViewMode = 'ortho',
+  refImageMetadata,
+  onRefImageRebind,
 }: GridPreviewProps) {
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -134,21 +143,27 @@ export function GridPreview({
           onClick={handleGridClick}
         >
           {cells}
-          {referenceImages.map(image => (
-            <ReferenceImageOverlay
-              key={image.id}
-              image={image}
-              isSelected={image.id === selectedImageId}
-              onPositionChange={(x, y) => onImagePositionChange?.(image.id, x, y)}
-              onSelect={() => onImageSelect?.(image.id)}
-              onScaleChange={(scale) => onImageScaleChange?.(image.id, scale)}
-              onOpacityChange={(opacity) => onImageOpacityChange?.(image.id, opacity)}
-              onRemove={() => onImageRemove?.(image.id)}
-              onToggleLock={() => onImageToggleLock?.(image.id)}
-              onRotateCw={() => onImageRotateCw?.(image.id)}
-              onRotateCcw={() => onImageRotateCcw?.(image.id)}
-            />
-          ))}
+          {referenceImages.map(image => {
+            const meta = refImageMetadata?.get(image.id);
+            return (
+              <ReferenceImageOverlay
+                key={image.id}
+                image={image}
+                isSelected={image.id === selectedImageId}
+                onPositionChange={(x, y) => onImagePositionChange?.(image.id, x, y)}
+                onSelect={() => onImageSelect?.(image.id)}
+                onScaleChange={(scale) => onImageScaleChange?.(image.id, scale)}
+                onOpacityChange={(opacity) => onImageOpacityChange?.(image.id, opacity)}
+                onRemove={() => onImageRemove?.(image.id)}
+                onToggleLock={() => onImageToggleLock?.(image.id)}
+                onRotateCw={() => onImageRotateCw?.(image.id)}
+                onRotateCcw={() => onImageRotateCcw?.(image.id)}
+                isBroken={meta?.isBroken}
+                imageUrl={meta?.imageUrl}
+                onRebind={onRefImageRebind ? () => onRefImageRebind(image.id) : undefined}
+              />
+            );
+          })}
           {placedItems.map(item => (
             <PlacedItemOverlay
               key={item.instanceId}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import type { UnitSystem, ImperialFormat, GridSpacerConfig, ImageViewMode } from './types/gridfinity';
+import type { UnitSystem, ImperialFormat, GridSpacerConfig, ImageViewMode, ReferenceImage, DragData } from './types/gridfinity';
 import { calculateGrid, mmToInches, inchesToMm } from './utils/conversions';
 import { useGridItems } from './hooks/useGridItems';
 import { useSpacerCalculation } from './hooks/useSpacerCalculation';
@@ -7,7 +7,7 @@ import { useBillOfMaterials } from './hooks/useBillOfMaterials';
 import { useLibraries } from './hooks/useLibraries';
 import { useLibraryData } from './hooks/useLibraryData';
 import { useCategoryData } from './hooks/useCategoryData';
-import { useReferenceImages } from './hooks/useReferenceImages';
+import { useRefImagePlacements } from './hooks/useRefImagePlacements';
 import { useGridTransform } from './hooks/useGridTransform';
 import { useSubmitBOM } from './hooks/useSubmitBOM';
 import { useAuth } from './contexts/AuthContext';
@@ -18,7 +18,8 @@ import { ItemLibrary } from './components/ItemLibrary';
 import { ItemControls } from './components/ItemControls';
 import { SpacerControls } from './components/SpacerControls';
 import { BillOfMaterials } from './components/BillOfMaterials';
-import { ReferenceImageUploader } from './components/ReferenceImageUploader';
+import { RefImageLibrary } from './components/RefImageLibrary';
+import { RebindImageDialog } from './components/RebindImageDialog';
 import { ZoomControls } from './components/ZoomControls';
 import { ImageViewToggle } from './components/ImageViewToggle';
 import { KeyboardShortcutsHelp } from './components/KeyboardShortcutsHelp';
@@ -27,6 +28,8 @@ import { SaveLayoutDialog } from './components/layouts/SaveLayoutDialog';
 import { LoadLayoutDialog } from './components/layouts/LoadLayoutDialog';
 import type { LoadedLayoutConfig } from './components/layouts/LoadLayoutDialog';
 import './App.css';
+
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:3001/api/v1';
 
 function App() {
   const [width, setWidth] = useState(168);
@@ -41,6 +44,9 @@ function App() {
   const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showLoadDialog, setShowLoadDialog] = useState(false);
+  const [showRebindDialog, setShowRebindDialog] = useState(false);
+  const [rebindTargetId, setRebindTargetId] = useState<string | null>(null);
+  const [sidebarTab, setSidebarTab] = useState<'items' | 'images'>('items');
   const [imageViewMode, setImageViewMode] = useState<ImageViewMode>(
     () => (localStorage.getItem('gridfinity-image-view-mode') as ImageViewMode) || 'ortho'
   );
@@ -71,17 +77,20 @@ function App() {
     categories,
   } = useCategoryData(libraryItems);
 
-  // Reference images
+  // Reference image placements (server-backed)
   const {
-    images,
-    addImage,
-    removeImage,
-    updateImagePosition,
-    updateImageScale,
-    updateImageOpacity,
-    updateImageRotation,
-    toggleImageLock,
-  } = useReferenceImages();
+    placements: refImagePlacements,
+    addPlacement: addRefImagePlacement,
+    removePlacement: removeRefImagePlacement,
+    updatePosition: updateRefImagePosition,
+    updateScale: updateRefImageScale,
+    updateOpacity: updateRefImageOpacity,
+    updateRotation: updateRefImageRotation,
+    toggleLock: toggleRefImageLock,
+    rebindImage: rebindRefImage,
+    loadPlacements: loadRefImagePlacements,
+    clearAll: clearRefImages,
+  } = useRefImagePlacements();
 
   const handleRefreshAll = async () => {
     // Refresh library manifest and all selected libraries
@@ -157,6 +166,60 @@ function App() {
     () => new Map(availableLibraries.map(lib => [lib.id, lib.name])),
     [availableLibraries]
   );
+
+  // Convert ref image placements to ReferenceImage format for GridPreview
+  const referenceImagesForGrid: ReferenceImage[] = useMemo(() =>
+    refImagePlacements.map(p => ({
+      id: p.id,
+      name: p.name,
+      dataUrl: '',
+      x: p.x,
+      y: p.y,
+      width: p.width,
+      height: p.height,
+      opacity: p.opacity,
+      scale: p.scale,
+      isLocked: p.isLocked,
+      rotation: p.rotation,
+    })),
+    [refImagePlacements]
+  );
+
+  // Metadata map for broken state / image URLs
+  const refImageMetadata = useMemo(() => {
+    const map = new Map<string, { isBroken: boolean; imageUrl: string | null }>();
+    for (const p of refImagePlacements) {
+      map.set(p.id, {
+        isBroken: p.refImageId === null,
+        imageUrl: p.imageUrl ? `${API_BASE_URL}/images/${p.imageUrl}` : null,
+      });
+    }
+    return map;
+  }, [refImagePlacements]);
+
+  // Combined drop handler for both library items and ref images
+  const handleCombinedDrop = useCallback((dragData: DragData, x: number, y: number) => {
+    if (dragData.type === 'ref-image' && dragData.refImageId != null) {
+      // Convert grid cell coordinates to percentage of grid
+      const xPercent = (x / gridResult.gridX) * 100;
+      const yPercent = (y / gridResult.gridY) * 100;
+      addRefImagePlacement({
+        refImageId: dragData.refImageId,
+        name: dragData.refImageName ?? 'Reference Image',
+        imageUrl: dragData.refImageUrl ?? '',
+        x: xPercent,
+        y: yPercent,
+        width: 25,
+        height: 25,
+        opacity: 0.5,
+        scale: 1,
+        isLocked: false,
+        rotation: 0,
+      });
+    } else {
+      handleDrop(dragData, x, y);
+    }
+  }, [gridResult.gridX, gridResult.gridY, addRefImagePlacement, handleDrop]);
 
   const { submitBOM, isSubmitting, error: submitError } = useSubmitBOM(
     gridSummaryData,
@@ -297,8 +360,13 @@ function App() {
   }, [deleteSelected]);
 
   const handleClearAll = () => {
-    if (window.confirm(`Remove all ${placedItems.length} placed items?`)) {
+    const message = refImagePlacements.length > 0
+      ? `Remove all ${placedItems.length} placed items and ${refImagePlacements.length} reference images?`
+      : `Remove all ${placedItems.length} placed items?`;
+    if (window.confirm(message)) {
       clearAll();
+      clearRefImages();
+      setSelectedImageId(null);
     }
   };
 
@@ -313,15 +381,29 @@ function App() {
     }
     setSpacerConfig(config.spacerConfig);
     loadItems(config.placedItems);
-  }, [unitSystem, loadItems]);
+    loadRefImagePlacements(config.refImagePlacements ?? []);
+    setSelectedImageId(null);
+  }, [unitSystem, loadItems, loadRefImagePlacements]);
 
   const handleRemoveImage = (id: string) => {
-    removeImage(id);
-    // Clear selection if we're removing the selected image
+    removeRefImagePlacement(id);
     if (selectedImageId === id) {
       setSelectedImageId(null);
     }
   };
+
+  const handleRebindImage = useCallback((id: string) => {
+    setRebindTargetId(id);
+    setShowRebindDialog(true);
+  }, []);
+
+  const handleRebindSelect = useCallback((refImageId: number, imageUrl: string, name: string) => {
+    if (rebindTargetId) {
+      rebindRefImage(rebindTargetId, refImageId, imageUrl, name);
+    }
+    setShowRebindDialog(false);
+    setRebindTargetId(null);
+  }, [rebindTargetId, rebindRefImage]);
 
   const toggleImageViewMode = useCallback(() => {
     setImageViewMode(prev => {
@@ -350,7 +432,7 @@ function App() {
       if ((event.key === 'Delete' || event.key === 'Backspace')) {
         if (selectedImageId) {
           event.preventDefault();
-          removeImage(selectedImageId);
+          removeRefImagePlacement(selectedImageId);
           setSelectedImageId(null);
           return;
         }
@@ -365,7 +447,7 @@ function App() {
       if (event.key === 'r' || event.key === 'R') {
         if (selectedImageId) {
           event.preventDefault();
-          updateImageRotation(selectedImageId, event.shiftKey ? 'ccw' : 'cw');
+          updateRefImageRotation(selectedImageId, event.shiftKey ? 'ccw' : 'cw');
           return;
         }
         if (selectedItemIds.size > 0) {
@@ -424,7 +506,7 @@ function App() {
       // L: Toggle lock on selected image
       if ((event.key === 'l' || event.key === 'L') && selectedImageId) {
         event.preventDefault();
-        toggleImageLock(selectedImageId);
+        toggleRefImageLock(selectedImageId);
         return;
       }
 
@@ -571,17 +653,44 @@ function App() {
 
       <main className="app-main">
         <section className="sidebar">
-          <ItemLibrary
-            items={libraryItems}
-            categories={categories}
-            isLoading={isLibraryLoading || isLibrariesLoading}
-            error={libraryError || librariesError}
-            onRefreshLibrary={handleRefreshAll}
-            availableLibraries={availableLibraries}
-            selectedLibraryIds={selectedLibraryIds}
-            onToggleLibrary={toggleLibrary}
-            isLibrariesLoading={isLibrariesLoading}
-          />
+          <div className="sidebar-tabs">
+            <button
+              className={`sidebar-tab${sidebarTab === 'items' ? ' active' : ''}`}
+              onClick={() => setSidebarTab('items')}
+              type="button"
+            >
+              Items
+            </button>
+            <button
+              className={`sidebar-tab${sidebarTab === 'images' ? ' active' : ''}`}
+              onClick={() => setSidebarTab('images')}
+              type="button"
+            >
+              Images
+            </button>
+          </div>
+
+          {sidebarTab === 'items' ? (
+            <ItemLibrary
+              items={libraryItems}
+              categories={categories}
+              isLoading={isLibraryLoading || isLibrariesLoading}
+              error={libraryError || librariesError}
+              onRefreshLibrary={handleRefreshAll}
+              availableLibraries={availableLibraries}
+              selectedLibraryIds={selectedLibraryIds}
+              onToggleLibrary={toggleLibrary}
+              isLibrariesLoading={isLibrariesLoading}
+            />
+          ) : (
+            isAuthenticated ? (
+              <RefImageLibrary />
+            ) : (
+              <div className="ref-image-auth-prompt">
+                <p>Sign in to upload and manage reference images.</p>
+              </div>
+            )
+          )}
 
           {selectedItemIds.size > 0 && (
             <ItemControls
@@ -595,7 +704,6 @@ function App() {
         <section className="preview">
           <div className="preview-toolbar">
             <div className="reference-image-toolbar">
-              <ReferenceImageUploader onUpload={addImage} />
               {isAuthenticated && (
                 <button
                   className="layout-toolbar-btn layout-load-btn"
@@ -605,7 +713,7 @@ function App() {
                   Load
                 </button>
               )}
-              {isAuthenticated && placedItems.length > 0 && (
+              {isAuthenticated && (placedItems.length > 0 || refImagePlacements.length > 0) && (
                 <button
                   className="layout-toolbar-btn layout-save-btn"
                   onClick={() => setShowSaveDialog(true)}
@@ -614,9 +722,9 @@ function App() {
                   Save
                 </button>
               )}
-              {placedItems.length > 0 && (
+              {(placedItems.length > 0 || refImagePlacements.length > 0) && (
                 <button className="clear-all-button" onClick={handleClearAll}>
-                  Clear All ({placedItems.length})
+                  Clear All ({placedItems.length + refImagePlacements.length})
                 </button>
               )}
             </div>
@@ -648,22 +756,24 @@ function App() {
                 selectedItemIds={selectedItemIds}
                 spacers={spacers}
                 imageViewMode={imageViewMode}
-                onDrop={handleDrop}
+                onDrop={handleCombinedDrop}
                 onSelectItem={(id, mods) => { selectItem(id, mods); if (id) setSelectedImageId(null); }}
                 getItemById={getItemById}
                 onDeleteItem={deleteItem}
                 onRotateItemCw={(id) => rotateItem(id, 'cw')}
                 onRotateItemCcw={(id) => rotateItem(id, 'ccw')}
-                referenceImages={images}
+                referenceImages={referenceImagesForGrid}
                 selectedImageId={selectedImageId}
-                onImagePositionChange={updateImagePosition}
+                onImagePositionChange={updateRefImagePosition}
                 onImageSelect={(id) => { setSelectedImageId(id); deselectAll(); }}
-                onImageScaleChange={updateImageScale}
-                onImageOpacityChange={updateImageOpacity}
+                onImageScaleChange={updateRefImageScale}
+                onImageOpacityChange={updateRefImageOpacity}
                 onImageRemove={handleRemoveImage}
-                onImageToggleLock={toggleImageLock}
-                onImageRotateCw={(id) => updateImageRotation(id, 'cw')}
-                onImageRotateCcw={(id) => updateImageRotation(id, 'ccw')}
+                onImageToggleLock={toggleRefImageLock}
+                onImageRotateCw={(id) => updateRefImageRotation(id, 'cw')}
+                onImageRotateCcw={(id) => updateRefImageRotation(id, 'ccw')}
+                refImageMetadata={refImageMetadata}
+                onRefImageRebind={handleRebindImage}
               />
             </div>
           </div>
@@ -693,13 +803,20 @@ function App() {
         depthMm={drawerDepth}
         spacerConfig={spacerConfig}
         placedItems={placedItems}
+        refImagePlacements={refImagePlacements}
       />
 
       <LoadLayoutDialog
         isOpen={showLoadDialog}
         onClose={() => setShowLoadDialog(false)}
         onLoad={handleLoadLayout}
-        hasItems={placedItems.length > 0}
+        hasItems={placedItems.length > 0 || refImagePlacements.length > 0}
+      />
+
+      <RebindImageDialog
+        isOpen={showRebindDialog}
+        onClose={() => { setShowRebindDialog(false); setRebindTargetId(null); }}
+        onSelect={handleRebindSelect}
       />
     </div>
   );

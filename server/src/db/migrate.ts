@@ -176,7 +176,24 @@ export async function runMigrations(client: Client): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_shared_projects_slug ON shared_projects(slug);
   `);
 
-  // Reference images table
+  // Reference image library table
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS ref_images (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      owner_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      file_size INTEGER NOT NULL DEFAULT 0,
+      uploaded_by INTEGER NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
+
+  await client.execute(`
+    CREATE INDEX IF NOT EXISTS idx_ref_images_owner ON ref_images(owner_id);
+  `);
+
+  // Reference images table (per-layout placements)
   await client.execute(`
     CREATE TABLE IF NOT EXISTS reference_images (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -198,6 +215,15 @@ export async function runMigrations(client: Client): Promise<void> {
   await client.execute(`
     CREATE INDEX IF NOT EXISTS idx_reference_images_layout ON reference_images(layout_id);
   `);
+
+  // Add ref_image_id column to reference_images if missing (existing databases)
+  try {
+    await client.execute(
+      `ALTER TABLE reference_images ADD COLUMN ref_image_id INTEGER REFERENCES ref_images(id) ON DELETE SET NULL;`,
+    );
+  } catch {
+    // Column already exists — ignore
+  }
 
   // BOM submissions table
   await client.execute(`
