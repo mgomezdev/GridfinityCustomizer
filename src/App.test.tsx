@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import App from './App';
-import type { LibraryItem, ReferenceImage } from './types/gridfinity';
+import type { LibraryItem } from './types/gridfinity';
+import type { RefImagePlacement } from './hooks/useRefImagePlacements';
 
 // --- Captured callback props from mocked components ---
 let capturedGridPreviewProps: Record<string, unknown> = {};
@@ -39,8 +40,12 @@ vi.mock('./components/BillOfMaterials', () => ({
   BillOfMaterials: () => <div data-testid="bill-of-materials" />,
 }));
 
-vi.mock('./components/ReferenceImageUploader', () => ({
-  ReferenceImageUploader: () => <div data-testid="reference-image-uploader" />,
+vi.mock('./components/RefImageLibrary', () => ({
+  RefImageLibrary: () => <div data-testid="ref-image-library" />,
+}));
+
+vi.mock('./components/RebindImageDialog', () => ({
+  RebindImageDialog: () => null,
 }));
 
 vi.mock('./components/ZoomControls', () => ({
@@ -162,22 +167,26 @@ vi.mock('./hooks/useCategoryData', () => ({
   }),
 }));
 
-// Mock useReferenceImages - controllable per test
-let mockImages: ReferenceImage[] = [];
-const mockRemoveImage = vi.fn();
-const mockUpdateImageRotation = vi.fn();
-const mockToggleImageLock = vi.fn();
+// Mock useRefImagePlacements - controllable per test
+let mockPlacements: RefImagePlacement[] = [];
+const mockRemovePlacement = vi.fn();
+const mockUpdateRotation = vi.fn();
+const mockToggleLock = vi.fn();
+const mockClearRefImages = vi.fn();
 
-vi.mock('./hooks/useReferenceImages', () => ({
-  useReferenceImages: () => ({
-    images: mockImages,
-    addImage: vi.fn(),
-    removeImage: mockRemoveImage,
-    updateImagePosition: vi.fn(),
-    updateImageScale: vi.fn(),
-    updateImageOpacity: vi.fn(),
-    updateImageRotation: mockUpdateImageRotation,
-    toggleImageLock: mockToggleImageLock,
+vi.mock('./hooks/useRefImagePlacements', () => ({
+  useRefImagePlacements: () => ({
+    placements: mockPlacements,
+    addPlacement: vi.fn(),
+    removePlacement: mockRemovePlacement,
+    updatePosition: vi.fn(),
+    updateScale: vi.fn(),
+    updateOpacity: vi.fn(),
+    updateRotation: mockUpdateRotation,
+    toggleLock: mockToggleLock,
+    rebindImage: vi.fn(),
+    loadPlacements: vi.fn(),
+    clearAll: mockClearRefImages,
   }),
 }));
 
@@ -216,7 +225,7 @@ describe('App Integration Tests', () => {
     capturedGridPreviewProps = {};
     capturedItemLibraryProps = {};
     capturedZoomControlsProps = {};
-    mockImages = [];
+    mockPlacements = [];
     localStorage.removeItem('gridfinity-image-view-mode');
   });
 
@@ -302,8 +311,8 @@ describe('App Integration Tests', () => {
   // ==========================================
   describe('Keyboard Shortcuts', () => {
     it('Delete with selectedImageId removes image, NOT items', () => {
-      mockImages = [{
-        id: 'img-1', name: 'test.png', dataUrl: 'data:,',
+      mockPlacements = [{
+        id: 'img-1', refImageId: 1, name: 'test.png', imageUrl: 'ref-lib/test.webp',
         x: 0, y: 0, width: 50, height: 50, opacity: 0.5, scale: 1, isLocked: false, rotation: 0,
       }];
       renderApp();
@@ -321,7 +330,7 @@ describe('App Integration Tests', () => {
       fireEvent.keyDown(document, { key: 'Delete' });
 
       // Image should be removed, items should remain
-      expect(mockRemoveImage).toHaveBeenCalledWith('img-1');
+      expect(mockRemovePlacement).toHaveBeenCalledWith('img-1');
       expect(getPlacedItems().length).toBe(1);
     });
 
@@ -350,8 +359,8 @@ describe('App Integration Tests', () => {
     });
 
     it('R with selectedImageId rotates image CW', () => {
-      mockImages = [{
-        id: 'img-1', name: 'test.png', dataUrl: 'data:,',
+      mockPlacements = [{
+        id: 'img-1', refImageId: 1, name: 'test.png', imageUrl: 'ref-lib/test.webp',
         x: 0, y: 0, width: 50, height: 50, opacity: 0.5, scale: 1, isLocked: false, rotation: 0,
       }];
       renderApp();
@@ -360,12 +369,12 @@ describe('App Integration Tests', () => {
       act(() => { onImageSelect('img-1'); });
 
       fireEvent.keyDown(document, { key: 'r' });
-      expect(mockUpdateImageRotation).toHaveBeenCalledWith('img-1', 'cw');
+      expect(mockUpdateRotation).toHaveBeenCalledWith('img-1', 'cw');
     });
 
     it('Shift+R with selectedImageId rotates image CCW', () => {
-      mockImages = [{
-        id: 'img-1', name: 'test.png', dataUrl: 'data:,',
+      mockPlacements = [{
+        id: 'img-1', refImageId: 1, name: 'test.png', imageUrl: 'ref-lib/test.webp',
         x: 0, y: 0, width: 50, height: 50, opacity: 0.5, scale: 1, isLocked: false, rotation: 0,
       }];
       renderApp();
@@ -374,7 +383,7 @@ describe('App Integration Tests', () => {
       act(() => { onImageSelect('img-1'); });
 
       fireEvent.keyDown(document, { key: 'R', shiftKey: true });
-      expect(mockUpdateImageRotation).toHaveBeenCalledWith('img-1', 'ccw');
+      expect(mockUpdateRotation).toHaveBeenCalledWith('img-1', 'ccw');
     });
 
     it('R with selectedItemIds rotates items', () => {
@@ -414,8 +423,8 @@ describe('App Integration Tests', () => {
     });
 
     it('Escape clears both image and item selections', () => {
-      mockImages = [{
-        id: 'img-1', name: 'test.png', dataUrl: 'data:,',
+      mockPlacements = [{
+        id: 'img-1', refImageId: 1, name: 'test.png', imageUrl: 'ref-lib/test.webp',
         x: 0, y: 0, width: 50, height: 50, opacity: 0.5, scale: 1, isLocked: false, rotation: 0,
       }];
       renderApp();
@@ -428,7 +437,7 @@ describe('App Integration Tests', () => {
 
       expect(getSelectedItemIds().size).toBe(0);
       // selectedImageId is internal state; verify by checking that Delete after Escape does nothing
-      expect(mockRemoveImage).not.toHaveBeenCalled();
+      expect(mockRemovePlacement).not.toHaveBeenCalled();
     });
 
     it('Ctrl+A selects all placed items', () => {
@@ -442,8 +451,8 @@ describe('App Integration Tests', () => {
     });
 
     it('L toggles lock on selected image', () => {
-      mockImages = [{
-        id: 'img-1', name: 'test.png', dataUrl: 'data:,',
+      mockPlacements = [{
+        id: 'img-1', refImageId: 1, name: 'test.png', imageUrl: 'ref-lib/test.webp',
         x: 0, y: 0, width: 50, height: 50, opacity: 0.5, scale: 1, isLocked: false, rotation: 0,
       }];
       renderApp();
@@ -452,7 +461,7 @@ describe('App Integration Tests', () => {
       act(() => { onImageSelect('img-1'); });
 
       fireEvent.keyDown(document, { key: 'l' });
-      expect(mockToggleImageLock).toHaveBeenCalledWith('img-1');
+      expect(mockToggleLock).toHaveBeenCalledWith('img-1');
     });
 
     it('+/- zoom in/out', () => {
@@ -557,8 +566,8 @@ describe('App Integration Tests', () => {
   // ==========================================
   describe('Selection Coordination', () => {
     it('onImageSelect clears item selection', () => {
-      mockImages = [{
-        id: 'img-1', name: 'test.png', dataUrl: 'data:,',
+      mockPlacements = [{
+        id: 'img-1', refImageId: 1, name: 'test.png', imageUrl: 'ref-lib/test.webp',
         x: 0, y: 0, width: 50, height: 50, opacity: 0.5, scale: 1, isLocked: false, rotation: 0,
       }];
       renderApp();
@@ -575,8 +584,8 @@ describe('App Integration Tests', () => {
     });
 
     it('onSelectItem with truthy id clears selectedImageId', () => {
-      mockImages = [{
-        id: 'img-1', name: 'test.png', dataUrl: 'data:,',
+      mockPlacements = [{
+        id: 'img-1', refImageId: 1, name: 'test.png', imageUrl: 'ref-lib/test.webp',
         x: 0, y: 0, width: 50, height: 50, opacity: 0.5, scale: 1, isLocked: false, rotation: 0,
       }];
       renderApp();
@@ -592,12 +601,12 @@ describe('App Integration Tests', () => {
 
       // Pressing R should rotate the item, not the image
       fireEvent.keyDown(document, { key: 'r' });
-      expect(mockUpdateImageRotation).not.toHaveBeenCalled();
+      expect(mockUpdateRotation).not.toHaveBeenCalled();
     });
 
     it('handleRemoveImage clears selectedImageId when removing selected image', () => {
-      mockImages = [{
-        id: 'img-1', name: 'test.png', dataUrl: 'data:,',
+      mockPlacements = [{
+        id: 'img-1', refImageId: 1, name: 'test.png', imageUrl: 'ref-lib/test.webp',
         x: 0, y: 0, width: 50, height: 50, opacity: 0.5, scale: 1, isLocked: false, rotation: 0,
       }];
       renderApp();
@@ -609,21 +618,21 @@ describe('App Integration Tests', () => {
       const onImageRemove = capturedGridPreviewProps.onImageRemove as (id: string) => void;
       act(() => { onImageRemove('img-1'); });
 
-      expect(mockRemoveImage).toHaveBeenCalledWith('img-1');
+      expect(mockRemovePlacement).toHaveBeenCalledWith('img-1');
       // After removal, Delete should not try to remove 'img-1' again
-      mockRemoveImage.mockClear();
+      mockRemovePlacement.mockClear();
       fireEvent.keyDown(document, { key: 'Delete' });
-      expect(mockRemoveImage).not.toHaveBeenCalled();
+      expect(mockRemovePlacement).not.toHaveBeenCalled();
     });
 
     it('handleRemoveImage does NOT clear selectedImageId for different image', () => {
-      mockImages = [
+      mockPlacements = [
         {
-          id: 'img-1', name: 'test1.png', dataUrl: 'data:,',
+          id: 'img-1', refImageId: 1, name: 'test1.png', imageUrl: 'ref-lib/test1.webp',
           x: 0, y: 0, width: 50, height: 50, opacity: 0.5, scale: 1, isLocked: false, rotation: 0,
         },
         {
-          id: 'img-2', name: 'test2.png', dataUrl: 'data:,',
+          id: 'img-2', refImageId: 2, name: 'test2.png', imageUrl: 'ref-lib/test2.webp',
           x: 10, y: 10, width: 50, height: 50, opacity: 0.5, scale: 1, isLocked: false, rotation: 0,
         },
       ];
@@ -638,9 +647,9 @@ describe('App Integration Tests', () => {
       act(() => { onImageRemove('img-2'); });
 
       // img-1 should still be selected; Delete should remove img-1
-      mockRemoveImage.mockClear();
+      mockRemovePlacement.mockClear();
       fireEvent.keyDown(document, { key: 'Delete' });
-      expect(mockRemoveImage).toHaveBeenCalledWith('img-1');
+      expect(mockRemovePlacement).toHaveBeenCalledWith('img-1');
     });
   });
 

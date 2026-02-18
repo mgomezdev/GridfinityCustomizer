@@ -2928,3 +2928,349 @@
   font-size: var(--text-sm);
   margin: 0;
 }
+
+/* ==============================
+   Sidebar Tabs
+   ============================== */
+
+.sidebar-tabs {
+  display: flex;
+  gap: 0;
+}
+
+.sidebar-tab {
+  flex: 1;
+  padding: var(--space-sm) var(--space-lg);
+  border: 2px solid var(--border-secondary);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.sidebar-tab:first-child {
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+.sidebar-tab:last-child {
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  border-left: none;
+}
+
+.sidebar-tab.active {
+  background: var(--grid-primary);
+  border-color: var(--grid-primary);
+  color: var(--bg-primary);
+}
+
+.sidebar-tab:hover:not(.active) {
+  border-color: var(--grid-primary);
+  background: var(--bg-hover);
+}
+
+/* ==============================
+   Ref Image Library
+   ============================== */
+
+.ref-image-library {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.ref-image-auth-prompt {
+  padding: var(--space-xl) var(--space-lg);
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.ref-image-library-title {
+  font-size: var(--text-lg);
+  font-family: var(--font-display);
+  font-weight: var(--font-bold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.ref-image-library-hint {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+.ref-image-library-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.ref-image-upload-btn {
+  flex: 1;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--accent-primary);
+  color: var(--bg-primary);
+  border: 2px solid var(--accent-primary);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.ref-image-upload-btn:hover:not(:disabled) {
+  background: var(--accent-secondary);
+  border-color: var(--accent-secondary);
+}
+
+.ref-image-upload-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ref-image-upload-btn--global {
+  background: transparent;
+  color: var(--accent-primary);
+}
+
+.ref-image-upload-btn--global:hover:not(:disabled) {
+  background: var(--grid-alpha-10);
+}
+
+.ref-image-library-error {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--invalid-alpha-40);
+  border: 1px solid var(--invalid-primary);
+  border-radius: var(--radius-md);
+  color: var(--invalid-primary);
+  font-size: var(--text-sm);
+}
+
+.ref-image-library-loading {
+  padding: var(--space-lg);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.ref-image-section {
+  margin-top: var(--space-sm);
+}
+
+.ref-image-section-title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-sm) 0;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.ref-image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: var(--space-sm);
+}
+
+.ref-image-grid.collapsed {
+  display: none;
+}
+
+.ref-image-empty {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  margin: 0;
+  padding: var(--space-md);
+  text-align: center;
+}
+
+/* ==============================
+   Ref Image Card
+   ============================== */
+
+.ref-image-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-sm);
+  border: 2px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  cursor: grab;
+  transition: all 0.15s;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ref-image-card:hover {
+  border-color: var(--grid-primary);
+  background: var(--bg-hover);
+  box-shadow: 0 2px 8px var(--grid-alpha-10);
+}
+
+.ref-image-card-thumbnail {
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+}
+
+.ref-image-card-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ref-image-card-info {
+  width: 100%;
+  margin-top: var(--space-xs);
+  text-align: center;
+}
+
+.ref-image-card-name {
+  font-size: 10px;
+  color: var(--text-secondary);
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ref-image-card-delete {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--invalid-primary);
+  background: var(--bg-primary);
+  color: var(--invalid-primary);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.ref-image-card:hover .ref-image-card-delete {
+  display: flex;
+}
+
+.ref-image-card-delete:hover {
+  background: var(--invalid-primary);
+  color: white;
+}
+
+/* Auth prompt for non-authenticated users */
+.sidebar-auth-prompt {
+  padding: var(--space-xl);
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+/* ==============================
+   Broken Image Placeholder
+   ============================== */
+
+.ref-image-broken {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(200, 50, 50, 0.1);
+  border: 2px dashed rgba(200, 50, 50, 0.4);
+  border-radius: var(--radius-md);
+  color: #c83232;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  padding: var(--space-md);
+  gap: var(--space-sm);
+}
+
+.ref-image-broken-icon {
+  font-size: 24px;
+}
+
+.ref-image-rebind-btn {
+  padding: 2px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  background: rgba(59, 130, 246, 0.8);
+  color: #fff;
+  transition: background 0.15s;
+}
+
+.ref-image-rebind-btn:hover {
+  background: rgba(59, 130, 246, 1);
+}
+
+/* ==============================
+   Rebind Image Dialog
+   ============================== */
+
+.rebind-image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: var(--space-md);
+}
+
+.rebind-image-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-sm);
+  border: 2px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  cursor: pointer;
+  transition: all 0.15s;
+  gap: var(--space-xs);
+}
+
+.rebind-image-option:hover {
+  border-color: var(--grid-primary);
+  background: var(--bg-hover);
+}
+
+.rebind-image-option img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+.rebind-image-name {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}

@@ -15,6 +15,21 @@ const placedItemSchema = z.object({
   }),
 });
 
+const refImagePlacementSchema = z.object({
+  refImageId: z.number().int().positive(),
+  name: z.string().min(1).max(255),
+  x: z.number().min(0).max(100),
+  y: z.number().min(0).max(100),
+  width: z.number().positive().max(100),
+  height: z.number().positive().max(100),
+  opacity: z.number().min(0).max(1),
+  scale: z.number().min(0.1).max(10),
+  isLocked: z.boolean(),
+  rotation: z.number().refine((v) => [0, 90, 180, 270].includes(v), {
+    message: 'Rotation must be 0, 90, 180, or 270',
+  }),
+});
+
 const createLayoutSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().max(500).optional(),
@@ -25,6 +40,7 @@ const createLayoutSchema = z.object({
   spacerHorizontal: z.string().optional(),
   spacerVertical: z.string().optional(),
   placedItems: z.array(placedItemSchema).max(200),
+  refImagePlacements: z.array(refImagePlacementSchema).max(50).optional(),
 });
 
 const updateLayoutMetaSchema = z.object({

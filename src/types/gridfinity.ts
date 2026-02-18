@@ -69,9 +69,12 @@ export interface PlacedItemWithValidity extends PlacedItem {
 }
 
 export interface DragData {
-  type: 'library' | 'placed';
+  type: 'library' | 'placed' | 'ref-image';
   itemId: string;
   instanceId?: string;
+  refImageId?: number;
+  refImageUrl?: string;
+  refImageName?: string;
 }
 
 export interface BOMItem {

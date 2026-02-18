@@ -1,8 +1,8 @@
 import { eq, and, lt, desc, sql, or } from 'drizzle-orm';
 import { AppError, ErrorCodes } from '@gridfinity/shared';
-import type { ApiLayout, ApiLayoutDetail, ApiPlacedItem } from '@gridfinity/shared';
+import type { ApiLayout, ApiLayoutDetail, ApiPlacedItem, ApiRefImagePlacement } from '@gridfinity/shared';
 import { db } from '../db/connection.js';
-import { layouts, placedItems, userStorage } from '../db/schema.js';
+import { layouts, placedItems, userStorage, referenceImages, refImages } from '../db/schema.js';
 import * as referenceImageService from './referenceImage.service.js';
 
 interface CursorData {
@@ -144,12 +144,40 @@ export async function getLayoutById(
     .where(eq(placedItems.layoutId, layoutId))
     .orderBy(placedItems.sortOrder);
 
-  const refImages = await referenceImageService.getReferenceImagesByLayout(layoutId);
+  const legacyRefImages = await referenceImageService.getReferenceImagesByLayout(layoutId);
+
+  // Fetch ref image placements with LEFT JOIN to resolve imageUrl
+  const refPlacementRows = await db
+    .select({
+      ri: referenceImages,
+      refImgPath: refImages.filePath,
+    })
+    .from(referenceImages)
+    .leftJoin(refImages, eq(referenceImages.refImageId, refImages.id))
+    .where(eq(referenceImages.layoutId, layoutId))
+    .orderBy(referenceImages.id);
+
+  const refImagePlacements: ApiRefImagePlacement[] = refPlacementRows.map(row => ({
+    id: row.ri.id,
+    layoutId: row.ri.layoutId,
+    refImageId: row.ri.refImageId,
+    name: row.ri.name,
+    imageUrl: row.ri.refImageId !== null ? (row.refImgPath ?? null) : null,
+    x: row.ri.x,
+    y: row.ri.y,
+    width: row.ri.width,
+    height: row.ri.height,
+    opacity: row.ri.opacity,
+    scale: row.ri.scale,
+    isLocked: row.ri.isLocked,
+    rotation: row.ri.rotation,
+  }));
 
   return {
     ...formatLayout(layout),
     placedItems: itemRows.map(formatPlacedItem),
-    referenceImages: refImages,
+    referenceImages: legacyRefImages,
+    refImagePlacements,
   };
 }
 
@@ -168,6 +196,18 @@ interface CreateLayoutData {
     y: number;
     width: number;
     height: number;
+    rotation: number;
+  }>;
+  refImagePlacements?: Array<{
+    refImageId: number;
+    name: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    opacity: number;
+    scale: number;
+    isLocked: boolean;
     rotation: number;
   }>;
 }
@@ -251,6 +291,49 @@ export async function createLayout(
       .returning();
   }
 
+  // Insert ref image placements
+  const refPlacementPlacements: ApiRefImagePlacement[] = [];
+  if (data.refImagePlacements && data.refImagePlacements.length > 0) {
+    const refValues = data.refImagePlacements.map(p => ({
+      layoutId: layout.id,
+      refImageId: p.refImageId,
+      name: p.name,
+      filePath: '',
+      x: p.x,
+      y: p.y,
+      width: p.width,
+      height: p.height,
+      opacity: p.opacity,
+      scale: p.scale,
+      isLocked: p.isLocked,
+      rotation: p.rotation,
+      createdAt: now,
+    }));
+
+    const insertedRefs = await db
+      .insert(referenceImages)
+      .values(refValues)
+      .returning();
+
+    for (const row of insertedRefs) {
+      refPlacementPlacements.push({
+        id: row.id,
+        layoutId: row.layoutId,
+        refImageId: row.refImageId,
+        name: row.name,
+        imageUrl: null, // Will be resolved on load
+        x: row.x,
+        y: row.y,
+        width: row.width,
+        height: row.height,
+        opacity: row.opacity,
+        scale: row.scale,
+        isLocked: row.isLocked,
+        rotation: row.rotation,
+      });
+    }
+  }
+
   // Update storage quota
   await db
     .update(userStorage)
@@ -260,6 +343,7 @@ export async function createLayout(
   return {
     ...formatLayout(layout),
     placedItems: insertedItems.map(formatPlacedItem),
+    refImagePlacements: refPlacementPlacements,
   };
 }
 
@@ -302,10 +386,13 @@ export async function updateLayout(
     .where(eq(layouts.id, layoutId))
     .returning();
 
-  // Delete old placed items
+  // Delete old placed items and ref image placements
   await db
     .delete(placedItems)
     .where(eq(placedItems.layoutId, layoutId));
+  await db
+    .delete(referenceImages)
+    .where(eq(referenceImages.layoutId, layoutId));
 
   // Insert new placed items
   const itemValues = data.placedItems.map((item, index) => {
@@ -331,9 +418,53 @@ export async function updateLayout(
       .returning();
   }
 
+  // Insert ref image placements
+  const refPlacementPlacements: ApiRefImagePlacement[] = [];
+  if (data.refImagePlacements && data.refImagePlacements.length > 0) {
+    const refValues = data.refImagePlacements.map(p => ({
+      layoutId,
+      refImageId: p.refImageId,
+      name: p.name,
+      filePath: '',
+      x: p.x,
+      y: p.y,
+      width: p.width,
+      height: p.height,
+      opacity: p.opacity,
+      scale: p.scale,
+      isLocked: p.isLocked,
+      rotation: p.rotation,
+      createdAt: now,
+    }));
+
+    const insertedRefs = await db
+      .insert(referenceImages)
+      .values(refValues)
+      .returning();
+
+    for (const row of insertedRefs) {
+      refPlacementPlacements.push({
+        id: row.id,
+        layoutId: row.layoutId,
+        refImageId: row.refImageId,
+        name: row.name,
+        imageUrl: null,
+        x: row.x,
+        y: row.y,
+        width: row.width,
+        height: row.height,
+        opacity: row.opacity,
+        scale: row.scale,
+        isLocked: row.isLocked,
+        rotation: row.rotation,
+      });
+    }
+  }
+
   return {
     ...formatLayout(updatedRows[0]),
     placedItems: insertedItems.map(formatPlacedItem),
+    refImagePlacements: refPlacementPlacements,
   };
 }
 

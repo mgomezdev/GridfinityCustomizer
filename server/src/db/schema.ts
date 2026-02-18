@@ -112,10 +112,24 @@ export const userStorage = sqliteTable('user_storage', {
   maxImageBytes: integer('max_image_bytes').notNull().default(52428800),
 });
 
-// Reference images table
+// Reference image library table
+export const refImages = sqliteTable('ref_images', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  ownerId: integer('owner_id').references(() => users.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  filePath: text('file_path').notNull(),
+  fileSize: integer('file_size').notNull().default(0),
+  uploadedBy: integer('uploaded_by').notNull().references(() => users.id),
+  createdAt: text('created_at').notNull().default(''),
+}, (table) => [
+  index('idx_ref_images_owner').on(table.ownerId),
+]);
+
+// Reference image placements table (per-layout)
 export const referenceImages = sqliteTable('reference_images', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   layoutId: integer('layout_id').notNull().references(() => layouts.id, { onDelete: 'cascade' }),
+  refImageId: integer('ref_image_id').references(() => refImages.id, { onDelete: 'set null' }),
   name: text('name').notNull(),
   filePath: text('file_path').notNull(),
   x: real('x').notNull().default(10),
@@ -208,10 +222,25 @@ export const layoutsRelations = relations(layouts, ({ one, many }) => ({
   referenceImages: many(referenceImages),
 }));
 
+export const refImagesRelations = relations(refImages, ({ one }) => ({
+  owner: one(users, {
+    fields: [refImages.ownerId],
+    references: [users.id],
+  }),
+  uploader: one(users, {
+    fields: [refImages.uploadedBy],
+    references: [users.id],
+  }),
+}));
+
 export const referenceImagesRelations = relations(referenceImages, ({ one }) => ({
   layout: one(layouts, {
     fields: [referenceImages.layoutId],
     references: [layouts.id],
+  }),
+  refImage: one(refImages, {
+    fields: [referenceImages.refImageId],
+    references: [refImages.id],
   }),
 }));
 
