@@ -73,9 +73,12 @@ export interface PlacedItemWithValidity extends PlacedItem {
 }
 
 export interface DragData {
-  type: 'library' | 'placed';
+  type: 'library' | 'placed' | 'ref-image';
   itemId: string;
   instanceId?: string;
+  refImageId?: number;
+  refImageUrl?: string;
+  refImageName?: string;
 }
 
 export interface BOMItem {
@@ -234,9 +237,36 @@ export interface ApiReferenceImage {
   createdAt: string;
 }
 
+export interface ApiRefImage {
+  id: number;
+  ownerId: number | null;
+  name: string;
+  isGlobal: boolean;
+  imageUrl: string;
+  fileSize: number;
+  createdAt: string;
+}
+
+export interface ApiRefImagePlacement {
+  id: number;
+  layoutId: number;
+  refImageId: number | null;
+  name: string;
+  imageUrl: string | null;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  opacity: number;
+  scale: number;
+  isLocked: boolean;
+  rotation: number;
+}
+
 export interface ApiLayoutDetail extends ApiLayout {
   placedItems: ApiPlacedItem[];
   referenceImages?: ApiReferenceImage[];
+  refImagePlacements?: ApiRefImagePlacement[];
 }
 
 export interface CreateLayoutRequest {
@@ -254,6 +284,18 @@ export interface CreateLayoutRequest {
     y: number;
     width: number;
     height: number;
+    rotation: number;
+  }>;
+  refImagePlacements?: Array<{
+    refImageId: number;
+    name: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    opacity: number;
+    scale: number;
+    isLocked: boolean;
     rotation: number;
   }>;
 }

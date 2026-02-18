@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ApiLayout, ApiLayoutDetail, PlacedItem, Rotation, SpacerMode, GridSpacerConfig } from '@gridfinity/shared';
+import type { RefImagePlacement } from '../../hooks/useRefImagePlacements';
 import { useLayoutsQuery, useDeleteLayoutMutation } from '../../hooks/useLayouts';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchLayout } from '../../api/layouts.api';
@@ -17,6 +18,7 @@ export interface LoadedLayoutConfig {
   depthMm: number;
   spacerConfig: GridSpacerConfig;
   placedItems: PlacedItem[];
+  refImagePlacements?: RefImagePlacement[];
 }
 
 function apiToPlacedItems(detail: ApiLayoutDetail): PlacedItem[] {
@@ -48,7 +50,7 @@ export function LoadLayoutDialog({
 
   const handleSelect = async (layout: ApiLayout) => {
     if (hasItems) {
-      const confirmed = window.confirm('Replace current layout? This will remove all currently placed items.');
+      const confirmed = window.confirm('Replace current layout? This will remove all placed items and reference images.');
       if (!confirmed) return;
     }
 
@@ -62,6 +64,22 @@ export function LoadLayoutDialog({
       const detail = await fetchLayout(token, layout.id);
       const placedItems = apiToPlacedItems(detail);
 
+      // Convert API ref image placements to frontend format
+      const refImagePlacements: RefImagePlacement[] = (detail.refImagePlacements ?? []).map((p, index) => ({
+        id: `loaded-ref-${index}`,
+        refImageId: p.refImageId,
+        name: p.name,
+        imageUrl: p.imageUrl,
+        x: p.x,
+        y: p.y,
+        width: p.width,
+        height: p.height,
+        opacity: p.opacity,
+        scale: p.scale,
+        isLocked: p.isLocked,
+        rotation: p.rotation as Rotation,
+      }));
+
       onLoad({
         widthMm: detail.widthMm,
         depthMm: detail.depthMm,
@@ -70,6 +88,7 @@ export function LoadLayoutDialog({
           vertical: detail.spacerVertical as SpacerMode,
         },
         placedItems,
+        refImagePlacements,
       });
 
       onClose();

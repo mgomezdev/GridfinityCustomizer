@@ -12,6 +12,9 @@ interface ReferenceImageOverlayProps {
   onToggleLock: () => void;
   onRotateCw?: () => void;
   onRotateCcw?: () => void;
+  isBroken?: boolean;
+  imageUrl?: string | null;
+  onRebind?: () => void;
 }
 
 interface DragState {
@@ -41,6 +44,9 @@ export const ReferenceImageOverlay = memo(function ReferenceImageOverlay({
   onToggleLock,
   onRotateCw,
   onRotateCcw,
+  isBroken,
+  imageUrl,
+  onRebind,
 }: ReferenceImageOverlayProps) {
   const [dragState, setDragState] = useState<DragState>(INITIAL_DRAG_STATE);
   const [imageLoadError, setImageLoadError] = useState(false);
@@ -233,6 +239,16 @@ export const ReferenceImageOverlay = memo(function ReferenceImageOverlay({
               &#8635;
             </button>
           )}
+          {isBroken && onRebind && (
+            <button
+              className="ref-image-rebind-btn"
+              onClick={onRebind}
+              title="Rebind to a different image"
+              aria-label="Rebind image"
+            >
+              Rebind
+            </button>
+          )}
           <button
             className="reference-image-overlay__toolbar-btn reference-image-overlay__toolbar-btn--remove"
             onClick={onRemove}
@@ -244,7 +260,13 @@ export const ReferenceImageOverlay = memo(function ReferenceImageOverlay({
         </div>
       )}
       <div className="reference-image-overlay__content" style={contentStyle}>
-        {imageLoadError ? (
+        {isBroken ? (
+          <div className="ref-image-broken">
+            <span className="ref-image-broken-icon">&#10060;</span>
+            <span>Image Removed</span>
+            <span style={{ fontSize: '10px', opacity: 0.7 }}>{image.name}</span>
+          </div>
+        ) : imageLoadError ? (
           <div
             style={{
               width: '100%',
@@ -265,7 +287,7 @@ export const ReferenceImageOverlay = memo(function ReferenceImageOverlay({
           </div>
         ) : (
           <img
-            src={image.dataUrl}
+            src={imageUrl ?? image.dataUrl}
             alt={image.name}
             draggable={false}
             onError={handleImageError}
