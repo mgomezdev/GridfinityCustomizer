@@ -7,7 +7,9 @@
       "widthUnits": 1,
       "heightUnits": 1,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled1x1.png",
       "perspectiveImageUrl": "bin__labeled1x1-perspective.png"
     },
@@ -17,7 +19,9 @@
       "widthUnits": 1,
       "heightUnits": 2,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled1x2.png",
       "perspectiveImageUrl": "bin__labeled1x2-perspective.png"
     },
@@ -27,7 +31,9 @@
       "widthUnits": 1,
       "heightUnits": 3,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled1x3.png",
       "perspectiveImageUrl": "bin__labeled1x3-perspective.png"
     },
@@ -37,7 +43,9 @@
       "widthUnits": 1,
       "heightUnits": 4,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled1x4.png",
       "perspectiveImageUrl": "bin__labeled1x4-perspective.png"
     },
@@ -47,7 +55,9 @@
       "widthUnits": 1,
       "heightUnits": 5,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled1x5.png",
       "perspectiveImageUrl": "bin__labeled1x5-perspective.png"
     },
@@ -57,7 +67,9 @@
       "widthUnits": 2,
       "heightUnits": 1,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled2x1.png",
       "perspectiveImageUrl": "bin__labeled2x1-perspective.png"
     },
@@ -67,8 +79,11 @@
       "widthUnits": 2,
       "heightUnits": 2,
       "color": "#6B7280",
-      "categories": ["labeled"],
-      "imageUrl": "bin__labeled2x2.png"
+      "categories": [
+        "labeled"
+      ],
+      "imageUrl": "bin__labeled2x2.png",
+      "perspectiveImageUrl": "bin__labeled2x2-perspective.png"
     },
     {
       "id": "bin-2x3-labeled",
@@ -76,7 +91,9 @@
       "widthUnits": 2,
       "heightUnits": 3,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled2x3.png",
       "perspectiveImageUrl": "bin__labeled2x3-perspective.png"
     },
@@ -86,7 +103,9 @@
       "widthUnits": 2,
       "heightUnits": 4,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled2x4.png",
       "perspectiveImageUrl": "bin__labeled2x4-perspective.png"
     },
@@ -96,7 +115,9 @@
       "widthUnits": 2,
       "heightUnits": 5,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled2x5.png",
       "perspectiveImageUrl": "bin__labeled2x5-perspective.png"
     },
@@ -106,7 +127,9 @@
       "widthUnits": 3,
       "heightUnits": 1,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled3x1.png",
       "perspectiveImageUrl": "bin__labeled3x1-perspective.png"
     },
@@ -116,7 +139,9 @@
       "widthUnits": 3,
       "heightUnits": 2,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled3x2.png",
       "perspectiveImageUrl": "bin__labeled3x2-perspective.png"
     },
@@ -126,7 +151,9 @@
       "widthUnits": 3,
       "heightUnits": 3,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled3x3.png",
       "perspectiveImageUrl": "bin__labeled3x3-perspective.png"
     },
@@ -136,7 +163,9 @@
       "widthUnits": 3,
       "heightUnits": 4,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled3x4.png",
       "perspectiveImageUrl": "bin__labeled3x4-perspective.png"
     },
@@ -146,7 +175,9 @@
       "widthUnits": 3,
       "heightUnits": 5,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled3x5.png",
       "perspectiveImageUrl": "bin__labeled3x5-perspective.png"
     },
@@ -156,7 +187,9 @@
       "widthUnits": 4,
       "heightUnits": 1,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled4x1.png",
       "perspectiveImageUrl": "bin__labeled4x1-perspective.png"
     },
@@ -166,7 +199,9 @@
       "widthUnits": 4,
       "heightUnits": 2,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled4x2.png",
       "perspectiveImageUrl": "bin__labeled4x2-perspective.png"
     },
@@ -176,7 +211,9 @@
       "widthUnits": 4,
       "heightUnits": 3,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled4x3.png",
       "perspectiveImageUrl": "bin__labeled4x3-perspective.png"
     },
@@ -186,7 +223,9 @@
       "widthUnits": 4,
       "heightUnits": 4,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled4x4.png",
       "perspectiveImageUrl": "bin__labeled4x4-perspective.png"
     },
@@ -196,7 +235,9 @@
       "widthUnits": 4,
       "heightUnits": 5,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled4x5.png",
       "perspectiveImageUrl": "bin__labeled4x5-perspective.png"
     },
@@ -206,7 +247,9 @@
       "widthUnits": 5,
       "heightUnits": 1,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled5x1.png",
       "perspectiveImageUrl": "bin__labeled5x1-perspective.png"
     },
@@ -216,7 +259,9 @@
       "widthUnits": 5,
       "heightUnits": 2,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled5x2.png",
       "perspectiveImageUrl": "bin__labeled5x2-perspective.png"
     },
@@ -226,7 +271,9 @@
       "widthUnits": 5,
       "heightUnits": 3,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled5x3.png",
       "perspectiveImageUrl": "bin__labeled5x3-perspective.png"
     },
@@ -236,7 +283,9 @@
       "widthUnits": 5,
       "heightUnits": 4,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled5x4.png",
       "perspectiveImageUrl": "bin__labeled5x4-perspective.png"
     },
@@ -246,7 +295,9 @@
       "widthUnits": 5,
       "heightUnits": 5,
       "color": "#6B7280",
-      "categories": ["labeled"],
+      "categories": [
+        "labeled"
+      ],
       "imageUrl": "bin__labeled5x5.png",
       "perspectiveImageUrl": "bin__labeled5x5-perspective.png"
     }

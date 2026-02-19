@@ -7,7 +7,9 @@
       "widthUnits": 1,
       "heightUnits": 1,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_1x1.png",
       "perspectiveImageUrl": "bin_1x1-perspective.png"
     },
@@ -17,7 +19,9 @@
       "widthUnits": 1,
       "heightUnits": 2,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_1x2.png",
       "perspectiveImageUrl": "bin_1x2-perspective.png"
     },
@@ -27,7 +31,9 @@
       "widthUnits": 1,
       "heightUnits": 3,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_1x3.png",
       "perspectiveImageUrl": "bin_1x3-perspective.png"
     },
@@ -37,7 +43,9 @@
       "widthUnits": 1,
       "heightUnits": 4,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_1x4.png",
       "perspectiveImageUrl": "bin_1x4-perspective.png"
     },
@@ -47,7 +55,9 @@
       "widthUnits": 1,
       "heightUnits": 5,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_1x5.png",
       "perspectiveImageUrl": "bin_1x5-perspective.png"
     },
@@ -57,7 +67,9 @@
       "widthUnits": 2,
       "heightUnits": 1,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_2x1.png",
       "perspectiveImageUrl": "bin_2x1-perspective.png"
     },
@@ -67,7 +79,9 @@
       "widthUnits": 2,
       "heightUnits": 2,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_2x2.png",
       "perspectiveImageUrl": "bin_2x2-perspective.png"
     },
@@ -77,7 +91,9 @@
       "widthUnits": 2,
       "heightUnits": 3,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_2x3.png",
       "perspectiveImageUrl": "bin_2x3-perspective.png"
     },
@@ -87,7 +103,9 @@
       "widthUnits": 2,
       "heightUnits": 4,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_2x4.png",
       "perspectiveImageUrl": "bin_2x4-perspective.png"
     },
@@ -97,7 +115,9 @@
       "widthUnits": 2,
       "heightUnits": 5,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_2x5.png",
       "perspectiveImageUrl": "bin_2x5-perspective.png"
     },
@@ -107,7 +127,9 @@
       "widthUnits": 3,
       "heightUnits": 1,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_3x1.png",
       "perspectiveImageUrl": "bin_3x1-perspective.png"
     },
@@ -117,7 +139,9 @@
       "widthUnits": 3,
       "heightUnits": 2,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_3x2.png",
       "perspectiveImageUrl": "bin_3x2-perspective.png"
     },
@@ -127,7 +151,9 @@
       "widthUnits": 3,
       "heightUnits": 3,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_3x3.png",
       "perspectiveImageUrl": "bin_3x3-perspective.png"
     },
@@ -137,7 +163,9 @@
       "widthUnits": 3,
       "heightUnits": 4,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_3x4.png",
       "perspectiveImageUrl": "bin_3x4-perspective.png"
     },
@@ -147,7 +175,9 @@
       "widthUnits": 3,
       "heightUnits": 5,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_3x5.png",
       "perspectiveImageUrl": "bin_3x5-perspective.png"
     },
@@ -157,7 +187,9 @@
       "widthUnits": 4,
       "heightUnits": 1,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_4x1.png",
       "perspectiveImageUrl": "bin_4x1-perspective.png"
     },
@@ -167,7 +199,9 @@
       "widthUnits": 4,
       "heightUnits": 2,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_4x2.png",
       "perspectiveImageUrl": "bin_4x2-perspective.png"
     },
@@ -177,7 +211,9 @@
       "widthUnits": 4,
       "heightUnits": 3,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_4x3.png",
       "perspectiveImageUrl": "bin_4x3-perspective.png"
     },
@@ -187,7 +223,9 @@
       "widthUnits": 4,
       "heightUnits": 4,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_4x4.png",
       "perspectiveImageUrl": "bin_4x4-perspective.png"
     },
@@ -197,7 +235,9 @@
       "widthUnits": 4,
       "heightUnits": 5,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_4x5.png",
       "perspectiveImageUrl": "bin_4x5-perspective.png"
     },
@@ -207,7 +247,9 @@
       "widthUnits": 5,
       "heightUnits": 1,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_5x1.png",
       "perspectiveImageUrl": "bin_5x1-perspective.png"
     },
@@ -217,7 +259,9 @@
       "widthUnits": 5,
       "heightUnits": 2,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_5x2.png",
       "perspectiveImageUrl": "bin_5x2-perspective.png"
     },
@@ -227,7 +271,9 @@
       "widthUnits": 5,
       "heightUnits": 3,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_5x3.png",
       "perspectiveImageUrl": "bin_5x3-perspective.png"
     },
@@ -237,8 +283,11 @@
       "widthUnits": 5,
       "heightUnits": 4,
       "color": "#3B82F6",
-      "categories": ["bin"],
-      "imageUrl": "bin_5x4.png"
+      "categories": [
+        "bin"
+      ],
+      "imageUrl": "bin_5x4.png",
+      "perspectiveImageUrl": "bin_5x4-perspective.png"
     },
     {
       "id": "bin-5x5",
@@ -246,7 +295,9 @@
       "widthUnits": 5,
       "heightUnits": 5,
       "color": "#3B82F6",
-      "categories": ["bin"],
+      "categories": [
+        "bin"
+      ],
       "imageUrl": "bin_5x5.png",
       "perspectiveImageUrl": "bin_5x5-perspective.png"
     }
