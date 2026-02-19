@@ -11,6 +11,7 @@
         "modular",
         "utensil"
       ],
+      "stlFile": "1x1-blank.stl",
       "imageUrl": "blank1x1.png",
       "perspectiveImageUrl": "blank1x1-perspective.png"
     },
@@ -24,6 +25,7 @@
         "modular",
         "utensil"
       ],
+      "stlFile": "1x1-endcap.stl",
       "imageUrl": "endcap1x1.png",
       "perspectiveImageUrl": "endcap1x1-perspective.png"
     },
@@ -37,6 +39,7 @@
         "modular",
         "utensil"
       ],
+      "stlFile": "1x2-endcap.stl",
       "imageUrl": "endcap1x2.png",
       "perspectiveImageUrl": "endcap1x2-perspective.png"
     },
@@ -50,6 +53,7 @@
         "modular",
         "utensil"
       ],
+      "stlFile": "1x3-endcap.stl",
       "imageUrl": "endcap1x3.png",
       "perspectiveImageUrl": "endcap1x3-perspective.png"
     },
@@ -63,6 +67,7 @@
         "modular",
         "utensil"
       ],
+      "stlFile": "2x1-blank.stl",
       "imageUrl": "blank2x1.png",
       "perspectiveImageUrl": "blank2x1-perspective.png"
     },
@@ -76,6 +81,7 @@
         "modular",
         "utensil"
       ],
+      "stlFile": "2x2-blank.stl",
       "imageUrl": "blank2x2.png",
       "perspectiveImageUrl": "blank2x2-perspective.png"
     },
@@ -89,6 +95,7 @@
         "modular",
         "utensil"
       ],
+      "stlFile": "2x2-endcap.stl",
       "imageUrl": "endcap2x2.png",
       "perspectiveImageUrl": "endcap2x2-perspective.png"
     },
@@ -102,6 +109,7 @@
         "modular",
         "utensil"
       ],
+      "stlFile": "2x3-blank.stl",
       "imageUrl": "blank2x3.png",
       "perspectiveImageUrl": "blank2x3-perspective.png"
     },
@@ -115,6 +123,7 @@
         "modular",
         "utensil"
       ],
+      "stlFile": "3x2-endcap.stl",
       "imageUrl": "endcap3x2.png",
       "perspectiveImageUrl": "endcap3x2-perspective.png"
     }
