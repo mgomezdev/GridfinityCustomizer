@@ -62,6 +62,7 @@ export interface PlacedItem {
   width: number;
   height: number;
   rotation: Rotation;
+  customization?: BinCustomization;
 }
 
 export interface PlacedItemWithValidity extends PlacedItem {
@@ -85,6 +86,7 @@ export interface BOMItem {
   color: string;
   categories: string[];
   quantity: number;
+  customization?: BinCustomization;
 }
 
 export interface ReferenceImage {
@@ -99,6 +101,38 @@ export interface ReferenceImage {
   scale: number;
   isLocked: boolean;
   rotation: Rotation;
+}
+
+export type WallPattern = 'none' | 'grid' | 'hexgrid' | 'voronoi' | 'voronoigrid' | 'voronoihexgrid';
+export type LipStyle = 'normal' | 'reduced' | 'minimum' | 'none';
+export type FingerSlide = 'none' | 'rounded' | 'chamfered';
+export type WallCutout = 'none' | 'vertical' | 'horizontal' | 'both';
+
+export interface BinCustomization {
+  wallPattern: WallPattern;
+  lipStyle: LipStyle;
+  fingerSlide: FingerSlide;
+  wallCutout: WallCutout;
+}
+
+export const DEFAULT_BIN_CUSTOMIZATION: BinCustomization = {
+  wallPattern: 'none',
+  lipStyle: 'normal',
+  fingerSlide: 'none',
+  wallCutout: 'none',
+};
+
+export function serializeCustomization(c: BinCustomization | undefined): string {
+  if (!c) return '';
+  return `${c.wallPattern}|${c.lipStyle}|${c.fingerSlide}|${c.wallCutout}`;
+}
+
+export function isDefaultCustomization(c: BinCustomization | undefined): boolean {
+  if (!c) return true;
+  return c.wallPattern === 'none'
+    && c.lipStyle === 'normal'
+    && c.fingerSlide === 'none'
+    && c.wallCutout === 'none';
 }
 
 export type ImageViewMode = 'ortho' | 'perspective';

@@ -79,6 +79,7 @@ function buildPayload(
       width: item.width,
       height: item.height,
       rotation: item.rotation,
+      ...(item.customization ? { customization: item.customization } : {}),
     })),
     ...(validPlacements.length > 0 ? { refImagePlacements: validPlacements } : {}),
   };
