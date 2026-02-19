@@ -82,11 +82,13 @@ export const layouts = sqliteTable('layouts', {
   depthMm: real('depth_mm').notNull(),
   spacerHorizontal: text('spacer_horizontal').notNull().default('none'),
   spacerVertical: text('spacer_vertical').notNull().default('none'),
+  status: text('status').notNull().default('draft'),
   isPublic: integer('is_public', { mode: 'boolean' }).notNull().default(false),
   createdAt: text('created_at').notNull().default(''),
   updatedAt: text('updated_at').notNull().default(''),
 }, (table) => [
   index('idx_layouts_user').on(table.userId),
+  index('idx_layouts_status').on(table.status),
 ]);
 
 export const placedItems = sqliteTable('placed_items', {

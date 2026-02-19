@@ -1,8 +1,8 @@
-import { eq, and, lt, desc, sql, or } from 'drizzle-orm';
+import { eq, and, lt, desc, sql, or, count } from 'drizzle-orm';
 import { AppError, ErrorCodes } from '@gridfinity/shared';
-import type { ApiLayout, ApiLayoutDetail, ApiPlacedItem, ApiRefImagePlacement } from '@gridfinity/shared';
+import type { ApiLayout, ApiLayoutDetail, ApiPlacedItem, ApiRefImagePlacement, LayoutStatus } from '@gridfinity/shared';
 import { db } from '../db/connection.js';
-import { layouts, placedItems, userStorage, referenceImages, refImages } from '../db/schema.js';
+import { layouts, placedItems, userStorage, referenceImages, refImages, users } from '../db/schema.js';
 import * as referenceImageService from './referenceImage.service.js';
 
 interface CursorData {
@@ -29,7 +29,7 @@ function decodeCursor(cursor: string): CursorData {
   }
 }
 
-function formatLayout(row: typeof layouts.$inferSelect): ApiLayout {
+function formatLayout(row: typeof layouts.$inferSelect, ownerUsername?: string, ownerEmail?: string): ApiLayout {
   return {
     id: row.id,
     userId: row.userId,
@@ -41,9 +41,12 @@ function formatLayout(row: typeof layouts.$inferSelect): ApiLayout {
     depthMm: row.depthMm,
     spacerHorizontal: row.spacerHorizontal,
     spacerVertical: row.spacerVertical,
+    status: row.status as LayoutStatus,
     isPublic: row.isPublic,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    ...(ownerUsername !== undefined ? { ownerUsername } : {}),
+    ...(ownerEmail !== undefined ? { ownerEmail } : {}),
   };
 }
 
@@ -104,7 +107,7 @@ export async function getLayoutsByUser(
     .limit(safeLimit + 1);
 
   const hasMore = rows.length > safeLimit;
-  const data = rows.slice(0, safeLimit).map(formatLayout);
+  const data = rows.slice(0, safeLimit).map(row => formatLayout(row));
 
   let nextCursor: string | undefined;
   if (hasMore && data.length > 0) {
@@ -121,6 +124,7 @@ export async function getLayoutsByUser(
 export async function getLayoutById(
   layoutId: number,
   userId: number,
+  isAdmin = false,
 ): Promise<ApiLayoutDetail> {
   const rows = await db
     .select()
@@ -134,8 +138,19 @@ export async function getLayoutById(
 
   const layout = rows[0];
 
-  if (layout.userId !== userId) {
+  if (layout.userId !== userId && !isAdmin) {
     throw new AppError(ErrorCodes.FORBIDDEN, 'Access denied');
+  }
+
+  // Resolve owner username for admin views
+  let ownerUsername: string | undefined;
+  if (isAdmin) {
+    const userRows = await db
+      .select({ username: users.username })
+      .from(users)
+      .where(eq(users.id, layout.userId))
+      .limit(1);
+    ownerUsername = userRows[0]?.username;
   }
 
   const itemRows = await db
@@ -174,7 +189,7 @@ export async function getLayoutById(
   }));
 
   return {
-    ...formatLayout(layout),
+    ...formatLayout(layout, ownerUsername),
     placedItems: itemRows.map(formatPlacedItem),
     referenceImages: legacyRefImages,
     refImagePlacements,
@@ -351,6 +366,7 @@ export async function updateLayout(
   layoutId: number,
   userId: number,
   data: CreateLayoutData,
+  isAdmin = false,
 ): Promise<ApiLayoutDetail> {
   // Verify ownership
   const existing = await db
@@ -363,7 +379,11 @@ export async function updateLayout(
     throw new AppError(ErrorCodes.NOT_FOUND, 'Layout not found');
   }
 
-  if (existing[0].userId !== userId) {
+  if (existing[0].status === 'delivered') {
+    throw new AppError(ErrorCodes.CONFLICT, 'Delivered layouts cannot be modified');
+  }
+
+  if (existing[0].userId !== userId && !isAdmin) {
     throw new AppError(ErrorCodes.FORBIDDEN, 'Access denied');
   }
 
@@ -484,6 +504,10 @@ export async function updateLayoutMeta(
     throw new AppError(ErrorCodes.NOT_FOUND, 'Layout not found');
   }
 
+  if (existing[0].status === 'delivered') {
+    throw new AppError(ErrorCodes.CONFLICT, 'Delivered layouts cannot be modified');
+  }
+
   if (existing[0].userId !== userId) {
     throw new AppError(ErrorCodes.FORBIDDEN, 'Access denied');
   }
@@ -518,6 +542,10 @@ export async function deleteLayout(
     throw new AppError(ErrorCodes.NOT_FOUND, 'Layout not found');
   }
 
+  if (existing[0].status === 'delivered') {
+    throw new AppError(ErrorCodes.CONFLICT, 'Delivered layouts cannot be deleted');
+  }
+
   if (existing[0].userId !== userId) {
     throw new AppError(ErrorCodes.FORBIDDEN, 'Access denied');
   }
@@ -530,4 +558,315 @@ export async function deleteLayout(
     .update(userStorage)
     .set({ layoutCount: sql`MAX(${userStorage.layoutCount} - 1, 0)` })
     .where(eq(userStorage.userId, userId));
+}
+
+// ============================================================
+// Status transition methods
+// ============================================================
+
+export async function submitLayout(
+  layoutId: number,
+  userId: number,
+): Promise<ApiLayout> {
+  const existing = await db
+    .select()
+    .from(layouts)
+    .where(eq(layouts.id, layoutId))
+    .limit(1);
+
+  if (existing.length === 0) {
+    throw new AppError(ErrorCodes.NOT_FOUND, 'Layout not found');
+  }
+
+  if (existing[0].userId !== userId) {
+    throw new AppError(ErrorCodes.FORBIDDEN, 'Access denied');
+  }
+
+  if (existing[0].status !== 'draft') {
+    throw new AppError(ErrorCodes.CONFLICT, 'Only draft layouts can be submitted');
+  }
+
+  const now = new Date().toISOString();
+  const updatedRows = await db
+    .update(layouts)
+    .set({ status: 'submitted', updatedAt: now })
+    .where(eq(layouts.id, layoutId))
+    .returning();
+
+  return formatLayout(updatedRows[0]);
+}
+
+export async function withdrawLayout(
+  layoutId: number,
+  userId: number,
+  isAdmin = false,
+): Promise<ApiLayout> {
+  const existing = await db
+    .select()
+    .from(layouts)
+    .where(eq(layouts.id, layoutId))
+    .limit(1);
+
+  if (existing.length === 0) {
+    throw new AppError(ErrorCodes.NOT_FOUND, 'Layout not found');
+  }
+
+  if (existing[0].status !== 'submitted') {
+    throw new AppError(ErrorCodes.CONFLICT, 'Only submitted layouts can be withdrawn');
+  }
+
+  if (existing[0].userId !== userId && !isAdmin) {
+    throw new AppError(ErrorCodes.FORBIDDEN, 'Access denied');
+  }
+
+  const now = new Date().toISOString();
+  const updatedRows = await db
+    .update(layouts)
+    .set({ status: 'draft', updatedAt: now })
+    .where(eq(layouts.id, layoutId))
+    .returning();
+
+  return formatLayout(updatedRows[0]);
+}
+
+export async function deliverLayout(
+  layoutId: number,
+): Promise<ApiLayout> {
+  const existing = await db
+    .select()
+    .from(layouts)
+    .where(eq(layouts.id, layoutId))
+    .limit(1);
+
+  if (existing.length === 0) {
+    throw new AppError(ErrorCodes.NOT_FOUND, 'Layout not found');
+  }
+
+  if (existing[0].status !== 'submitted') {
+    throw new AppError(ErrorCodes.CONFLICT, 'Only submitted layouts can be delivered');
+  }
+
+  const now = new Date().toISOString();
+  const updatedRows = await db
+    .update(layouts)
+    .set({ status: 'delivered', updatedAt: now })
+    .where(eq(layouts.id, layoutId))
+    .returning();
+
+  return formatLayout(updatedRows[0]);
+}
+
+// ============================================================
+// Admin queries
+// ============================================================
+
+export async function getAdminLayouts(
+  statusFilter?: string,
+  cursor?: string,
+  limit: number = 20,
+): Promise<{ data: ApiLayout[]; nextCursor?: string; hasMore: boolean }> {
+  const safeLimit = Math.min(Math.max(limit, 1), 100);
+
+  let cursorCondition;
+  if (cursor) {
+    const cursorData = decodeCursor(cursor);
+    cursorCondition = or(
+      lt(layouts.createdAt, cursorData.createdAt),
+      and(
+        eq(layouts.createdAt, cursorData.createdAt),
+        lt(layouts.id, cursorData.id),
+      ),
+    );
+  }
+
+  const conditions = [];
+  if (statusFilter) {
+    conditions.push(eq(layouts.status, statusFilter));
+  }
+  if (cursorCondition) {
+    conditions.push(cursorCondition);
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const rows = await db
+    .select({
+      layout: layouts,
+      ownerUsername: users.username,
+      ownerEmail: users.email,
+    })
+    .from(layouts)
+    .leftJoin(users, eq(layouts.userId, users.id))
+    .where(whereClause)
+    .orderBy(desc(layouts.createdAt), desc(layouts.id))
+    .limit(safeLimit + 1);
+
+  const hasMore = rows.length > safeLimit;
+  const data = rows.slice(0, safeLimit).map(row =>
+    formatLayout(row.layout, row.ownerUsername ?? undefined, row.ownerEmail ?? undefined),
+  );
+
+  let nextCursor: string | undefined;
+  if (hasMore && data.length > 0) {
+    const lastItem = data[data.length - 1];
+    nextCursor = encodeCursor({
+      createdAt: lastItem.createdAt,
+      id: lastItem.id,
+    });
+  }
+
+  return { data, nextCursor, hasMore };
+}
+
+export async function getSubmittedCount(): Promise<number> {
+  const result = await db
+    .select({ value: count() })
+    .from(layouts)
+    .where(eq(layouts.status, 'submitted'));
+
+  return result[0]?.value ?? 0;
+}
+
+export async function cloneLayout(
+  sourceLayoutId: number,
+  requestingUserId: number,
+  isAdmin = false,
+): Promise<ApiLayoutDetail> {
+  // Fetch source layout
+  const sourceRows = await db
+    .select()
+    .from(layouts)
+    .where(eq(layouts.id, sourceLayoutId))
+    .limit(1);
+
+  if (sourceRows.length === 0) {
+    throw new AppError(ErrorCodes.NOT_FOUND, 'Layout not found');
+  }
+
+  const source = sourceRows[0];
+
+  // Ownership check: admin can clone any, users can only clone their own
+  if (source.userId !== requestingUserId && !isAdmin) {
+    throw new AppError(ErrorCodes.FORBIDDEN, 'Access denied');
+  }
+
+  // Check quota
+  const storage = await ensureStorageRow(requestingUserId);
+  if (storage.layoutCount >= storage.maxLayouts) {
+    throw new AppError(
+      ErrorCodes.QUOTA_EXCEEDED,
+      `Layout limit reached (${storage.maxLayouts}). Delete existing layouts to save new ones.`,
+    );
+  }
+
+  const now = new Date().toISOString();
+
+  // Create new layout as draft
+  const newLayoutRows = await db
+    .insert(layouts)
+    .values({
+      userId: requestingUserId,
+      name: `Copy of ${source.name}`,
+      description: source.description,
+      gridX: source.gridX,
+      gridY: source.gridY,
+      widthMm: source.widthMm,
+      depthMm: source.depthMm,
+      spacerHorizontal: source.spacerHorizontal,
+      spacerVertical: source.spacerVertical,
+      status: 'draft',
+      isPublic: false,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .returning();
+
+  const newLayout = newLayoutRows[0];
+
+  // Copy placed items
+  const sourceItems = await db
+    .select()
+    .from(placedItems)
+    .where(eq(placedItems.layoutId, sourceLayoutId))
+    .orderBy(placedItems.sortOrder);
+
+  let insertedItems: Array<typeof placedItems.$inferSelect> = [];
+  if (sourceItems.length > 0) {
+    const itemValues = sourceItems.map(item => ({
+      layoutId: newLayout.id,
+      libraryId: item.libraryId,
+      itemId: item.itemId,
+      x: item.x,
+      y: item.y,
+      width: item.width,
+      height: item.height,
+      rotation: item.rotation,
+      sortOrder: item.sortOrder,
+    }));
+    insertedItems = await db
+      .insert(placedItems)
+      .values(itemValues)
+      .returning();
+  }
+
+  // Copy ref image placements
+  const sourceRefPlacements = await db
+    .select()
+    .from(referenceImages)
+    .where(eq(referenceImages.layoutId, sourceLayoutId))
+    .orderBy(referenceImages.id);
+
+  const refPlacementResults: ApiRefImagePlacement[] = [];
+  if (sourceRefPlacements.length > 0) {
+    const refValues = sourceRefPlacements.map(p => ({
+      layoutId: newLayout.id,
+      refImageId: p.refImageId,
+      name: p.name,
+      filePath: p.filePath,
+      x: p.x,
+      y: p.y,
+      width: p.width,
+      height: p.height,
+      opacity: p.opacity,
+      scale: p.scale,
+      isLocked: p.isLocked,
+      rotation: p.rotation,
+      createdAt: now,
+    }));
+
+    const insertedRefs = await db
+      .insert(referenceImages)
+      .values(refValues)
+      .returning();
+
+    for (const row of insertedRefs) {
+      refPlacementResults.push({
+        id: row.id,
+        layoutId: row.layoutId,
+        refImageId: row.refImageId,
+        name: row.name,
+        imageUrl: null,
+        x: row.x,
+        y: row.y,
+        width: row.width,
+        height: row.height,
+        opacity: row.opacity,
+        scale: row.scale,
+        isLocked: row.isLocked,
+        rotation: row.rotation,
+      });
+    }
+  }
+
+  // Update storage quota
+  await db
+    .update(userStorage)
+    .set({ layoutCount: sql`${userStorage.layoutCount} + 1` })
+    .where(eq(userStorage.userId, requestingUserId));
+
+  return {
+    ...formatLayout(newLayout),
+    placedItems: insertedItems.map(formatPlacedItem),
+    refImagePlacements: refPlacementResults,
+  };
 }

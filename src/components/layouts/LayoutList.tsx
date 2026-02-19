@@ -1,15 +1,33 @@
 import { useState } from 'react';
-import type { ApiLayout } from '@gridfinity/shared';
+import type { ApiLayout, LayoutStatus } from '@gridfinity/shared';
 
 interface LayoutListProps {
   layouts: ApiLayout[];
   isLoading: boolean;
   onSelect: (layout: ApiLayout) => void;
   onDelete: (layoutId: number) => void;
+  onSubmit?: (layoutId: number) => void;
+  onWithdraw?: (layoutId: number) => void;
+  onClone?: (layoutId: number) => void;
   isDeleting: boolean;
 }
 
-export function LayoutList({ layouts, isLoading, onSelect, onDelete, isDeleting }: LayoutListProps) {
+function StatusBadge({ status }: { status: LayoutStatus }) {
+  const className = `layout-status-badge layout-status-${status}`;
+  const label = status.charAt(0).toUpperCase() + status.slice(1);
+  return <span className={className}>{label}</span>;
+}
+
+export function LayoutList({
+  layouts,
+  isLoading,
+  onSelect,
+  onDelete,
+  onSubmit,
+  onWithdraw,
+  onClone,
+  isDeleting,
+}: LayoutListProps) {
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   if (isLoading) {
@@ -35,6 +53,11 @@ export function LayoutList({ layouts, isLoading, onSelect, onDelete, isDeleting 
     } else {
       setConfirmDeleteId(layoutId);
     }
+  };
+
+  const handleActionClick = (e: React.MouseEvent, action: () => void) => {
+    e.stopPropagation();
+    action();
   };
 
   const formatDate = (dateStr: string): string => {
@@ -67,26 +90,64 @@ export function LayoutList({ layouts, isLoading, onSelect, onDelete, isDeleting 
           }}
         >
           <div className="layout-list-item-info">
-            <span className="layout-list-item-name">{layout.name}</span>
+            <div className="layout-list-item-name-row">
+              <span className="layout-list-item-name">{layout.name}</span>
+              <StatusBadge status={layout.status} />
+            </div>
             {layout.description && (
               <span className="layout-list-item-description">{layout.description}</span>
             )}
             <div className="layout-list-item-meta">
               <span>{layout.gridX} x {layout.gridY} grid</span>
-              <span>{formatDate(layout.createdAt)}</span>
+              <span>{formatDate(layout.updatedAt)}</span>
+              {layout.ownerUsername && (
+                <span>by {layout.ownerUsername}</span>
+              )}
             </div>
           </div>
           <div className="layout-list-item-actions">
-            <button
-              className={`layout-delete-btn ${confirmDeleteId === layout.id ? 'confirming' : ''}`}
-              onClick={e => handleDeleteClick(e, layout.id)}
-              onBlur={() => setConfirmDeleteId(null)}
-              type="button"
-              disabled={isDeleting}
-              aria-label={confirmDeleteId === layout.id ? 'Confirm delete' : `Delete ${layout.name}`}
-            >
-              {confirmDeleteId === layout.id ? 'Confirm' : 'Delete'}
-            </button>
+            {layout.status === 'draft' && onSubmit && (
+              <button
+                className="layout-action-btn layout-submit-action"
+                onClick={e => handleActionClick(e, () => onSubmit(layout.id))}
+                type="button"
+                aria-label={`Submit ${layout.name}`}
+              >
+                Submit
+              </button>
+            )}
+            {layout.status === 'submitted' && onWithdraw && (
+              <button
+                className="layout-action-btn layout-withdraw-action"
+                onClick={e => handleActionClick(e, () => onWithdraw(layout.id))}
+                type="button"
+                aria-label={`Withdraw ${layout.name}`}
+              >
+                Withdraw
+              </button>
+            )}
+            {layout.status === 'delivered' && onClone && (
+              <button
+                className="layout-action-btn layout-clone-action"
+                onClick={e => handleActionClick(e, () => onClone(layout.id))}
+                type="button"
+                aria-label={`Clone ${layout.name}`}
+              >
+                Clone
+              </button>
+            )}
+            {layout.status !== 'delivered' && (
+              <button
+                className={`layout-delete-btn ${confirmDeleteId === layout.id ? 'confirming' : ''}`}
+                onClick={e => handleDeleteClick(e, layout.id)}
+                onBlur={() => setConfirmDeleteId(null)}
+                type="button"
+                disabled={isDeleting}
+                aria-label={confirmDeleteId === layout.id ? 'Confirm delete' : `Delete ${layout.name}`}
+              >
+                {confirmDeleteId === layout.id ? 'Confirm' : 'Delete'}
+              </button>
+            )}
           </div>
         </div>
       ))}

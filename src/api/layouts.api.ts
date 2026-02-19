@@ -5,6 +5,7 @@ import type {
   ApiLayoutDetail,
   CreateLayoutRequest,
   UpdateLayoutMetaRequest,
+  LayoutStatusCount,
 } from '@gridfinity/shared';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:3001/api/v1';
@@ -117,4 +118,78 @@ export async function deleteLayoutApi(
     accessToken,
     { method: 'DELETE' },
   );
+}
+
+export async function submitLayout(
+  accessToken: string,
+  id: number,
+): Promise<ApiLayout> {
+  const result = await layoutFetch<ApiResponse<ApiLayout>>(
+    `/layouts/${id}/submit`,
+    accessToken,
+    { method: 'PATCH' },
+  );
+  return result.data;
+}
+
+export async function withdrawLayout(
+  accessToken: string,
+  id: number,
+): Promise<ApiLayout> {
+  const result = await layoutFetch<ApiResponse<ApiLayout>>(
+    `/layouts/${id}/withdraw`,
+    accessToken,
+    { method: 'PATCH' },
+  );
+  return result.data;
+}
+
+export async function cloneLayout(
+  accessToken: string,
+  id: number,
+): Promise<ApiLayoutDetail> {
+  const result = await layoutFetch<ApiResponse<ApiLayoutDetail>>(
+    `/layouts/${id}/clone`,
+    accessToken,
+    { method: 'POST' },
+  );
+  return result.data;
+}
+
+export async function fetchAdminLayouts(
+  accessToken: string,
+  status?: string,
+  cursor?: string,
+  limit?: number,
+): Promise<ApiListResponse<ApiLayout>> {
+  const params = new URLSearchParams();
+  if (status) params.set('status', status);
+  if (cursor) params.set('cursor', cursor);
+  if (limit) params.set('limit', String(limit));
+  const query = params.toString();
+  const path = `/admin/layouts${query ? `?${query}` : ''}`;
+
+  return layoutFetch<ApiListResponse<ApiLayout>>(path, accessToken);
+}
+
+export async function fetchSubmittedCount(
+  accessToken: string,
+): Promise<LayoutStatusCount> {
+  const result = await layoutFetch<ApiResponse<LayoutStatusCount>>(
+    '/admin/layouts/count',
+    accessToken,
+  );
+  return result.data;
+}
+
+export async function deliverLayout(
+  accessToken: string,
+  id: number,
+): Promise<ApiLayout> {
+  const result = await layoutFetch<ApiResponse<ApiLayout>>(
+    `/admin/layouts/${id}/deliver`,
+    accessToken,
+    { method: 'PATCH' },
+  );
+  return result.data;
 }

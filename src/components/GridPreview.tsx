@@ -143,6 +143,21 @@ export function GridPreview({
           onClick={handleGridClick}
         >
           {cells}
+          {placedItems.map(item => (
+            <PlacedItemOverlay
+              key={item.instanceId}
+              item={item}
+              gridX={gridX}
+              gridY={gridY}
+              isSelected={selectedItemIds.has(item.instanceId)}
+              onSelect={(instanceId, modifiers) => onSelectItem(instanceId, modifiers)}
+              getItemById={getItemById}
+              onDelete={onDeleteItem}
+              onRotateCw={onRotateItemCw}
+              onRotateCcw={onRotateItemCcw}
+              imageViewMode={imageViewMode}
+            />
+          ))}
           {referenceImages.map(image => {
             const meta = refImageMetadata?.get(image.id);
             return (
@@ -164,21 +179,6 @@ export function GridPreview({
               />
             );
           })}
-          {placedItems.map(item => (
-            <PlacedItemOverlay
-              key={item.instanceId}
-              item={item}
-              gridX={gridX}
-              gridY={gridY}
-              isSelected={selectedItemIds.has(item.instanceId)}
-              onSelect={(instanceId, modifiers) => onSelectItem(instanceId, modifiers)}
-              getItemById={getItemById}
-              onDelete={onDeleteItem}
-              onRotateCw={onRotateItemCw}
-              onRotateCcw={onRotateItemCcw}
-              imageViewMode={imageViewMode}
-            />
-          ))}
         </div>
       </div>
     </div>

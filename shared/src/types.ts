@@ -192,6 +192,8 @@ export type UserRole = 'user' | 'admin';
 // Layout API types
 // ============================================================
 
+export type LayoutStatus = 'draft' | 'submitted' | 'delivered';
+
 export interface ApiLayout {
   id: number;
   userId: number;
@@ -203,9 +205,12 @@ export interface ApiLayout {
   depthMm: number;
   spacerHorizontal: string;
   spacerVertical: string;
+  status: LayoutStatus;
   isPublic: boolean;
   createdAt: string;
   updatedAt: string;
+  ownerUsername?: string;
+  ownerEmail?: string;
 }
 
 export interface ApiPlacedItem {
@@ -305,6 +310,10 @@ export type UpdateLayoutRequest = CreateLayoutRequest;
 export interface UpdateLayoutMetaRequest {
   name?: string;
   description?: string;
+}
+
+export interface LayoutStatusCount {
+  submitted: number;
 }
 
 // ============================================================

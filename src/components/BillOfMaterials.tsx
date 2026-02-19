@@ -2,12 +2,9 @@ import type { BOMItem } from '../types/gridfinity';
 
 interface BillOfMaterialsProps {
   items: BOMItem[];
-  onSubmitBOM?: () => void;
-  isSubmitting?: boolean;
-  submitError?: string | null;
 }
 
-export function BillOfMaterials({ items, onSubmitBOM, isSubmitting, submitError }: BillOfMaterialsProps) {
+export function BillOfMaterials({ items }: BillOfMaterialsProps) {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
@@ -44,23 +41,7 @@ export function BillOfMaterials({ items, onSubmitBOM, isSubmitting, submitError 
             ))}
           </div>
 
-          {onSubmitBOM && (
-            <div className="bom-submit">
-              <button
-                className="bom-submit-button"
-                onClick={onSubmitBOM}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Submitting...' : 'Submit BOM'}
-              </button>
-              <p className="bom-submit-notice">
-                Reference images are not included in submissions.
-              </p>
-              {submitError && (
-                <p className="bom-submit-error">{submitError}</p>
-              )}
-            </div>
-          )}
+
         </div>
       )}
     </div>

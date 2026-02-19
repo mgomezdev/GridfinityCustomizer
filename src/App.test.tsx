@@ -88,8 +88,27 @@ vi.mock('./components/layouts/SaveLayoutDialog', () => ({
   SaveLayoutDialog: () => null,
 }));
 
+let capturedLoadLayoutDialogProps: Record<string, unknown> = {};
 vi.mock('./components/layouts/LoadLayoutDialog', () => ({
-  LoadLayoutDialog: () => null,
+  LoadLayoutDialog: (props: Record<string, unknown>) => {
+    capturedLoadLayoutDialogProps = props;
+    return null;
+  },
+}));
+
+vi.mock('./components/admin/AdminSubmissionsDialog', () => ({
+  AdminSubmissionsDialog: () => null,
+}));
+
+vi.mock('./components/admin/SubmissionsBadge', () => ({
+  SubmissionsBadge: () => null,
+}));
+
+vi.mock('./hooks/useLayouts', () => ({
+  useSubmitLayoutMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useWithdrawLayoutMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCloneLayoutMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useSubmittedCountQuery: () => ({ data: null, isLoading: false }),
 }));
 
 vi.mock('./components/DimensionInput', () => ({
@@ -225,6 +244,7 @@ describe('App Integration Tests', () => {
     capturedGridPreviewProps = {};
     capturedItemLibraryProps = {};
     capturedZoomControlsProps = {};
+    capturedLoadLayoutDialogProps = {};
     mockPlacements = [];
     localStorage.removeItem('gridfinity-image-view-mode');
   });
@@ -802,6 +822,114 @@ describe('App Integration Tests', () => {
 
       expect(consoleSpy).toHaveBeenCalled();
       consoleSpy.mockRestore();
+    });
+  });
+
+  // ==========================================
+  // 8. Layout subtitle in header
+  // ==========================================
+  describe('Layout subtitle in header', () => {
+    it('does not show subtitle when no layout is loaded', () => {
+      renderApp();
+      expect(screen.queryByText(/layout-info-subtitle/)).not.toBeInTheDocument();
+    });
+
+    it('shows layout name in subtitle after loading a layout', () => {
+      renderApp();
+
+      const onLoad = capturedLoadLayoutDialogProps.onLoad as (config: Record<string, unknown>) => void;
+      act(() => {
+        onLoad({
+          layoutId: 42,
+          layoutName: 'My Custom Layout',
+          layoutDescription: null,
+          layoutStatus: 'draft',
+          widthMm: 168,
+          depthMm: 168,
+          spacerConfig: { horizontal: 'none', vertical: 'none' },
+          placedItems: [],
+        });
+      });
+
+      expect(screen.getByText('My Custom Layout')).toBeInTheDocument();
+    });
+
+    it('shows status badge in subtitle', () => {
+      renderApp();
+
+      const onLoad = capturedLoadLayoutDialogProps.onLoad as (config: Record<string, unknown>) => void;
+      act(() => {
+        onLoad({
+          layoutId: 42,
+          layoutName: 'Badge Test',
+          layoutDescription: null,
+          layoutStatus: 'submitted',
+          widthMm: 168,
+          depthMm: 168,
+          spacerConfig: { horizontal: 'none', vertical: 'none' },
+          placedItems: [],
+        });
+      });
+
+      const badge = screen.getByText('submitted');
+      expect(badge).toBeInTheDocument();
+      expect(badge.className).toContain('layout-status-badge');
+    });
+
+    it('shows owner info for admin-loaded layouts', () => {
+      renderApp();
+
+      const onLoad = capturedLoadLayoutDialogProps.onLoad as (config: Record<string, unknown>) => void;
+      act(() => {
+        onLoad({
+          layoutId: 42,
+          layoutName: 'Their Layout',
+          layoutDescription: null,
+          layoutStatus: 'submitted',
+          widthMm: 168,
+          depthMm: 168,
+          spacerConfig: { horizontal: 'none', vertical: 'none' },
+          placedItems: [],
+          ownerUsername: 'alice',
+          ownerEmail: 'alice@example.com',
+        });
+      });
+
+      expect(screen.getByText('Their Layout')).toBeInTheDocument();
+      // Owner string should contain username and email
+      const ownerSpan = screen.getByText(/alice/);
+      expect(ownerSpan).toBeInTheDocument();
+      expect(ownerSpan.textContent).toContain('alice@example.com');
+    });
+
+    it('clears subtitle on Clear All', () => {
+      renderApp();
+
+      // Load a layout first
+      const onLoad = capturedLoadLayoutDialogProps.onLoad as (config: Record<string, unknown>) => void;
+      act(() => {
+        onLoad({
+          layoutId: 42,
+          layoutName: 'To Clear',
+          layoutDescription: null,
+          layoutStatus: 'draft',
+          widthMm: 168,
+          depthMm: 168,
+          spacerConfig: { horizontal: 'none', vertical: 'none' },
+          placedItems: [
+            { instanceId: 'test-1', itemId: 'bins_standard:bin-1x1', x: 0, y: 0, width: 1, height: 1, rotation: 0 },
+          ],
+        });
+      });
+
+      expect(screen.getByText('To Clear')).toBeInTheDocument();
+
+      // Clear all
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      fireEvent.click(screen.getByText(/Clear All/));
+
+      expect(screen.queryByText('To Clear')).not.toBeInTheDocument();
+      (window.confirm as Mock).mockRestore();
     });
   });
 });
