@@ -4,6 +4,16 @@ import { PlacedItemOverlay } from './PlacedItemOverlay';
 import type { PlacedItemWithValidity, LibraryItem } from '../types/gridfinity';
 import type React from 'react';
 
+// Mock getRotatedPerspectiveUrl so we can control rotation URL generation in tests
+vi.mock('../utils/imageHelpers', () => ({
+  getRotatedPerspectiveUrl: (url: string, rotation: number) => {
+    if (!url) return url;
+    if (rotation === 0) return url;
+    if (!url.includes('-perspective.png')) return url;
+    return url.replace('-perspective.png', `-perspective-${rotation}.png`);
+  },
+}));
+
 // Mock usePointerDragSource to capture onTap callback
 let capturedOnTap: ((e: PointerEvent) => void) | undefined;
 vi.mock('../hooks/usePointerDrag', () => ({
@@ -1362,6 +1372,166 @@ describe('PlacedItemOverlay', () => {
 
       image = container.querySelector('.placed-item-image');
       expect(image).toHaveAttribute('src', 'https://example.com/perspective.png');
+    });
+  });
+
+  describe('rotation-specific perspective images', () => {
+    // Item has both ortho and perspective image URLs using the -perspective.png convention
+    const mockGetItemByIdWithPerspective = (id: string): LibraryItem | undefined => {
+      const items: Record<string, LibraryItem> = {
+        'bin-perspective': {
+          id: 'bin-perspective',
+          name: 'Bin Perspective',
+          widthUnits: 1,
+          heightUnits: 1,
+          color: '#3B82F6',
+          categories: ['bin'],
+          imageUrl: 'https://example.com/bin-ortho.png',
+          perspectiveImageUrl: 'https://example.com/bin-perspective.png',
+        },
+        'bin-ortho-only': {
+          id: 'bin-ortho-only',
+          name: 'Bin Ortho Only',
+          widthUnits: 1,
+          heightUnits: 1,
+          color: '#3B82F6',
+          categories: ['bin'],
+          imageUrl: 'https://example.com/bin-ortho.png',
+        },
+      };
+      return items[id];
+    };
+
+    it('should use base perspectiveImageUrl and apply no CSS rotation for 0° in perspective mode', () => {
+      const item = createMockItem({ itemId: 'bin-perspective', rotation: 0 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithPerspective}
+          imageViewMode="perspective"
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image') as HTMLImageElement;
+      expect(image).toBeInTheDocument();
+      expect(image).toHaveAttribute('src', 'https://example.com/bin-perspective.png');
+      // No rotation at 0° — style should not contain a rotate transform
+      const styleTransform = image.style.transform;
+      expect(styleTransform).not.toMatch(/rotate/);
+    });
+
+    it('should use -perspective-90.png URL and apply no CSS rotation for 90° in perspective mode', () => {
+      const item = createMockItem({ itemId: 'bin-perspective', rotation: 90, width: 1, height: 1 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithPerspective}
+          imageViewMode="perspective"
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image') as HTMLImageElement;
+      expect(image).toBeInTheDocument();
+      expect(image).toHaveAttribute('src', 'https://example.com/bin-perspective-90.png');
+      // Pre-rendered rotated image — no CSS rotation needed
+      const styleTransform = image.style.transform;
+      expect(styleTransform).not.toMatch(/rotate/);
+    });
+
+    it('should use -perspective-180.png URL and apply no CSS rotation for 180° in perspective mode', () => {
+      const item = createMockItem({ itemId: 'bin-perspective', rotation: 180, width: 1, height: 1 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithPerspective}
+          imageViewMode="perspective"
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image') as HTMLImageElement;
+      expect(image).toBeInTheDocument();
+      expect(image).toHaveAttribute('src', 'https://example.com/bin-perspective-180.png');
+      const styleTransform = image.style.transform;
+      expect(styleTransform).not.toMatch(/rotate/);
+    });
+
+    it('should use -perspective-270.png URL and apply no CSS rotation for 270° in perspective mode', () => {
+      const item = createMockItem({ itemId: 'bin-perspective', rotation: 270, width: 1, height: 1 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithPerspective}
+          imageViewMode="perspective"
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image') as HTMLImageElement;
+      expect(image).toBeInTheDocument();
+      expect(image).toHaveAttribute('src', 'https://example.com/bin-perspective-270.png');
+      const styleTransform = image.style.transform;
+      expect(styleTransform).not.toMatch(/rotate/);
+    });
+
+    it('should use imageUrl with CSS rotation for 90° in ortho mode (existing behavior unchanged)', () => {
+      const item = createMockItem({ itemId: 'bin-perspective', rotation: 90, width: 1, height: 1 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithPerspective}
+          imageViewMode="ortho"
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image') as HTMLImageElement;
+      expect(image).toBeInTheDocument();
+      // In ortho mode the base imageUrl is used (not perspective)
+      expect(image).toHaveAttribute('src', 'https://example.com/bin-ortho.png');
+      // Ortho mode still applies CSS rotation
+      const styleTransform = image.style.transform;
+      expect(styleTransform).toMatch(/rotate\(90deg\)/);
+    });
+
+    it('should fall back to imageUrl with CSS rotation when perspectiveImageUrl is absent and rotation is 90°', () => {
+      const item = createMockItem({ itemId: 'bin-ortho-only', rotation: 90, width: 1, height: 1 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithPerspective}
+          imageViewMode="perspective"
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image') as HTMLImageElement;
+      expect(image).toBeInTheDocument();
+      // No perspectiveImageUrl — falls back to ortho imageUrl
+      expect(image).toHaveAttribute('src', 'https://example.com/bin-ortho.png');
+      // Because there is no pre-rendered rotated perspective image, CSS rotation is applied as fallback
+      const styleTransform = image.style.transform;
+      expect(styleTransform).toMatch(/rotate\(90deg\)/);
     });
   });
 });
