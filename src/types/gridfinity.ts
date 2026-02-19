@@ -50,6 +50,7 @@ export interface LibraryItem {
   heightUnits: number;
   color: string;
   categories: string[];
+  stlFile?: string;
   imageUrl?: string;
   perspectiveImageUrl?: string;
 }

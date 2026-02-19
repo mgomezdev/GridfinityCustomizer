@@ -910,6 +910,7 @@ def build_library_item(stl_file, png_file, width, height, color_hex, custom_id=N
         'heightUnits': height,
         'color': color_hex,
         'categories': [],
+        'stlFile': stl_file,
         'imageUrl': png_file  # Orthographic (backwards compatible)
     }
 
