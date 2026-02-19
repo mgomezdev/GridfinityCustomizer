@@ -4,6 +4,7 @@ import { isDefaultCustomization } from '../types/gridfinity';
 import { usePointerDragSource } from '../hooks/usePointerDrag';
 import { useImageLoadState } from '../hooks/useImageLoadState';
 import { BinCustomizationPanel } from './BinCustomizationPanel';
+import { getRotatedPerspectiveUrl } from '../utils/imageHelpers';
 
 interface PlacedItemOverlayProps {
   item: PlacedItemWithValidity;
@@ -39,9 +40,17 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
   const libraryItem = getItemById(item.itemId);
   const color = item.isValid ? (libraryItem?.color || DEFAULT_VALID_COLOR) : INVALID_COLOR;
 
-  const imageSrc = imageViewMode === 'perspective'
-    ? (libraryItem?.perspectiveImageUrl || libraryItem?.imageUrl)
-    : libraryItem?.imageUrl;
+  const perspectiveUrl = libraryItem?.perspectiveImageUrl;
+  const orthoUrl = libraryItem?.imageUrl;
+  const usingPerspective = imageViewMode === 'perspective' && !!perspectiveUrl;
+
+  const imageSrc = (() => {
+    if (imageViewMode === 'perspective' && perspectiveUrl) {
+      if (item.rotation === 0) return perspectiveUrl;
+      return getRotatedPerspectiveUrl(perspectiveUrl, item.rotation);
+    }
+    return imageViewMode === 'perspective' ? (perspectiveUrl || orthoUrl) : orthoUrl;
+  })();
 
   const { imageError, shouldShowImage, handleImageLoad, handleImageError } =
     useImageLoadState(imageSrc);
@@ -52,6 +61,8 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
   const aspectRatio = item.width / item.height;
 
   const getImageStyle = (): React.CSSProperties | undefined => {
+    // Perspective images are pre-rendered at the correct angle — no CSS rotation needed
+    if (usingPerspective) return undefined;
     if (!item.rotation) return undefined;
 
     if (isSideways) {
