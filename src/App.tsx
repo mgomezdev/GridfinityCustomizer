@@ -871,6 +871,8 @@ function App() {
                 onDeleteItem={deleteItem}
                 onRotateItemCw={(id) => rotateItem(id, 'cw')}
                 onRotateItemCcw={(id) => rotateItem(id, 'ccw')}
+                onItemCustomizationChange={updateItemCustomization}
+                onItemCustomizationReset={(id) => updateItemCustomization(id, undefined)}
                 referenceImages={referenceImagesForGrid}
                 selectedImageId={selectedImageId}
                 onImagePositionChange={updateRefImagePosition}

@@ -1,7 +1,9 @@
-import { memo } from 'react';
-import type { PlacedItemWithValidity, LibraryItem, ImageViewMode } from '../types/gridfinity';
+import { memo, useState, useCallback } from 'react';
+import type { PlacedItemWithValidity, LibraryItem, ImageViewMode, BinCustomization } from '../types/gridfinity';
+import { isDefaultCustomization } from '../types/gridfinity';
 import { usePointerDragSource } from '../hooks/usePointerDrag';
 import { useImageLoadState } from '../hooks/useImageLoadState';
+import { BinCustomizationPanel } from './BinCustomizationPanel';
 import { getRotatedPerspectiveUrl } from '../utils/imageHelpers';
 
 interface PlacedItemOverlayProps {
@@ -14,13 +16,27 @@ interface PlacedItemOverlayProps {
   onDelete?: (instanceId: string) => void;
   onRotateCw?: (instanceId: string) => void;
   onRotateCcw?: (instanceId: string) => void;
+  onCustomizationChange?: (instanceId: string, customization: BinCustomization) => void;
+  onCustomizationReset?: (instanceId: string) => void;
   imageViewMode?: ImageViewMode;
 }
 
 const DEFAULT_VALID_COLOR = '#3B82F6';
 const INVALID_COLOR = '#EF4444';
 
-export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, getItemById, onDelete, onRotateCw, onRotateCcw, imageViewMode = 'ortho' }: PlacedItemOverlayProps) {
+function getCustomizationBadges(customization: BinCustomization | undefined): string[] {
+  if (!customization || isDefaultCustomization(customization)) return [];
+  const badges: string[] = [];
+  if (customization.wallPattern !== 'none') badges.push(customization.wallPattern);
+  if (customization.lipStyle !== 'normal') badges.push(`lip: ${customization.lipStyle}`);
+  if (customization.fingerSlide !== 'none') badges.push(`slide: ${customization.fingerSlide}`);
+  if (customization.wallCutout !== 'none') badges.push(`cutout: ${customization.wallCutout}`);
+  return badges;
+}
+
+export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, getItemById, onDelete, onRotateCw, onRotateCcw, onCustomizationChange, onCustomizationReset, imageViewMode = 'ortho' }: PlacedItemOverlayProps) {
+  const [showPopover, setShowPopover] = useState(false);
+
   const libraryItem = getItemById(item.itemId);
   const color = item.isValid ? (libraryItem?.color || DEFAULT_VALID_COLOR) : INVALID_COLOR;
 
@@ -93,6 +109,28 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
     onRotateCcw?.(item.instanceId);
   };
 
+  const handleCustomizeClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setShowPopover(prev => !prev);
+  };
+
+  const handlePopoverChange = useCallback((customization: BinCustomization) => {
+    onCustomizationChange?.(item.instanceId, customization);
+  }, [onCustomizationChange, item.instanceId]);
+
+  const handlePopoverReset = useCallback(() => {
+    onCustomizationReset?.(item.instanceId);
+  }, [onCustomizationReset, item.instanceId]);
+
+  const handleClosePopover = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setShowPopover(false);
+  };
+
+  const badges = getCustomizationBadges(item.customization);
+
   return (
     <div
       className={`placed-item ${isSelected ? 'selected' : ''} ${!item.isValid ? 'invalid' : ''}`}
@@ -141,6 +179,13 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
         </div>
       )}
       <span className="placed-item-label">{libraryItem?.name}</span>
+      {badges.length > 0 && (
+        <div className="placed-item-badges">
+          {badges.map(badge => (
+            <span key={badge} className="placed-item-badge">{badge}</span>
+          ))}
+        </div>
+      )}
       {isSelected && (onRotateCcw || onRotateCw) && (
         <>
           {onRotateCcw && (
@@ -183,6 +228,45 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
         >
           &times;
         </button>
+      )}
+      {isSelected && onCustomizationChange && (
+        <button
+          className="placed-item-customize-btn"
+          onClick={handleCustomizeClick}
+          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          draggable={false}
+          aria-label="Customize"
+          title="Customize bin options"
+        >
+          &#9881;
+        </button>
+      )}
+      {showPopover && isSelected && onCustomizationChange && (
+        <div
+          className="placed-item-customize-popover"
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <div className="placed-item-customize-popover-header">
+            <span className="placed-item-customize-popover-title">Customize</span>
+            <button
+              className="placed-item-customize-popover-close"
+              onClick={handleClosePopover}
+              aria-label="Close customization"
+              title="Close"
+            >
+              &times;
+            </button>
+          </div>
+          <BinCustomizationPanel
+            customization={item.customization}
+            onChange={handlePopoverChange}
+            onReset={handlePopoverReset}
+            idPrefix="inline-"
+          />
+        </div>
       )}
     </div>
   );
