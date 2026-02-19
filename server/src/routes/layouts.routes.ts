@@ -19,6 +19,9 @@ router.post('/', layoutController.createLayout);
 router.put('/:id', layoutController.updateLayout);
 router.patch('/:id', layoutController.updateLayoutMeta);
 router.delete('/:id', layoutController.deleteLayout);
+router.patch('/:id/submit', layoutController.submitLayout);
+router.patch('/:id/withdraw', layoutController.withdrawLayout);
+router.post('/:id/clone', layoutController.cloneLayout);
 
 // Reference image endpoints
 router.post('/:id/reference-images', upload.single('image'), refImageController.uploadReferenceImage);

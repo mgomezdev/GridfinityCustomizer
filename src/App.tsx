@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { UnitSystem, ImperialFormat, GridSpacerConfig, ImageViewMode, ReferenceImage, DragData } from './types/gridfinity';
+import type { LayoutStatus } from '@gridfinity/shared';
 import { calculateGrid, mmToInches, inchesToMm } from './utils/conversions';
 import { useGridItems } from './hooks/useGridItems';
 import { useSpacerCalculation } from './hooks/useSpacerCalculation';
@@ -9,8 +10,8 @@ import { useLibraryData } from './hooks/useLibraryData';
 import { useCategoryData } from './hooks/useCategoryData';
 import { useRefImagePlacements } from './hooks/useRefImagePlacements';
 import { useGridTransform } from './hooks/useGridTransform';
-import { useSubmitBOM } from './hooks/useSubmitBOM';
 import { useAuth } from './contexts/AuthContext';
+import { useSubmitLayoutMutation, useWithdrawLayoutMutation, useCloneLayoutMutation, useSubmittedCountQuery } from './hooks/useLayouts';
 import { DimensionInput } from './components/DimensionInput';
 import { GridPreview } from './components/GridPreview';
 import { GridSummary } from './components/GridSummary';
@@ -27,6 +28,8 @@ import { UserMenu } from './components/auth/UserMenu';
 import { SaveLayoutDialog } from './components/layouts/SaveLayoutDialog';
 import { LoadLayoutDialog } from './components/layouts/LoadLayoutDialog';
 import type { LoadedLayoutConfig } from './components/layouts/LoadLayoutDialog';
+import { AdminSubmissionsDialog } from './components/admin/AdminSubmissionsDialog';
+import { SubmissionsBadge } from './components/admin/SubmissionsBadge';
 import './App.css';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:3001/api/v1';
@@ -45,13 +48,26 @@ function App() {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [showRebindDialog, setShowRebindDialog] = useState(false);
+  const [showAdminDialog, setShowAdminDialog] = useState(false);
   const [rebindTargetId, setRebindTargetId] = useState<string | null>(null);
+  const [currentLayoutId, setCurrentLayoutId] = useState<number | null>(null);
+  const [currentLayoutName, setCurrentLayoutName] = useState('');
+  const [currentLayoutDescription, setCurrentLayoutDescription] = useState('');
+  const [currentLayoutStatus, setCurrentLayoutStatus] = useState<LayoutStatus | null>(null);
+  const [currentLayoutOwner, setCurrentLayoutOwner] = useState('');
   const [sidebarTab, setSidebarTab] = useState<'items' | 'images'>('items');
   const [imageViewMode, setImageViewMode] = useState<ImageViewMode>(
     () => (localStorage.getItem('gridfinity-image-view-mode') as ImageViewMode) || 'ortho'
   );
 
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const isReadOnly = currentLayoutStatus === 'delivered';
+
+  const submitLayoutMutation = useSubmitLayoutMutation();
+  const withdrawLayoutMutation = useWithdrawLayoutMutation();
+  const cloneLayoutMutation = useCloneLayoutMutation();
+  const submittedCountQuery = useSubmittedCountQuery();
 
   // Library selection and discovery
   const {
@@ -150,23 +166,6 @@ function App() {
 
   const bomItems = useBillOfMaterials(placedItems, libraryItems);
 
-  const gridSummaryData = {
-    gridX: gridResult.gridX,
-    gridY: gridResult.gridY,
-    width,
-    depth,
-    unit: unitSystem,
-    imperialFormat,
-    gapWidth: gridResult.gapWidth,
-    gapDepth: gridResult.gapDepth,
-    spacerConfig,
-  };
-
-  const libraryNames = useMemo(
-    () => new Map(availableLibraries.map(lib => [lib.id, lib.name])),
-    [availableLibraries]
-  );
-
   // Convert ref image placements to ReferenceImage format for GridPreview
   const referenceImagesForGrid: ReferenceImage[] = useMemo(() =>
     refImagePlacements.map(p => ({
@@ -199,6 +198,7 @@ function App() {
 
   // Combined drop handler for both library items and ref images
   const handleCombinedDrop = useCallback((dragData: DragData, x: number, y: number) => {
+    if (isReadOnly) return;
     if (dragData.type === 'ref-image' && dragData.refImageId != null) {
       // Convert grid cell coordinates to percentage of grid
       const xPercent = (x / gridResult.gridX) * 100;
@@ -219,15 +219,45 @@ function App() {
     } else {
       handleDrop(dragData, x, y);
     }
-  }, [gridResult.gridX, gridResult.gridY, addRefImagePlacement, handleDrop]);
+  }, [isReadOnly, gridResult.gridX, gridResult.gridY, addRefImagePlacement, handleDrop]);
 
-  const { submitBOM, isSubmitting, error: submitError } = useSubmitBOM(
-    gridSummaryData,
-    placedItems,
-    bomItems,
-    getItemById,
-    libraryNames,
-  );
+  const handleSaveComplete = useCallback((layoutId: number, name: string, status: LayoutStatus) => {
+    setCurrentLayoutId(layoutId);
+    setCurrentLayoutName(name);
+    setCurrentLayoutStatus(status);
+  }, []);
+
+  const handleSubmitLayout = useCallback(async () => {
+    if (!currentLayoutId) return;
+    try {
+      const result = await submitLayoutMutation.mutateAsync(currentLayoutId);
+      setCurrentLayoutStatus(result.status);
+    } catch {
+      // Error handled by mutation
+    }
+  }, [currentLayoutId, submitLayoutMutation]);
+
+  const handleWithdrawLayout = useCallback(async () => {
+    if (!currentLayoutId) return;
+    try {
+      const result = await withdrawLayoutMutation.mutateAsync(currentLayoutId);
+      setCurrentLayoutStatus(result.status);
+    } catch {
+      // Error handled by mutation
+    }
+  }, [currentLayoutId, withdrawLayoutMutation]);
+
+  const handleCloneCurrentLayout = useCallback(async () => {
+    if (!currentLayoutId) return;
+    try {
+      const result = await cloneLayoutMutation.mutateAsync(currentLayoutId);
+      setCurrentLayoutId(result.id);
+      setCurrentLayoutName(result.name);
+      setCurrentLayoutStatus(result.status);
+    } catch {
+      // Error handled by mutation
+    }
+  }, [currentLayoutId, cloneLayoutMutation]);
 
   // Zoom and pan
   const {
@@ -367,6 +397,11 @@ function App() {
       clearAll();
       clearRefImages();
       setSelectedImageId(null);
+      setCurrentLayoutId(null);
+      setCurrentLayoutName('');
+      setCurrentLayoutDescription('');
+      setCurrentLayoutStatus(null);
+      setCurrentLayoutOwner('');
     }
   };
 
@@ -383,6 +418,21 @@ function App() {
     loadItems(config.placedItems);
     loadRefImagePlacements(config.refImagePlacements ?? []);
     setSelectedImageId(null);
+    setCurrentLayoutId(config.layoutId);
+    setCurrentLayoutName(config.layoutName);
+    setCurrentLayoutDescription(config.layoutDescription ?? '');
+    setCurrentLayoutStatus(config.layoutStatus);
+
+    // Build owner string for admin views
+    if (config.ownerUsername) {
+      let owner = config.ownerUsername;
+      if (config.ownerEmail) {
+        owner += `<${config.ownerEmail}>`;
+      }
+      setCurrentLayoutOwner(owner);
+    } else {
+      setCurrentLayoutOwner('');
+    }
   }, [unitSystem, loadItems, loadRefImagePlacements]);
 
   const handleRemoveImage = (id: string) => {
@@ -569,8 +619,16 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Gridfinity Bin Customizer</h1>
-        <p className="subtitle">Design your modular storage layout</p>
+        <div className="header-title-group">
+          <h1>Gridfinity Bin Customizer</h1>
+          {currentLayoutId && (
+            <p className="layout-info-subtitle">
+              {currentLayoutOwner && <span className="layout-owner">{currentLayoutOwner} — </span>}
+              <span className="layout-name">{currentLayoutName}</span>
+              {currentLayoutStatus && <span className={`layout-status-badge layout-status-${currentLayoutStatus}`}>{currentLayoutStatus}</span>}
+            </p>
+          )}
+        </div>
         <div className="header-actions">
           <UserMenu />
           <button
@@ -719,13 +777,49 @@ function App() {
                   onClick={() => setShowSaveDialog(true)}
                   type="button"
                 >
-                  Save
+                  {currentLayoutId && !isReadOnly ? 'Save' : 'Save'}
                 </button>
               )}
-              {(placedItems.length > 0 || refImagePlacements.length > 0) && (
+              {isAuthenticated && currentLayoutId && currentLayoutStatus === 'draft' && (
+                <button
+                  className="layout-toolbar-btn layout-submit-btn"
+                  onClick={handleSubmitLayout}
+                  type="button"
+                  disabled={submitLayoutMutation.isPending}
+                >
+                  {submitLayoutMutation.isPending ? 'Submitting...' : 'Submit'}
+                </button>
+              )}
+              {isAuthenticated && currentLayoutId && currentLayoutStatus === 'submitted' && (
+                <button
+                  className="layout-toolbar-btn layout-withdraw-btn"
+                  onClick={handleWithdrawLayout}
+                  type="button"
+                  disabled={withdrawLayoutMutation.isPending}
+                >
+                  {withdrawLayoutMutation.isPending ? 'Withdrawing...' : 'Withdraw'}
+                </button>
+              )}
+              {isAuthenticated && isReadOnly && (
+                <button
+                  className="layout-toolbar-btn layout-clone-btn"
+                  onClick={handleCloneCurrentLayout}
+                  type="button"
+                  disabled={cloneLayoutMutation.isPending}
+                >
+                  {cloneLayoutMutation.isPending ? 'Cloning...' : 'Clone'}
+                </button>
+              )}
+              {!isReadOnly && (placedItems.length > 0 || refImagePlacements.length > 0) && (
                 <button className="clear-all-button" onClick={handleClearAll}>
                   Clear All ({placedItems.length + refImagePlacements.length})
                 </button>
+              )}
+              {isAdmin && (
+                <SubmissionsBadge
+                  count={submittedCountQuery.data?.submitted ?? 0}
+                  onClick={() => setShowAdminDialog(true)}
+                />
               )}
             </div>
             <ImageViewToggle mode={imageViewMode} onToggle={toggleImageViewMode} />
@@ -782,9 +876,6 @@ function App() {
         <section className="bom-sidebar">
           <BillOfMaterials
             items={bomItems}
-            onSubmitBOM={submitBOM}
-            isSubmitting={isSubmitting}
-            submitError={submitError}
           />
         </section>
       </main>
@@ -804,6 +895,11 @@ function App() {
         spacerConfig={spacerConfig}
         placedItems={placedItems}
         refImagePlacements={refImagePlacements}
+        currentLayoutId={currentLayoutId}
+        currentLayoutName={currentLayoutName}
+        currentLayoutDescription={currentLayoutDescription}
+        currentLayoutStatus={currentLayoutStatus}
+        onSaveComplete={handleSaveComplete}
       />
 
       <LoadLayoutDialog
@@ -818,6 +914,19 @@ function App() {
         onClose={() => { setShowRebindDialog(false); setRebindTargetId(null); }}
         onSelect={handleRebindSelect}
       />
+
+      <AdminSubmissionsDialog
+        isOpen={showAdminDialog}
+        onClose={() => setShowAdminDialog(false)}
+        onLoad={handleLoadLayout}
+        hasItems={placedItems.length > 0 || refImagePlacements.length > 0}
+      />
+
+      {isReadOnly && (
+        <div className="read-only-banner">
+          This layout has been delivered and is read-only. Clone to make changes.
+        </div>
+      )}
     </div>
   );
 }

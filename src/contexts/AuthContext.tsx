@@ -6,6 +6,7 @@ import {
   registerApi,
   refreshTokenApi,
   logoutApi,
+  getMeApi,
 } from '../api/auth.api';
 
 const REFRESH_TOKEN_KEY = 'gridfinity_refresh_token';
@@ -51,45 +52,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
     localStorage.removeItem(REFRESH_TOKEN_KEY);
   }, []);
 
+  // Guard against StrictMode double-invocation: with refresh token rotation,
+  // two concurrent calls with the same token triggers reuse detection and
+  // revokes the entire token family.
+  const hasStartedRefreshRef = useRef(false);
+
   // Attempt silent refresh on mount
   useEffect(() => {
     const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-    if (!storedRefreshToken) {
+    if (!storedRefreshToken || hasStartedRefreshRef.current) {
       return;
     }
-
-    let cancelled = false;
+    hasStartedRefreshRef.current = true;
 
     refreshTokenApi(storedRefreshToken)
-      .then((tokens) => {
-        if (cancelled) return;
+      .then(async (tokens) => {
         accessTokenRef.current = tokens.accessToken;
         localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
 
-        // Decode user from JWT payload
-        try {
-          const payload = JSON.parse(atob(tokens.accessToken.split('.')[1]));
-          setUser({
-            id: payload.userId,
-            email: '',
-            username: '',
-            role: payload.role,
-            createdAt: '',
-          });
-        } catch {
-          // If we can't decode, just set a minimal user
-          setUser(null);
-        }
+        const me = await getMeApi(tokens.accessToken);
+        setUser(me);
       })
       .catch(() => {
-        if (cancelled) return;
         clearAuth();
       })
       .finally(() => {
-        if (!cancelled) setIsLoading(false);
+        setIsLoading(false);
       });
-
-    return () => { cancelled = true; };
   }, [clearAuth]);
 
   const login = useCallback(async (email: string, password: string) => {

@@ -225,6 +225,15 @@ export async function runMigrations(client: Client): Promise<void> {
     // Column already exists — ignore
   }
 
+  // Add status column to layouts if missing (existing databases)
+  try {
+    await client.execute(`ALTER TABLE layouts ADD COLUMN status TEXT NOT NULL DEFAULT 'draft';`);
+  } catch {
+    // Column already exists — ignore
+  }
+
+  await client.execute(`CREATE INDEX IF NOT EXISTS idx_layouts_status ON layouts(status);`);
+
   // BOM submissions table
   await client.execute(`
     CREATE TABLE IF NOT EXISTS bom_submissions (

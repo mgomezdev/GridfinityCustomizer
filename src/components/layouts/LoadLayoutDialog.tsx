@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import type { ApiLayout, ApiLayoutDetail, PlacedItem, Rotation, SpacerMode, GridSpacerConfig } from '@gridfinity/shared';
+import type { ApiLayout, ApiLayoutDetail, PlacedItem, Rotation, SpacerMode, GridSpacerConfig, LayoutStatus } from '@gridfinity/shared';
 import type { RefImagePlacement } from '../../hooks/useRefImagePlacements';
-import { useLayoutsQuery, useDeleteLayoutMutation } from '../../hooks/useLayouts';
+import { useLayoutsQuery, useDeleteLayoutMutation, useSubmitLayoutMutation, useWithdrawLayoutMutation, useCloneLayoutMutation } from '../../hooks/useLayouts';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchLayout } from '../../api/layouts.api';
 import { LayoutList } from './LayoutList';
@@ -14,11 +14,17 @@ interface LoadLayoutDialogProps {
 }
 
 export interface LoadedLayoutConfig {
+  layoutId: number;
+  layoutName: string;
+  layoutDescription: string | null;
+  layoutStatus: LayoutStatus;
   widthMm: number;
   depthMm: number;
   spacerConfig: GridSpacerConfig;
   placedItems: PlacedItem[];
   refImagePlacements?: RefImagePlacement[];
+  ownerUsername?: string;
+  ownerEmail?: string;
 }
 
 function apiToPlacedItems(detail: ApiLayoutDetail): PlacedItem[] {
@@ -45,6 +51,9 @@ export function LoadLayoutDialog({
   const { getAccessToken } = useAuth();
   const layoutsQuery = useLayoutsQuery();
   const deleteLayoutMutation = useDeleteLayoutMutation();
+  const submitLayoutMutation = useSubmitLayoutMutation();
+  const withdrawLayoutMutation = useWithdrawLayoutMutation();
+  const cloneLayoutMutation = useCloneLayoutMutation();
 
   if (!isOpen) return null;
 
@@ -81,6 +90,10 @@ export function LoadLayoutDialog({
       }));
 
       onLoad({
+        layoutId: detail.id,
+        layoutName: detail.name,
+        layoutDescription: detail.description,
+        layoutStatus: detail.status,
         widthMm: detail.widthMm,
         depthMm: detail.depthMm,
         spacerConfig: {
@@ -102,6 +115,30 @@ export function LoadLayoutDialog({
   const handleDelete = async (layoutId: number) => {
     try {
       await deleteLayoutMutation.mutateAsync(layoutId);
+    } catch {
+      // Error is handled by mutation state
+    }
+  };
+
+  const handleSubmit = async (layoutId: number) => {
+    try {
+      await submitLayoutMutation.mutateAsync(layoutId);
+    } catch {
+      // Error is handled by mutation state
+    }
+  };
+
+  const handleWithdraw = async (layoutId: number) => {
+    try {
+      await withdrawLayoutMutation.mutateAsync(layoutId);
+    } catch {
+      // Error is handled by mutation state
+    }
+  };
+
+  const handleClone = async (layoutId: number) => {
+    try {
+      await cloneLayoutMutation.mutateAsync(layoutId);
     } catch {
       // Error is handled by mutation state
     }
@@ -154,6 +191,9 @@ export function LoadLayoutDialog({
             isLoading={layoutsQuery.isLoading}
             onSelect={handleSelect}
             onDelete={handleDelete}
+            onSubmit={handleSubmit}
+            onWithdraw={handleWithdraw}
+            onClone={handleClone}
             isDeleting={deleteLayoutMutation.isPending}
           />
         </div>

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { ApiLayout, ApiLayoutDetail, CreateLayoutRequest, UpdateLayoutMetaRequest } from '@gridfinity/shared';
+import type { ApiLayout, ApiLayoutDetail, CreateLayoutRequest, UpdateLayoutMetaRequest, LayoutStatusCount } from '@gridfinity/shared';
 import { useAuth } from '../contexts/AuthContext';
 import {
   fetchLayouts,
@@ -8,6 +8,12 @@ import {
   updateLayout,
   updateLayoutMeta,
   deleteLayoutApi,
+  submitLayout,
+  withdrawLayout,
+  cloneLayout,
+  fetchAdminLayouts,
+  fetchSubmittedCount,
+  deliverLayout,
 } from '../api/layouts.api';
 
 export function useLayoutsQuery() {
@@ -52,6 +58,7 @@ export function useSaveLayoutMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['layouts'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-layouts'] });
     },
   });
 }
@@ -68,6 +75,7 @@ export function useUpdateLayoutMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['layouts'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-layouts'] });
     },
   });
 }
@@ -99,6 +107,108 @@ export function useDeleteLayoutMutation() {
       await deleteLayoutApi(token, id);
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['layouts'] });
+    },
+  });
+}
+
+export function useSubmitLayoutMutation() {
+  const { getAccessToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number): Promise<ApiLayout> => {
+      const token = getAccessToken();
+      if (!token) throw new Error('Not authenticated');
+      return submitLayout(token, id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['layouts'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-layouts'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-submitted-count'] });
+    },
+  });
+}
+
+export function useWithdrawLayoutMutation() {
+  const { getAccessToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number): Promise<ApiLayout> => {
+      const token = getAccessToken();
+      if (!token) throw new Error('Not authenticated');
+      return withdrawLayout(token, id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['layouts'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-layouts'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-submitted-count'] });
+    },
+  });
+}
+
+export function useCloneLayoutMutation() {
+  const { getAccessToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number): Promise<ApiLayoutDetail> => {
+      const token = getAccessToken();
+      if (!token) throw new Error('Not authenticated');
+      return cloneLayout(token, id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['layouts'] });
+    },
+  });
+}
+
+export function useAdminLayoutsQuery(statusFilter?: string) {
+  const { getAccessToken, isAuthenticated, user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+
+  return useQuery({
+    queryKey: ['admin-layouts', statusFilter],
+    queryFn: async () => {
+      const token = getAccessToken();
+      if (!token) throw new Error('Not authenticated');
+      const result = await fetchAdminLayouts(token, statusFilter);
+      return result.data;
+    },
+    enabled: isAuthenticated && isAdmin,
+  });
+}
+
+export function useSubmittedCountQuery() {
+  const { getAccessToken, isAuthenticated, user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+
+  return useQuery<LayoutStatusCount>({
+    queryKey: ['admin-submitted-count'],
+    queryFn: async () => {
+      const token = getAccessToken();
+      if (!token) throw new Error('Not authenticated');
+      return fetchSubmittedCount(token);
+    },
+    enabled: isAuthenticated && isAdmin,
+    refetchInterval: 30000,
+  });
+}
+
+export function useDeliverLayoutMutation() {
+  const { getAccessToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number): Promise<ApiLayout> => {
+      const token = getAccessToken();
+      if (!token) throw new Error('Not authenticated');
+      return deliverLayout(token, id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-layouts'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-submitted-count'] });
       queryClient.invalidateQueries({ queryKey: ['layouts'] });
     },
   });
