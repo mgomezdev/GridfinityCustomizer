@@ -10,7 +10,7 @@ COPY tsconfig.json tsconfig.app.json tsconfig.node.json vite.config.ts index.htm
 COPY src/ src/
 COPY public/ public/
 ENV VITE_API_BASE_URL=/api/v1
-RUN npm run build
+RUN npm run -w shared build && npm run build
 
 # Stage 2: Serve
 FROM nginx:alpine

@@ -36,6 +36,7 @@ function apiToPlacedItems(detail: ApiLayoutDetail): PlacedItem[] {
     width: item.width,
     height: item.height,
     rotation: item.rotation as Rotation,
+    ...(item.customization ? { customization: item.customization } : {}),
   }));
 }
 

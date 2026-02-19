@@ -17,6 +17,7 @@ import { GridPreview } from './components/GridPreview';
 import { GridSummary } from './components/GridSummary';
 import { ItemLibrary } from './components/ItemLibrary';
 import { ItemControls } from './components/ItemControls';
+import { BinCustomizationPanel } from './components/BinCustomizationPanel';
 import { SpacerControls } from './components/SpacerControls';
 import { BillOfMaterials } from './components/BillOfMaterials';
 import { RefImageLibrary } from './components/RefImageLibrary';
@@ -162,6 +163,7 @@ function App() {
     pasteItems,
     deleteSelected,
     rotateSelected,
+    updateItemCustomization,
   } = useGridItems(gridResult.gridX, gridResult.gridY, getItemById);
 
   const bomItems = useBillOfMaterials(placedItems, libraryItems);
@@ -757,6 +759,19 @@ function App() {
               onDelete={handleDeleteSelected}
             />
           )}
+
+          {selectedItemIds.size === 1 && (() => {
+            const selectedId = selectedItemIds.values().next().value as string;
+            const selectedItem = placedItems.find(i => i.instanceId === selectedId);
+            if (!selectedItem) return null;
+            return (
+              <BinCustomizationPanel
+                customization={selectedItem.customization}
+                onChange={(c) => updateItemCustomization(selectedId, c)}
+                onReset={() => updateItemCustomization(selectedId, undefined)}
+              />
+            );
+          })()}
         </section>
 
         <section className="preview">

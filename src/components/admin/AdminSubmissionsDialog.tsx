@@ -66,6 +66,7 @@ export function AdminSubmissionsDialog({
         width: item.width,
         height: item.height,
         rotation: item.rotation as Rotation,
+        ...(item.customization ? { customization: item.customization } : {}),
       }));
 
       const refImagePlacements: RefImagePlacement[] = (detail.refImagePlacements ?? []).map((p, index) => ({
