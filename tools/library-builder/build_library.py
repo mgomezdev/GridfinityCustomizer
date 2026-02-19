@@ -33,7 +33,7 @@ import re
 import sys
 import tempfile
 from glob import glob
-from stl_to_png import render_stl_to_png
+from stl_to_png import render_stl_to_png, render_stl_to_png_perspective
 
 try:
     import trimesh
@@ -65,6 +65,33 @@ COLOR_MAP = {
     'amber': '#F59E0B',
 }
 
+# Configuration constants
+GRIDFINITY_UNIT_MM = 42.0  # Standard Gridfinity grid unit size in millimeters
+DEFAULT_PNG_MAX_DIMENSION = 800  # Maximum dimension for rendered PNG images
+DEFAULT_PNG_DPI = 100  # DPI for PNG rendering
+XY_ALIGNMENT_ANGLE_STEP = 1  # Degree step for XY plane alignment optimization
+MAX_REASONABLE_GRID_UNITS = 50  # Sanity check for dimension validation
+MAX_FILE_SIZE_MB = 500  # Maximum STL file size to process (in MB)
+
+# Perspective rendering configuration
+RENDER_BOTH_MODES = True  # Render both orthographic and perspective versions
+PERSPECTIVE_CAMERA_TILT = 22.5  # Camera tilt angle in degrees (0° = top-down, 45° = isometric)
+PERSPECTIVE_FOV = 45  # Field of view in degrees
+
+
+def cleanup_temp_file(temp_path):
+    """
+    Safely cleanup temporary file, ignoring errors.
+
+    Args:
+        temp_path: Path to temporary file to delete
+    """
+    if temp_path and os.path.exists(temp_path):
+        try:
+            os.unlink(temp_path)
+        except Exception:
+            pass  # Ignore cleanup errors
+
 
 def align_geometry_xy_plane(geometry):
     """
@@ -79,18 +106,27 @@ def align_geometry_xy_plane(geometry):
     """
     import numpy as np
 
-    # Get vertices projected onto XY plane
-    vertices = geometry.vertices[:, :2]  # Only X, Y coordinates
+    # Validate geometry has vertices
+    if not hasattr(geometry, 'vertices'):
+        print("  WARNING: Geometry has no vertices attribute, skipping alignment")
+        return
 
-    if len(vertices) < 3:
+    if len(geometry.vertices) < 3:
         return  # Not enough vertices to align
+
+    # Get vertices projected onto XY plane
+    try:
+        vertices = geometry.vertices[:, :2]  # Only X, Y coordinates
+    except (IndexError, ValueError, TypeError) as e:
+        print(f"  WARNING: Cannot extract XY coordinates from vertices: {e}, skipping alignment")
+        return
 
     # Try rotations from 0 to 90 degrees (due to symmetry, only need 90°)
     # Find the rotation that minimizes bounding box area
     best_angle = 0
     best_area = float('inf')
 
-    for angle_deg in range(0, 90, 1):  # Check every degree
+    for angle_deg in range(0, 90, XY_ALIGNMENT_ANGLE_STEP):  # Check every degree
         angle_rad = np.radians(angle_deg)
         cos_a = np.cos(angle_rad)
         sin_a = np.sin(angle_rad)
@@ -162,13 +198,23 @@ def extract_dimensions(filename):
         filename: Name of the file (e.g., "Utensils 1x3.stl")
 
     Returns:
-        Tuple of (width, height) as integers, or (None, None) if not found
+        Tuple of (width, height) as integers, or (None, None) if not found or invalid
     """
     # Look for pattern like "1x3" or "2x4"
     match = re.search(r'(\d+)x(\d+)', filename, re.IGNORECASE)
     if match:
         width = int(match.group(1))
         height = int(match.group(2))
+
+        # Validate dimensions
+        if width == 0 or height == 0:
+            print(f"  WARNING: Invalid zero dimension in filename '{filename}': {width}x{height}")
+            return None, None
+
+        if width > MAX_REASONABLE_GRID_UNITS or height > MAX_REASONABLE_GRID_UNITS:
+            print(f"  WARNING: Unusually large dimensions in filename '{filename}': {width}x{height}")
+            print(f"  Typical Gridfinity grids are 1-{MAX_REASONABLE_GRID_UNITS} units. Proceeding with caution.")
+
         return width, height
     return None, None
 
@@ -254,21 +300,57 @@ def calculate_gridfinity_dimensions(geometry):
     Returns:
         tuple: (width, height) in grid units
 
+    Raises:
+        ValueError: If extents are invalid or result in zero dimensions
+
     Algorithm:
         1. Get bounding box extents [x, y, z] in mm
         2. Divide x and y by 42mm (Gridfinity grid unit)
         3. Round up to nearest integer (ceiling)
         4. Assign smaller value as width, larger as height
     """
-    extents = geometry.extents  # [x, y, z] in mm
-    x_units = math.ceil(extents[0] / 42.0)
-    y_units = math.ceil(extents[1] / 42.0)
+    try:
+        extents = geometry.extents  # [x, y, z] in mm
 
-    # Smaller dimension is width
-    width = min(x_units, y_units)
-    height = max(x_units, y_units)
+        # Validate extents format
+        if not hasattr(extents, '__len__') or len(extents) < 2:
+            raise ValueError("Invalid extents format")
 
-    return width, height
+        # Check for valid numeric values
+        if not all(isinstance(ext, (int, float)) for ext in extents[:2]):
+            raise ValueError("Extents contain non-numeric values")
+
+        # Check for NaN or infinity
+        if not all(math.isfinite(ext) for ext in extents[:2]):
+            raise ValueError("Extents contain NaN or infinity")
+
+        # Check for positive values
+        if extents[0] <= 0 or extents[1] <= 0:
+            raise ValueError(f"Invalid extents (must be > 0): X={extents[0]:.2f}mm, Y={extents[1]:.2f}mm")
+
+        # Check for unreasonably large values (sanity check)
+        max_extent_mm = MAX_REASONABLE_GRID_UNITS * GRIDFINITY_UNIT_MM
+        if extents[0] > max_extent_mm or extents[1] > max_extent_mm:
+            print(f"  WARNING: Very large extents detected: {extents[0]:.1f}mm × {extents[1]:.1f}mm")
+            print(f"  Verify that STL file units are in millimeters")
+
+        x_units = math.ceil(extents[0] / GRIDFINITY_UNIT_MM)
+        y_units = math.ceil(extents[1] / GRIDFINITY_UNIT_MM)
+
+        # Final sanity check
+        if x_units == 0 or y_units == 0:
+            raise ValueError(f"Calculated dimensions are zero: {x_units}x{y_units} units")
+
+        # Smaller dimension is width
+        width = min(x_units, y_units)
+        height = max(x_units, y_units)
+
+        return width, height
+
+    except (AttributeError, TypeError, IndexError) as e:
+        raise ValueError(f"Failed to access geometry extents: {e}")
+    except Exception as e:
+        raise ValueError(f"Failed to calculate dimensions: {e}")
 
 
 def generate_3mf_png_filename(mf3_basename, object_name, width, height):
@@ -345,9 +427,10 @@ def prompt_for_dimensions(filename):
     return width, height
 
 
-def process_stl_file(stl_path, color_hex, output_dir=None, skip_existing_png=True, non_interactive=False):
+def process_stl_file(stl_path, color_hex, output_dir=None, skip_existing_png=True, non_interactive=False,
+                     render_both=None, camera_tilt=None, fov=None, rotation=0):
     """
-    Process a single STL file: extract dimensions, render PNG, return metadata.
+    Process a single STL file: extract dimensions, render PNG(s), return metadata.
 
     Args:
         stl_path: Path to STL file
@@ -355,11 +438,36 @@ def process_stl_file(stl_path, color_hex, output_dir=None, skip_existing_png=Tru
         output_dir: Directory for PNG output (default: same as STL)
         skip_existing_png: If True, skip rendering if PNG already exists
         non_interactive: If True, skip files with missing dimensions
+        render_both: If True, render both orthographic and perspective; if False, render orthographic only; if None, use default
+        camera_tilt: Camera tilt angle in degrees (for perspective mode)
+        fov: Field of view in degrees (for perspective mode)
 
     Returns:
         Dictionary with metadata, or None on failure
     """
+    # Use default values if not specified
+    if render_both is None:
+        render_both = RENDER_BOTH_MODES
+    if camera_tilt is None:
+        camera_tilt = PERSPECTIVE_CAMERA_TILT
+    if fov is None:
+        fov = PERSPECTIVE_FOV
     filename = os.path.basename(stl_path)
+
+    # Check file size
+    try:
+        file_size = os.path.getsize(stl_path)
+        if file_size == 0:
+            print(f"  ERROR: File is empty (0 bytes)")
+            return None
+
+        file_size_mb = file_size / (1024 * 1024)
+        if file_size_mb > MAX_FILE_SIZE_MB:
+            print(f"  WARNING: Very large file ({file_size_mb:.1f} MB)")
+            print(f"  Processing may be slow or fail due to memory constraints")
+    except OSError as e:
+        print(f"  ERROR: Cannot read file: {e}")
+        return None
 
     # Extract dimensions from filename
     width, height = extract_dimensions(filename)
@@ -391,8 +499,8 @@ def process_stl_file(stl_path, color_hex, output_dir=None, skip_existing_png=Tru
     if geometry is not None:
         # Calculate actual geometry dimensions
         extents = geometry.extents  # [x, y, z] in mm
-        actual_x_units = math.ceil(extents[0] / 42.0)
-        actual_y_units = math.ceil(extents[1] / 42.0)
+        actual_x_units = math.ceil(extents[0] / GRIDFINITY_UNIT_MM)
+        actual_y_units = math.ceil(extents[1] / GRIDFINITY_UNIT_MM)
 
         # Determine orientation from filename
         filename_is_landscape = width > height
@@ -409,15 +517,20 @@ def process_stl_file(stl_path, color_hex, output_dir=None, skip_existing_png=Tru
             needs_rotation = (filename_is_landscape and geometry_is_portrait) or \
                             (filename_is_portrait and geometry_is_landscape)
 
-    # Generate PNG filename with format: [name] [width]x[height].png
+    # Generate PNG filenames with format: [name] [width]x[height].png
     base_name = os.path.splitext(filename)[0]
     # Remove existing dimension pattern if present
     base_name = re.sub(r'\s*\d+x\d+\s*', ' ', base_name, flags=re.IGNORECASE).strip()
-    png_filename = f"{base_name} {width}x{height}.png"
+
+    # Orthographic version (for backwards compatibility)
+    png_filename_ortho = f"{base_name} {width}x{height}.png"
+    # Perspective version (optional)
+    png_filename_persp = f"{base_name} {width}x{height}-perspective.png"
 
     # Use output_dir if provided, otherwise use STL directory
     png_dir = output_dir if output_dir else os.path.dirname(stl_path)
-    png_path = os.path.join(png_dir, png_filename)
+    png_path_ortho = os.path.join(png_dir, png_filename_ortho)
+    png_path_persp = os.path.join(png_dir, png_filename_persp)
 
     # Prepare STL path for rendering (may be rotated)
     stl_to_render = stl_path
@@ -425,6 +538,7 @@ def process_stl_file(stl_path, color_hex, output_dir=None, skip_existing_png=Tru
 
     if needs_rotation:
         print(f"  Rotating geometry to match {width}x{height} orientation")
+        temp_stl_fd = None
         try:
             import numpy as np
 
@@ -436,50 +550,120 @@ def process_stl_file(stl_path, color_hex, output_dir=None, skip_existing_png=Tru
             # Apply rotation
             geometry.apply_transform(rotation_matrix)
 
-            # Export to temporary file
-            temp_stl = tempfile.NamedTemporaryFile(suffix='.stl', delete=False)
-            temp_stl.close()
-            geometry.export(temp_stl.name, file_type='stl')
-            temp_stl_path = temp_stl.name
-            stl_to_render = temp_stl_path
+            # Create temporary file
+            try:
+                temp_stl_fd = tempfile.NamedTemporaryFile(suffix='.stl', delete=False)
+                temp_stl_path = temp_stl_fd.name
+                temp_stl_fd.close()
+            except (OSError, PermissionError) as e:
+                print(f"  ERROR: Cannot create temporary file: {e}")
+                raise
 
-            print(f"  Created rotated temporary STL")
+            # Export to temporary file (cleanup on failure)
+            try:
+                geometry.export(temp_stl_path, file_type='stl')
+                stl_to_render = temp_stl_path
+                print(f"  Created rotated temporary STL")
+            except Exception as export_error:
+                # Clean up immediately on export failure
+                cleanup_temp_file(temp_stl_path)
+                temp_stl_path = None
+                raise export_error
+
         except Exception as e:
             print(f"  WARNING: Rotation failed: {e}")
             print(f"  Using original STL file")
             needs_rotation = False
             stl_to_render = stl_path
+            temp_stl_path = None  # Ensure cleanup doesn't fail
 
-    # Check if PNG already exists
-    if os.path.exists(png_path) and skip_existing_png:
-        print(f"  PNG already exists, skipping render: {png_filename}")
+    # Apply additional user-specified Z-axis rotation
+    if rotation != 0:
+        if geometry is not None:
+            try:
+                import numpy as np
+                print(f"  Applying {rotation}° user rotation")
+                user_rot_matrix = trimesh.transformations.rotation_matrix(
+                    np.radians(rotation), [0, 0, 1]
+                )
+                geometry.apply_transform(user_rot_matrix)
+
+                # Export rotated geometry to temp STL
+                if temp_stl_path is None:
+                    temp_stl_fd = tempfile.NamedTemporaryFile(suffix='.stl', delete=False)
+                    temp_stl_path = temp_stl_fd.name
+                    temp_stl_fd.close()
+
+                geometry.export(temp_stl_path, file_type='stl')
+                stl_to_render = temp_stl_path
+            except Exception as e:
+                print(f"  WARNING: User rotation failed: {e}")
+                print(f"  Rendering without user rotation")
+        else:
+            print(f"  WARNING: Cannot apply user rotation (geometry not loaded)")
+
+    # Render orthographic version (always, for backwards compatibility)
+    if os.path.exists(png_path_ortho) and skip_existing_png:
+        print(f"  Orthographic PNG already exists, skipping: {png_filename_ortho}")
     else:
-        print(f"  Rendering PNG: {png_filename}")
-        success = render_stl_to_png(
-            stl_to_render, png_path,
-            max_dimension=800, dpi=100, quiet=True
+        print(f"  Rendering orthographic PNG: {png_filename_ortho}")
+        success_ortho = render_stl_to_png(
+            stl_to_render, png_path_ortho,
+            max_dimension=DEFAULT_PNG_MAX_DIMENSION, dpi=DEFAULT_PNG_DPI, quiet=True
         )
-        if not success:
-            print(f"  FAILED to render {filename}")
-            # Clean up temporary rotated STL if created
-            if temp_stl_path and os.path.exists(temp_stl_path):
-                try:
-                    os.unlink(temp_stl_path)
-                except:
-                    pass
+        if not success_ortho:
+            print(f"  FAILED to render orthographic version of {filename}")
+            cleanup_temp_file(temp_stl_path)
             return None
 
+    # Render perspective version (optional)
+    perspective_filename = None
+    if render_both:
+        if os.path.exists(png_path_persp) and skip_existing_png:
+            print(f"  Perspective PNG already exists, skipping: {png_filename_persp}")
+            perspective_filename = png_filename_persp
+        else:
+            print(f"  Rendering perspective PNG: {png_filename_persp}")
+            success_persp = render_stl_to_png_perspective(
+                stl_to_render, png_path_persp,
+                max_dimension=DEFAULT_PNG_MAX_DIMENSION,
+                camera_tilt=camera_tilt,
+                fov=fov,
+                dpi=DEFAULT_PNG_DPI,
+                quiet=True
+            )
+            if success_persp:
+                perspective_filename = png_filename_persp
+            else:
+                print(f"  WARNING: Failed to render perspective version, continuing with orthographic only")
+
+    # Render rotation perspective variants (90°, 180°, 270°)
+    if render_both and perspective_filename:
+        for rot_angle in [90, 180, 270]:
+            rot_filename = f"{base_name} {width}x{height}-perspective-{rot_angle}.png"
+            rot_path = os.path.join(png_dir, rot_filename)
+            if os.path.exists(rot_path) and skip_existing_png:
+                print(f"  Perspective {rot_angle}° already exists, skipping: {rot_filename}")
+            else:
+                print(f"  Rendering perspective {rot_angle}° PNG: {rot_filename}")
+                render_stl_to_png_perspective(
+                    stl_to_render, rot_path,
+                    max_dimension=DEFAULT_PNG_MAX_DIMENSION,
+                    camera_tilt=camera_tilt,
+                    fov=fov,
+                    dpi=DEFAULT_PNG_DPI,
+                    quiet=True,
+                    rotation=rot_angle
+                )
+
     # Clean up temporary rotated STL if created
-    if temp_stl_path and os.path.exists(temp_stl_path):
-        try:
-            os.unlink(temp_stl_path)
-        except:
-            pass  # Ignore cleanup errors
+    cleanup_temp_file(temp_stl_path)
 
     # Build metadata
     metadata = {
         'stl_file': filename,
-        'png_file': png_filename,
+        'png_file': png_filename_ortho,  # Orthographic for backwards compatibility
+        'png_file_perspective': perspective_filename,  # Perspective version (optional)
         'width': width,
         'height': height,
         'color': color_hex
@@ -488,7 +672,8 @@ def process_stl_file(stl_path, color_hex, output_dir=None, skip_existing_png=Tru
     return metadata
 
 
-def process_3mf_file(mf3_path, color_hex, output_dir=None, skip_existing_png=True, non_interactive=False):
+def process_3mf_file(mf3_path, color_hex, output_dir=None, skip_existing_png=True, non_interactive=False,
+                     render_both=None, camera_tilt=None, fov=None, rotation=0):
     """
     Process a 3MF file with multiple objects.
 
@@ -498,10 +683,20 @@ def process_3mf_file(mf3_path, color_hex, output_dir=None, skip_existing_png=Tru
         output_dir: Directory for PNG output (default: same as 3MF)
         skip_existing_png: Skip rendering if PNG exists
         non_interactive: Skip objects without auto-detectable dimensions
+        render_both: If True, render both orthographic and perspective; if False, render orthographic only; if None, use default
+        camera_tilt: Camera tilt angle in degrees (for perspective mode)
+        fov: Field of view in degrees (for perspective mode)
 
     Returns:
         list[dict]: List of metadata dicts (one per object), empty on failure
     """
+    # Use default values if not specified
+    if render_both is None:
+        render_both = RENDER_BOTH_MODES
+    if camera_tilt is None:
+        camera_tilt = PERSPECTIVE_CAMERA_TILT
+    if fov is None:
+        fov = PERSPECTIVE_FOV
     if trimesh is None:
         print(f"  ERROR: trimesh library not installed. Install with: pip install trimesh lxml")
         return []
@@ -544,47 +739,136 @@ def process_3mf_file(mf3_path, color_hex, output_dir=None, skip_existing_png=Tru
                 print(f"  ERROR calculating dimensions for {obj_name}: {e}")
                 continue
 
-            # Generate PNG filename
-            png_filename = generate_3mf_png_filename(mf3_basename, obj_name, width, height)
-            png_path = os.path.join(directory, png_filename)
+            # Apply additional user-specified Z-axis rotation (after dimension calculation)
+            if rotation != 0:
+                try:
+                    import numpy as np
+                    user_rot_matrix = trimesh.transformations.rotation_matrix(
+                        np.radians(rotation), [0, 0, 1]
+                    )
+                    geometry.apply_transform(user_rot_matrix)
+                except Exception as e:
+                    print(f"    WARNING: User rotation failed for {obj_name}: {e}")
 
-            # Check if PNG already exists
-            if os.path.exists(png_path) and skip_existing_png:
-                print(f"    PNG already exists for {obj_name}, skipping render")
+            # Generate PNG filenames
+            # Orthographic (for backwards compatibility)
+            png_filename_ortho = generate_3mf_png_filename(mf3_basename, obj_name, width, height)
+            # Perspective version
+            png_filename_persp = f"{os.path.splitext(png_filename_ortho)[0]}-perspective.png"
+
+            png_path_ortho = os.path.join(directory, png_filename_ortho)
+            png_path_persp = os.path.join(directory, png_filename_persp)
+
+            # Render orthographic version (always, for backwards compatibility)
+            if os.path.exists(png_path_ortho) and skip_existing_png:
+                print(f"    Orthographic PNG already exists for {obj_name}, skipping")
             else:
                 # Export to temporary STL file
-                temp_stl = None
+                temp_stl_name = None
                 try:
-                    temp_stl = tempfile.NamedTemporaryFile(suffix='.stl', delete=False)
-                    temp_stl.close()
+                    try:
+                        temp_stl = tempfile.NamedTemporaryFile(suffix='.stl', delete=False)
+                        temp_stl_name = temp_stl.name
+                        temp_stl.close()
+                    except (OSError, PermissionError) as e:
+                        print(f"    ERROR: Cannot create temporary file: {e}")
+                        print(f"    Skipping {obj_name}")
+                        continue
 
                     # Export geometry to STL
-                    geometry.export(temp_stl.name, file_type='stl')
+                    geometry.export(temp_stl_name, file_type='stl')
 
-                    # Render with existing STL renderer
-                    print(f"    Rendering PNG for {obj_name}: {png_filename}")
-                    success = render_stl_to_png(
-                        temp_stl.name, png_path,
-                        max_dimension=800, dpi=100, quiet=True
+                    # Render orthographic version
+                    print(f"    Rendering orthographic PNG for {obj_name}: {png_filename_ortho}")
+                    success_ortho = render_stl_to_png(
+                        temp_stl_name, png_path_ortho,
+                        max_dimension=DEFAULT_PNG_MAX_DIMENSION, dpi=DEFAULT_PNG_DPI, quiet=True
                     )
 
-                    if not success:
-                        print(f"    FAILED to render {obj_name}")
+                    if not success_ortho:
+                        print(f"    FAILED to render orthographic version of {obj_name}")
                         continue
 
                 finally:
                     # Always cleanup temp file
-                    if temp_stl and os.path.exists(temp_stl.name):
+                    cleanup_temp_file(temp_stl_name)
+
+            # Render perspective version (optional)
+            perspective_filename = None
+            if render_both:
+                if os.path.exists(png_path_persp) and skip_existing_png:
+                    print(f"    Perspective PNG already exists for {obj_name}, skipping")
+                    perspective_filename = png_filename_persp
+                else:
+                    # Export to temporary STL file again for perspective rendering
+                    temp_stl_name = None
+                    try:
                         try:
-                            os.unlink(temp_stl.name)
-                        except:
-                            pass
+                            temp_stl = tempfile.NamedTemporaryFile(suffix='.stl', delete=False)
+                            temp_stl_name = temp_stl.name
+                            temp_stl.close()
+                        except (OSError, PermissionError) as e:
+                            print(f"    WARNING: Cannot create temporary file for perspective: {e}")
+                            print(f"    Skipping perspective rendering for {obj_name}")
+                        else:
+                            # Export geometry to STL
+                            geometry.export(temp_stl_name, file_type='stl')
+
+                            # Render perspective version
+                            print(f"    Rendering perspective PNG for {obj_name}: {png_filename_persp}")
+                            success_persp = render_stl_to_png_perspective(
+                                temp_stl_name, png_path_persp,
+                                max_dimension=DEFAULT_PNG_MAX_DIMENSION,
+                                camera_tilt=camera_tilt,
+                                fov=fov,
+                                dpi=DEFAULT_PNG_DPI,
+                                quiet=True
+                            )
+
+                            if success_persp:
+                                perspective_filename = png_filename_persp
+                            else:
+                                print(f"    WARNING: Failed to render perspective version of {obj_name}")
+
+                    finally:
+                        # Always cleanup temp file
+                        cleanup_temp_file(temp_stl_name)
+
+            # Render rotation perspective variants (90°, 180°, 270°)
+            if render_both and perspective_filename:
+                for rot_angle in [90, 180, 270]:
+                    rot_filename = f"{os.path.splitext(png_filename_ortho)[0]}-perspective-{rot_angle}.png"
+                    rot_path = os.path.join(directory, rot_filename)
+                    if os.path.exists(rot_path) and skip_existing_png:
+                        print(f"    Perspective {rot_angle}° already exists for {obj_name}, skipping")
+                    else:
+                        temp_stl_name = None
+                        try:
+                            temp_stl = tempfile.NamedTemporaryFile(suffix='.stl', delete=False)
+                            temp_stl_name = temp_stl.name
+                            temp_stl.close()
+                            geometry.export(temp_stl_name, file_type='stl')
+                            print(f"    Rendering perspective {rot_angle}° PNG for {obj_name}: {rot_filename}")
+                            render_stl_to_png_perspective(
+                                temp_stl_name, rot_path,
+                                max_dimension=DEFAULT_PNG_MAX_DIMENSION,
+                                camera_tilt=camera_tilt,
+                                fov=fov,
+                                dpi=DEFAULT_PNG_DPI,
+                                quiet=True,
+                                rotation=rot_angle
+                            )
+                        except Exception as e:
+                            print(f"    WARNING: Failed rotation {rot_angle}° for {obj_name}: {e}")
+                        finally:
+                            cleanup_temp_file(temp_stl_name)
 
             # Build metadata
             metadata = {
                 'mf3_file': mf3_filename,
                 'object_name': obj_name,
-                'png_file': png_filename,
+                'png_file': png_filename_ortho,  # Orthographic for backwards compatibility
+                'png_file_perspective': perspective_filename,  # Perspective version (optional)
                 'width': width,
                 'height': height,
                 'color': color_hex
@@ -598,18 +882,20 @@ def process_3mf_file(mf3_path, color_hex, output_dir=None, skip_existing_png=Tru
         return []
 
 
-def build_library_item(stl_file, png_file, width, height, color_hex, custom_id=None, custom_name=None):
+def build_library_item(stl_file, png_file, width, height, color_hex, custom_id=None, custom_name=None,
+                       png_file_perspective=None):
     """
     Create a library item dictionary from metadata.
 
     Args:
         stl_file: STL/3MF filename (for default ID generation)
-        png_file: PNG filename
+        png_file: PNG filename (orthographic)
         width: Width in grid units
         height: Height in grid units
         color_hex: Hex color code
         custom_id: Override ID (used for 3MF objects)
         custom_name: Override display name (used for 3MF objects)
+        png_file_perspective: Optional perspective PNG filename
 
     Returns:
         Library item dictionary
@@ -617,19 +903,26 @@ def build_library_item(stl_file, png_file, width, height, color_hex, custom_id=N
     item_id = custom_id if custom_id else to_kebab_case(stl_file)
     item_name = custom_name if custom_name else generate_display_name(stl_file, width, height)
 
-    return {
+    item = {
         'id': item_id,
         'name': item_name,
         'widthUnits': width,
         'heightUnits': height,
         'color': color_hex,
         'categories': [],
-        'imageUrl': png_file  # Just filename, not full path
+        'imageUrl': png_file  # Orthographic (backwards compatible)
     }
+
+    # Add perspective image URL if available
+    if png_file_perspective:
+        item['perspectiveImageUrl'] = png_file_perspective
+
+    return item
 
 
 def generate_library_json(directory, color_hex=None, output_file='index.json',
-                         library_name=None, skip_existing=True, non_interactive=False):
+                         library_name=None, skip_existing=True, non_interactive=False,
+                         render_both=None, camera_tilt=None, fov=None, rotation=0):
     """
     Main orchestration: scan directory, process STL and 3MF files, generate index.json.
 
@@ -640,6 +933,9 @@ def generate_library_json(directory, color_hex=None, output_file='index.json',
         library_name: Optional library name - creates subfolder for output
         skip_existing: Skip rendering if PNG already exists
         non_interactive: Skip files with missing dimensions
+        render_both: If True, render both orthographic and perspective; if False, orthographic only; if None, use default
+        camera_tilt: Camera tilt angle in degrees (for perspective mode)
+        fov: Field of view in degrees (for perspective mode)
 
     Returns:
         True on success, False on failure
@@ -684,7 +980,8 @@ def generate_library_json(directory, color_hex=None, output_file='index.json',
         filename = os.path.basename(stl_path)
         print(f"[{file_count}/{total_files}] Processing {filename}...")
 
-        metadata = process_stl_file(stl_path, color_hex, output_dir, skip_existing, non_interactive)
+        metadata = process_stl_file(stl_path, color_hex, output_dir, skip_existing, non_interactive,
+                                   render_both, camera_tilt, fov, rotation)
 
         if metadata is None:
             failures += 1
@@ -696,7 +993,8 @@ def generate_library_json(directory, color_hex=None, output_file='index.json',
             metadata['png_file'],
             metadata['width'],
             metadata['height'],
-            metadata['color']
+            metadata['color'],
+            png_file_perspective=metadata.get('png_file_perspective')
         )
         items.append(item)
         successes += 1
@@ -710,7 +1008,8 @@ def generate_library_json(directory, color_hex=None, output_file='index.json',
         mf3_basename = os.path.splitext(mf3_filename)[0]
         print(f"[{file_count}/{total_files}] Processing {mf3_filename}...")
 
-        metadata_list = process_3mf_file(mf3_path, color_hex, output_dir, skip_existing, non_interactive)
+        metadata_list = process_3mf_file(mf3_path, color_hex, output_dir, skip_existing, non_interactive,
+                                        render_both, camera_tilt, fov, rotation)
 
         if not metadata_list:
             failures += 1
@@ -741,7 +1040,8 @@ def generate_library_json(directory, color_hex=None, output_file='index.json',
                 metadata['height'],
                 metadata['color'],
                 custom_id=custom_id,
-                custom_name=custom_name
+                custom_name=custom_name,
+                png_file_perspective=metadata.get('png_file_perspective')
             )
             items.append(item)
             successes += 1
@@ -761,8 +1061,15 @@ def generate_library_json(directory, color_hex=None, output_file='index.json',
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(library, f, indent=2, ensure_ascii=False)
         print(f"Successfully wrote library to: {output_path}")
+    except PermissionError:
+        print(f"ERROR: Permission denied writing to: {output_path}", file=sys.stderr)
+        print(f"Check file permissions or try a different output directory.", file=sys.stderr)
+        return False
+    except OSError as e:
+        print(f"ERROR: Cannot write file: {e}", file=sys.stderr)
+        return False
     except Exception as e:
-        print(f"Error writing library file: {e}", file=sys.stderr)
+        print(f"ERROR: Unexpected error writing library file: {e}", file=sys.stderr)
         return False
 
     # Display summary
@@ -809,6 +1116,20 @@ Examples:
     parser.add_argument('--non-interactive', action='store_true',
                         help='Skip files with missing dimensions instead of prompting')
 
+    # Rendering mode options
+    parser.add_argument('--both-modes', action='store_true', default=None,
+                       help='Render both orthographic and perspective versions (default)')
+    parser.add_argument('--orthographic-only', action='store_true',
+                       help='Render only orthographic version (no perspective)')
+
+    # Perspective-specific options
+    parser.add_argument('--camera-tilt', type=float, default=None,
+                       help=f'Camera tilt angle in degrees for perspective mode (default: {PERSPECTIVE_CAMERA_TILT})')
+    parser.add_argument('--fov', type=float, default=None,
+                       help=f'Field of view in degrees for perspective mode (default: {PERSPECTIVE_FOV})')
+    parser.add_argument('--rotate', type=int, default=0, choices=[0, 90, 180, 270],
+                       help='Additional Z-axis rotation in degrees applied after auto-alignment (default: 0)')
+
     args = parser.parse_args()
 
     # Validate directory
@@ -825,6 +1146,13 @@ Examples:
             print("Use a color name (e.g., 'blue') or hex code (e.g., '#3B82F6')")
             sys.exit(1)
 
+    # Determine rendering mode
+    render_both = None  # Use default from constant
+    if args.orthographic_only:
+        render_both = False
+    elif args.both_modes:
+        render_both = True
+
     # Generate library
     success = generate_library_json(
         args.directory,
@@ -832,7 +1160,11 @@ Examples:
         output_file=args.output,
         library_name=args.library_name,
         skip_existing=args.skip_existing,
-        non_interactive=args.non_interactive
+        non_interactive=args.non_interactive,
+        render_both=render_both,
+        camera_tilt=args.camera_tilt,
+        fov=args.fov,
+        rotation=args.rotate
     )
 
     sys.exit(0 if success else 1)
