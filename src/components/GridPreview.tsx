@@ -1,5 +1,5 @@
 import { useRef, useMemo } from 'react';
-import type { PlacedItemWithValidity, DragData, ComputedSpacer, LibraryItem, ReferenceImage, ImageViewMode } from '../types/gridfinity';
+import type { PlacedItemWithValidity, DragData, ComputedSpacer, LibraryItem, ReferenceImage, ImageViewMode, BinCustomization } from '../types/gridfinity';
 import { PlacedItemOverlay } from './PlacedItemOverlay';
 import { SpacerOverlay } from './SpacerOverlay';
 import { ReferenceImageOverlay } from './ReferenceImageOverlay';
@@ -22,6 +22,8 @@ interface GridPreviewProps {
   onDeleteItem?: (instanceId: string) => void;
   onRotateItemCw?: (instanceId: string) => void;
   onRotateItemCcw?: (instanceId: string) => void;
+  onItemCustomizationChange?: (instanceId: string, customization: BinCustomization) => void;
+  onItemCustomizationReset?: (instanceId: string) => void;
   referenceImages?: ReferenceImage[];
   selectedImageId?: string | null;
   onImagePositionChange?: (id: string, x: number, y: number) => void;
@@ -49,6 +51,8 @@ export function GridPreview({
   onDeleteItem,
   onRotateItemCw,
   onRotateItemCcw,
+  onItemCustomizationChange,
+  onItemCustomizationReset,
   referenceImages = [],
   selectedImageId,
   onImagePositionChange,
@@ -155,6 +159,8 @@ export function GridPreview({
               onDelete={onDeleteItem}
               onRotateCw={onRotateItemCw}
               onRotateCcw={onRotateItemCcw}
+              onCustomizationChange={onItemCustomizationChange}
+              onCustomizationReset={onItemCustomizationReset}
               imageViewMode={imageViewMode}
             />
           ))}

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { PlacedItemOverlay } from './PlacedItemOverlay';
 import type { PlacedItemWithValidity, LibraryItem } from '../types/gridfinity';
+import { DEFAULT_BIN_CUSTOMIZATION } from '../types/gridfinity';
 import type React from 'react';
 
 // Mock usePointerDragSource to capture onTap callback
@@ -1362,6 +1363,423 @@ describe('PlacedItemOverlay', () => {
 
       image = container.querySelector('.placed-item-image');
       expect(image).toHaveAttribute('src', 'https://example.com/perspective.png');
+    });
+  });
+
+  describe('Customization Badges', () => {
+    it('should NOT render customization badges when customization is undefined', () => {
+      const item = createMockItem({ customization: undefined });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const badges = container.querySelector('.placed-item-badges');
+      expect(badges).not.toBeInTheDocument();
+    });
+
+    it('should NOT render customization badges when customization is default', () => {
+      const item = createMockItem({ customization: DEFAULT_BIN_CUSTOMIZATION });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const badges = container.querySelector('.placed-item-badges');
+      expect(badges).not.toBeInTheDocument();
+    });
+
+    it('should render wall pattern badge when wall pattern is non-default', () => {
+      const item = createMockItem({
+        customization: {
+          ...DEFAULT_BIN_CUSTOMIZATION,
+          wallPattern: 'grid',
+        },
+      });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const badge = container.querySelector('.placed-item-badge');
+      expect(badge).toBeInTheDocument();
+      expect(badge?.textContent).toMatch(/grid/i);
+    });
+
+    it('should render lip style badge when lip style is non-default', () => {
+      const item = createMockItem({
+        customization: {
+          ...DEFAULT_BIN_CUSTOMIZATION,
+          lipStyle: 'reduced',
+        },
+      });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const badge = container.querySelector('.placed-item-badge');
+      expect(badge).toBeInTheDocument();
+      expect(badge?.textContent).toMatch(/lip/i);
+    });
+
+    it('should render finger slide badge when finger slide is non-default', () => {
+      const item = createMockItem({
+        customization: {
+          ...DEFAULT_BIN_CUSTOMIZATION,
+          fingerSlide: 'rounded',
+        },
+      });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const badge = container.querySelector('.placed-item-badge');
+      expect(badge).toBeInTheDocument();
+      expect(badge?.textContent).toMatch(/slide/i);
+    });
+
+    it('should render wall cutout badge when wall cutout is non-default', () => {
+      const item = createMockItem({
+        customization: {
+          ...DEFAULT_BIN_CUSTOMIZATION,
+          wallCutout: 'vertical',
+        },
+      });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const badge = container.querySelector('.placed-item-badge');
+      expect(badge).toBeInTheDocument();
+      expect(badge?.textContent).toMatch(/cutout/i);
+    });
+
+    it('should render multiple badges when multiple customizations are non-default', () => {
+      const item = createMockItem({
+        customization: {
+          wallPattern: 'grid',
+          lipStyle: 'reduced',
+          fingerSlide: 'rounded',
+          wallCutout: 'none',
+        },
+      });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const badges = container.querySelectorAll('.placed-item-badge');
+      expect(badges.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('should render badges even when item is not selected', () => {
+      const item = createMockItem({
+        customization: {
+          ...DEFAULT_BIN_CUSTOMIZATION,
+          wallPattern: 'grid',
+        },
+      });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const badge = container.querySelector('.placed-item-badge');
+      expect(badge).toBeInTheDocument();
+    });
+  });
+
+  describe('Inline Customize Button', () => {
+    const mockOnCustomizationChange = vi.fn();
+
+    beforeEach(() => {
+      mockOnCustomizationChange.mockClear();
+    });
+
+    it('should render customize button when selected and handlers provided', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onCustomizationChange={mockOnCustomizationChange}
+        />
+      );
+
+      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      expect(customizeBtn).toBeInTheDocument();
+    });
+
+    it('should NOT render customize button when not selected', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onCustomizationChange={mockOnCustomizationChange}
+        />
+      );
+
+      expect(screen.queryByRole('button', { name: 'Customize' })).not.toBeInTheDocument();
+    });
+
+    it('should NOT render customize button when no handler provided', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      expect(screen.queryByRole('button', { name: 'Customize' })).not.toBeInTheDocument();
+    });
+
+    it('should NOT propagate click to parent', () => {
+      const item = createMockItem();
+      const parentClickHandler = vi.fn();
+      render(
+        <div onClick={parentClickHandler}>
+          <PlacedItemOverlay
+            item={item}
+            gridX={4}
+            gridY={4}
+            isSelected={true}
+            onSelect={mockOnSelect}
+            getItemById={mockGetItemById}
+            onCustomizationChange={mockOnCustomizationChange}
+          />
+        </div>
+      );
+
+      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      fireEvent.click(customizeBtn);
+
+      expect(parentClickHandler).not.toHaveBeenCalled();
+    });
+
+    it('should toggle customization popover when clicked', () => {
+      const item = createMockItem();
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onCustomizationChange={mockOnCustomizationChange}
+        />
+      );
+
+      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      fireEvent.click(customizeBtn);
+
+      const popover = container.querySelector('.placed-item-customize-popover');
+      expect(popover).toBeInTheDocument();
+    });
+  });
+
+  describe('Customization Popover', () => {
+    const mockOnCustomizationChange = vi.fn();
+    const mockOnCustomizationReset = vi.fn();
+
+    beforeEach(() => {
+      mockOnCustomizationChange.mockClear();
+      mockOnCustomizationReset.mockClear();
+    });
+
+    it('should render four select fields when popover is open', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onCustomizationChange={mockOnCustomizationChange}
+        />
+      );
+
+      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      fireEvent.click(customizeBtn);
+
+      expect(screen.getByLabelText('Wall Pattern')).toBeInTheDocument();
+      expect(screen.getByLabelText('Lip Style')).toBeInTheDocument();
+      expect(screen.getByLabelText('Finger Slide')).toBeInTheDocument();
+      expect(screen.getByLabelText('Wall Cutout')).toBeInTheDocument();
+    });
+
+    it('should call onCustomizationChange when a select value changes', () => {
+      const item = createMockItem({ instanceId: 'custom-item-123' });
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onCustomizationChange={mockOnCustomizationChange}
+        />
+      );
+
+      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      fireEvent.click(customizeBtn);
+
+      const wallPatternSelect = screen.getByLabelText('Wall Pattern') as HTMLSelectElement;
+      fireEvent.change(wallPatternSelect, { target: { value: 'voronoi' } });
+
+      expect(mockOnCustomizationChange).toHaveBeenCalledWith(
+        'custom-item-123',
+        expect.objectContaining({ wallPattern: 'voronoi' })
+      );
+    });
+
+    it('should render reset button in popover', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onCustomizationChange={mockOnCustomizationChange}
+          onCustomizationReset={mockOnCustomizationReset}
+        />
+      );
+
+      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      fireEvent.click(customizeBtn);
+
+      const resetBtn = screen.getByRole('button', { name: /reset to defaults/i });
+      expect(resetBtn).toBeInTheDocument();
+    });
+
+    it('should call onCustomizationReset when reset is clicked', () => {
+      const item = createMockItem({
+        instanceId: 'custom-item-456',
+        customization: {
+          wallPattern: 'grid',
+          lipStyle: 'normal',
+          fingerSlide: 'none',
+          wallCutout: 'none',
+        },
+      });
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onCustomizationChange={mockOnCustomizationChange}
+          onCustomizationReset={mockOnCustomizationReset}
+        />
+      );
+
+      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      fireEvent.click(customizeBtn);
+
+      const resetBtn = screen.getByRole('button', { name: /reset to defaults/i });
+      fireEvent.click(resetBtn);
+
+      expect(mockOnCustomizationReset).toHaveBeenCalledWith('custom-item-456');
+    });
+
+    it('should close popover when close button is clicked', () => {
+      const item = createMockItem();
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onCustomizationChange={mockOnCustomizationChange}
+        />
+      );
+
+      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      fireEvent.click(customizeBtn);
+
+      const popover = container.querySelector('.placed-item-customize-popover');
+      expect(popover).toBeInTheDocument();
+
+      const closeBtn = screen.getByRole('button', { name: 'Close customization' });
+      fireEvent.click(closeBtn);
+
+      const popoverAfterClose = container.querySelector('.placed-item-customize-popover');
+      expect(popoverAfterClose).not.toBeInTheDocument();
     });
   });
 });

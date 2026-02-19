@@ -14,6 +14,7 @@ interface BinCustomizationPanelProps {
   customization: BinCustomization | undefined;
   onChange: (customization: BinCustomization) => void;
   onReset: () => void;
+  idPrefix?: string;
 }
 
 const WALL_PATTERN_OPTIONS: WallPattern[] = [
@@ -35,6 +36,7 @@ export function BinCustomizationPanel({
   customization,
   onChange,
   onReset,
+  idPrefix = '',
 }: BinCustomizationPanelProps) {
   const current: BinCustomization = customization ?? DEFAULT_BIN_CUSTOMIZATION;
   const isDefault = isDefaultCustomization(customization);
@@ -58,9 +60,9 @@ export function BinCustomizationPanel({
   return (
     <div className="bin-customization-panel">
       <div className="bin-customization-field">
-        <label htmlFor="wall-pattern-select">Wall Pattern</label>
+        <label htmlFor={`${idPrefix}wall-pattern-select`}>Wall Pattern</label>
         <select
-          id="wall-pattern-select"
+          id={`${idPrefix}wall-pattern-select`}
           value={current.wallPattern}
           onChange={handleWallPatternChange}
         >
@@ -73,9 +75,9 @@ export function BinCustomizationPanel({
       </div>
 
       <div className="bin-customization-field">
-        <label htmlFor="lip-style-select">Lip Style</label>
+        <label htmlFor={`${idPrefix}lip-style-select`}>Lip Style</label>
         <select
-          id="lip-style-select"
+          id={`${idPrefix}lip-style-select`}
           value={current.lipStyle}
           onChange={handleLipStyleChange}
         >
@@ -88,9 +90,9 @@ export function BinCustomizationPanel({
       </div>
 
       <div className="bin-customization-field">
-        <label htmlFor="finger-slide-select">Finger Slide</label>
+        <label htmlFor={`${idPrefix}finger-slide-select`}>Finger Slide</label>
         <select
-          id="finger-slide-select"
+          id={`${idPrefix}finger-slide-select`}
           value={current.fingerSlide}
           onChange={handleFingerSlideChange}
         >
@@ -103,9 +105,9 @@ export function BinCustomizationPanel({
       </div>
 
       <div className="bin-customization-field">
-        <label htmlFor="wall-cutout-select">Wall Cutout</label>
+        <label htmlFor={`${idPrefix}wall-cutout-select`}>Wall Cutout</label>
         <select
-          id="wall-cutout-select"
+          id={`${idPrefix}wall-cutout-select`}
           value={current.wallCutout}
           onChange={handleWallCutoutChange}
         >
