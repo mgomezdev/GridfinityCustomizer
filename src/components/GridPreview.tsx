@@ -122,6 +122,13 @@ export function GridPreview({
     onSelectItem(null);
   };
 
+  const handleGridKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onSelectItem(null);
+    }
+  };
+
   return (
     <div className="grid-preview" style={{ aspectRatio: `${gridX} / ${gridY}` }}>
       {selectedItemIds.size > 1 && (
@@ -148,6 +155,7 @@ export function GridPreview({
             height: `${gridHeight}%`,
           }}
           onClick={handleGridClick}
+          onKeyDown={handleGridKeyDown}
         >
           {cells}
           {placedItems.map(item => (

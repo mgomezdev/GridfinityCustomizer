@@ -245,7 +245,9 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
       {showPopover && isSelected && onCustomizationChange && (
         <div
           className="placed-item-customize-popover"
+          role="dialog"
           onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >

@@ -1144,4 +1144,65 @@ describe('GridPreview', () => {
       expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
   });
+
+  describe('Keyboard Accessibility', () => {
+    it('should have an onKeyDown handler on the grid container', () => {
+      const { container } = render(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={[]}
+          selectedItemIds={new Set()}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const gridContainer = container.querySelector('.grid-container')!;
+      // Fire a keydown event and verify it doesn't throw
+      fireEvent.keyDown(gridContainer, { key: 'Escape' });
+      // The handler should deselect on Escape
+      expect(mockOnSelectItem).toHaveBeenCalledWith(null);
+    });
+
+    it('should deselect all items when Escape is pressed on the grid container', () => {
+      const items = [createMockItem({ instanceId: 'item-1' })];
+      const { container } = render(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={items}
+          selectedItemIds={new Set(['item-1'])}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const gridContainer = container.querySelector('.grid-container')!;
+      fireEvent.keyDown(gridContainer, { key: 'Escape' });
+
+      expect(mockOnSelectItem).toHaveBeenCalledWith(null);
+    });
+
+    it('should not call onSelectItem for non-handled keys on the grid container', () => {
+      const { container } = render(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={[]}
+          selectedItemIds={new Set()}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const gridContainer = container.querySelector('.grid-container')!;
+      fireEvent.keyDown(gridContainer, { key: 'a' });
+
+      expect(mockOnSelectItem).not.toHaveBeenCalled();
+    });
+  });
 });

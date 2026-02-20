@@ -1951,5 +1951,54 @@ describe('PlacedItemOverlay', () => {
       const popoverAfterClose = container.querySelector('.placed-item-customize-popover');
       expect(popoverAfterClose).not.toBeInTheDocument();
     });
+
+    it('should have role="dialog" on the popover', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onCustomizationChange={mockOnCustomizationChange}
+        />
+      );
+
+      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      fireEvent.click(customizeBtn);
+
+      const popover = screen.getByRole('dialog');
+      expect(popover).toBeInTheDocument();
+      expect(popover).toHaveClass('placed-item-customize-popover');
+    });
+
+    it('should stop keyboard event propagation from the popover', () => {
+      const item = createMockItem();
+      const mockOnDelete = vi.fn();
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onCustomizationChange={mockOnCustomizationChange}
+          onDelete={mockOnDelete}
+        />
+      );
+
+      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      fireEvent.click(customizeBtn);
+
+      const popover = container.querySelector('.placed-item-customize-popover')!;
+      // Fire a Delete keydown inside the popover — it should NOT propagate
+      // to the parent .placed-item div which would trigger onDelete
+      fireEvent.keyDown(popover, { key: 'Delete' });
+
+      expect(mockOnDelete).not.toHaveBeenCalled();
+    });
   });
 });
