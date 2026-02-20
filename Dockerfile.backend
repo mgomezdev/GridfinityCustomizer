@@ -19,7 +19,7 @@ COPY --from=build /app/server/dist server/dist
 COPY --from=build /app/server/package.json server/package.json
 # Seed data: library manifests and images from public/
 COPY public/libraries/ public/libraries/
-COPY docker-entrypoint.sh /docker-entrypoint.sh
+COPY docker-entrypoint.backend.sh /docker-entrypoint.sh
 RUN sed -i 's/\r$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
 RUN mkdir -p /data/images
 EXPOSE 3001
