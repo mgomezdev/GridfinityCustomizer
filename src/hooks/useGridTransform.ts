@@ -1,9 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-
-const MIN_ZOOM = 0.25;
-const MAX_ZOOM = 4.0;
-const ZOOM_STEP = 0.1;
-const WHEEL_ZOOM_FACTOR = 0.001;
+import { MIN_ZOOM, MAX_ZOOM, ZOOM_STEP, WHEEL_ZOOM_FACTOR } from '../utils/constants';
 
 export interface GridTransform {
   zoom: number;
