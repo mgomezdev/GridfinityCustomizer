@@ -975,6 +975,93 @@ describe('GridPreview', () => {
     });
   });
 
+  describe('Default Prop Referential Stability', () => {
+    it('should render correctly when spacers prop is omitted across re-renders', () => {
+      const { container, rerender } = render(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={[]}
+          selectedItemIds={new Set()}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const gridContainer = container.querySelector('.grid-container');
+      expect(gridContainer).toBeInTheDocument();
+      expect(gridContainer).toHaveStyle({ left: '0%', top: '0%', width: '100%', height: '100%' });
+
+      rerender(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={[]}
+          selectedItemIds={new Set()}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      expect(gridContainer).toHaveStyle({ left: '0%', top: '0%', width: '100%', height: '100%' });
+    });
+
+    it('should render correctly when referenceImages prop is omitted across re-renders', () => {
+      const { container, rerender } = render(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={[]}
+          selectedItemIds={new Set()}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const gridContainer = container.querySelector('.grid-container')!;
+      const refImages = gridContainer.querySelectorAll('.reference-image-overlay');
+      expect(refImages).toHaveLength(0);
+
+      rerender(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={[]}
+          selectedItemIds={new Set()}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const refImagesAfter = gridContainer.querySelectorAll('.reference-image-overlay');
+      expect(refImagesAfter).toHaveLength(0);
+    });
+
+    it('should not render spacer overlays when spacers prop is omitted', () => {
+      const { container } = render(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={[]}
+          selectedItemIds={new Set()}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const drawerContainer = container.querySelector('.drawer-container')!;
+      const spacerOverlays = drawerContainer.querySelectorAll('[class*="spacer"]');
+      const gridContainer = container.querySelector('.grid-container');
+      expect(gridContainer).toBeInTheDocument();
+      expect(spacerOverlays).toHaveLength(0);
+    });
+  });
+
   describe('Stacking Order — Reference Images Above Placed Items', () => {
     const createMockRefImage = (overrides?: Partial<ReferenceImage>): ReferenceImage => ({
       id: 'ref-img-1',

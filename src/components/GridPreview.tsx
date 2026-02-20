@@ -5,6 +5,9 @@ import { SpacerOverlay } from './SpacerOverlay';
 import { ReferenceImageOverlay } from './ReferenceImageOverlay';
 import { usePointerDropTarget } from '../hooks/usePointerDrag';
 
+const EMPTY_SPACERS: ComputedSpacer[] = [];
+const EMPTY_REF_IMAGES: ReferenceImage[] = [];
+
 interface RefImageMeta {
   isBroken: boolean;
   imageUrl: string | null;
@@ -44,7 +47,7 @@ export function GridPreview({
   gridY,
   placedItems,
   selectedItemIds,
-  spacers = [],
+  spacers = EMPTY_SPACERS,
   onDrop,
   onSelectItem,
   getItemById,
@@ -53,7 +56,7 @@ export function GridPreview({
   onRotateItemCcw,
   onItemCustomizationChange,
   onItemCustomizationReset,
-  referenceImages = [],
+  referenceImages = EMPTY_REF_IMAGES,
   selectedImageId,
   onImagePositionChange,
   onImageSelect,
