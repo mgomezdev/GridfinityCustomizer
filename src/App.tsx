@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useReducer, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { UnitSystem, ImperialFormat, GridSpacerConfig, ImageViewMode, ReferenceImage, DragData } from './types/gridfinity';
 import type { LayoutStatus } from '@gridfinity/shared';
 import { calculateGrid, mmToInches, inchesToMm } from './utils/conversions';
+import { layoutMetaReducer, initialLayoutMetaState } from './reducers/layoutMetaReducer';
+import { dialogReducer, initialDialogState } from './reducers/dialogReducer';
 import { useGridItems } from './hooks/useGridItems';
 import { useSpacerCalculation } from './hooks/useSpacerCalculation';
 import { useBillOfMaterials } from './hooks/useBillOfMaterials';
@@ -45,17 +47,8 @@ function App() {
     vertical: 'none',
   });
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
-  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [showLoadDialog, setShowLoadDialog] = useState(false);
-  const [showRebindDialog, setShowRebindDialog] = useState(false);
-  const [showAdminDialog, setShowAdminDialog] = useState(false);
-  const [rebindTargetId, setRebindTargetId] = useState<string | null>(null);
-  const [currentLayoutId, setCurrentLayoutId] = useState<number | null>(null);
-  const [currentLayoutName, setCurrentLayoutName] = useState('');
-  const [currentLayoutDescription, setCurrentLayoutDescription] = useState('');
-  const [currentLayoutStatus, setCurrentLayoutStatus] = useState<LayoutStatus | null>(null);
-  const [currentLayoutOwner, setCurrentLayoutOwner] = useState('');
+  const [dialogs, dialogDispatch] = useReducer(dialogReducer, initialDialogState);
+  const [layoutMeta, layoutDispatch] = useReducer(layoutMetaReducer, initialLayoutMetaState);
   const [sidebarTab, setSidebarTab] = useState<'items' | 'images'>('items');
   const [imageViewMode, setImageViewMode] = useState<ImageViewMode>(
     () => (localStorage.getItem('gridfinity-image-view-mode') as ImageViewMode) || 'ortho'
@@ -63,7 +56,7 @@ function App() {
 
   const { isAuthenticated, user } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const isReadOnly = currentLayoutStatus === 'delivered';
+  const isReadOnly = layoutMeta.status === 'delivered';
 
   const submitLayoutMutation = useSubmitLayoutMutation();
   const withdrawLayoutMutation = useWithdrawLayoutMutation();
@@ -224,42 +217,38 @@ function App() {
   }, [isReadOnly, gridResult.gridX, gridResult.gridY, addRefImagePlacement, handleDrop]);
 
   const handleSaveComplete = useCallback((layoutId: number, name: string, status: LayoutStatus) => {
-    setCurrentLayoutId(layoutId);
-    setCurrentLayoutName(name);
-    setCurrentLayoutStatus(status);
+    layoutDispatch({ type: 'SAVE_COMPLETE', payload: { id: layoutId, name, status } });
   }, []);
 
   const handleSubmitLayout = useCallback(async () => {
-    if (!currentLayoutId) return;
+    if (!layoutMeta.id) return;
     try {
-      const result = await submitLayoutMutation.mutateAsync(currentLayoutId);
-      setCurrentLayoutStatus(result.status);
+      const result = await submitLayoutMutation.mutateAsync(layoutMeta.id);
+      layoutDispatch({ type: 'SET_STATUS', payload: result.status });
     } catch {
       // Error handled by mutation
     }
-  }, [currentLayoutId, submitLayoutMutation]);
+  }, [layoutMeta.id, submitLayoutMutation]);
 
   const handleWithdrawLayout = useCallback(async () => {
-    if (!currentLayoutId) return;
+    if (!layoutMeta.id) return;
     try {
-      const result = await withdrawLayoutMutation.mutateAsync(currentLayoutId);
-      setCurrentLayoutStatus(result.status);
+      const result = await withdrawLayoutMutation.mutateAsync(layoutMeta.id);
+      layoutDispatch({ type: 'SET_STATUS', payload: result.status });
     } catch {
       // Error handled by mutation
     }
-  }, [currentLayoutId, withdrawLayoutMutation]);
+  }, [layoutMeta.id, withdrawLayoutMutation]);
 
   const handleCloneCurrentLayout = useCallback(async () => {
-    if (!currentLayoutId) return;
+    if (!layoutMeta.id) return;
     try {
-      const result = await cloneLayoutMutation.mutateAsync(currentLayoutId);
-      setCurrentLayoutId(result.id);
-      setCurrentLayoutName(result.name);
-      setCurrentLayoutStatus(result.status);
+      const result = await cloneLayoutMutation.mutateAsync(layoutMeta.id);
+      layoutDispatch({ type: 'CLONE_COMPLETE', payload: { id: result.id, name: result.name, status: result.status } });
     } catch {
       // Error handled by mutation
     }
-  }, [currentLayoutId, cloneLayoutMutation]);
+  }, [layoutMeta.id, cloneLayoutMutation]);
 
   // Zoom and pan
   const {
@@ -401,11 +390,7 @@ function App() {
       clearAll();
       clearRefImages();
       setSelectedImageId(null);
-      setCurrentLayoutId(null);
-      setCurrentLayoutName('');
-      setCurrentLayoutDescription('');
-      setCurrentLayoutStatus(null);
-      setCurrentLayoutOwner('');
+      layoutDispatch({ type: 'CLEAR_LAYOUT' });
     }
   };
 
@@ -422,21 +407,26 @@ function App() {
     loadItems(config.placedItems);
     loadRefImagePlacements(config.refImagePlacements ?? []);
     setSelectedImageId(null);
-    setCurrentLayoutId(config.layoutId);
-    setCurrentLayoutName(config.layoutName);
-    setCurrentLayoutDescription(config.layoutDescription ?? '');
-    setCurrentLayoutStatus(config.layoutStatus);
 
     // Build owner string for admin views
+    let owner = '';
     if (config.ownerUsername) {
-      let owner = config.ownerUsername;
+      owner = config.ownerUsername;
       if (config.ownerEmail) {
         owner += `<${config.ownerEmail}>`;
       }
-      setCurrentLayoutOwner(owner);
-    } else {
-      setCurrentLayoutOwner('');
     }
+
+    layoutDispatch({
+      type: 'LOAD_LAYOUT',
+      payload: {
+        id: config.layoutId,
+        name: config.layoutName,
+        description: config.layoutDescription ?? '',
+        status: config.layoutStatus,
+        owner,
+      },
+    });
   }, [unitSystem, loadItems, loadRefImagePlacements]);
 
   const handleRemoveImage = (id: string) => {
@@ -447,17 +437,15 @@ function App() {
   };
 
   const handleRebindImage = useCallback((id: string) => {
-    setRebindTargetId(id);
-    setShowRebindDialog(true);
+    dialogDispatch({ type: 'OPEN_REBIND', targetId: id });
   }, []);
 
   const handleRebindSelect = useCallback((refImageId: number, imageUrl: string, name: string) => {
-    if (rebindTargetId) {
-      rebindRefImage(rebindTargetId, refImageId, imageUrl, name);
+    if (dialogs.rebindTargetId) {
+      rebindRefImage(dialogs.rebindTargetId, refImageId, imageUrl, name);
     }
-    setShowRebindDialog(false);
-    setRebindTargetId(null);
-  }, [rebindTargetId, rebindRefImage]);
+    dialogDispatch({ type: 'CLOSE_REBIND' });
+  }, [dialogs.rebindTargetId, rebindRefImage]);
 
   const toggleImageViewMode = useCallback(() => {
     setImageViewMode(prev => {
@@ -584,7 +572,7 @@ function App() {
       // ?: Show keyboard shortcuts help
       if (event.key === '?') {
         event.preventDefault();
-        setShowKeyboardHelp(prev => !prev);
+        dialogDispatch({ type: 'TOGGLE', dialog: 'keyboard' });
         return;
       }
 
@@ -625,11 +613,11 @@ function App() {
       <header className="app-header">
         <div className="header-title-group">
           <h1>Gridfinity Bin Customizer</h1>
-          {currentLayoutId && (
+          {layoutMeta.id && (
             <p className="layout-info-subtitle">
-              {currentLayoutOwner && <span className="layout-owner">{currentLayoutOwner} — </span>}
-              <span className="layout-name">{currentLayoutName}</span>
-              {currentLayoutStatus && <span className={`layout-status-badge layout-status-${currentLayoutStatus}`}>{currentLayoutStatus}</span>}
+              {layoutMeta.owner && <span className="layout-owner">{layoutMeta.owner} — </span>}
+              <span className="layout-name">{layoutMeta.name}</span>
+              {layoutMeta.status && <span className={`layout-status-badge layout-status-${layoutMeta.status}`}>{layoutMeta.status}</span>}
             </p>
           )}
         </div>
@@ -637,7 +625,7 @@ function App() {
           <UserMenu />
           <button
             className="keyboard-help-button"
-            onClick={() => setShowKeyboardHelp(true)}
+            onClick={() => dialogDispatch({ type: 'OPEN', dialog: 'keyboard' })}
             aria-label="Keyboard shortcuts"
             title="Keyboard shortcuts (?)"
           >
@@ -782,7 +770,7 @@ function App() {
               {isAuthenticated && (
                 <button
                   className="layout-toolbar-btn layout-load-btn"
-                  onClick={() => setShowLoadDialog(true)}
+                  onClick={() => dialogDispatch({ type: 'OPEN', dialog: 'load' })}
                   type="button"
                 >
                   Load
@@ -791,13 +779,13 @@ function App() {
               {isAuthenticated && (placedItems.length > 0 || refImagePlacements.length > 0) && (
                 <button
                   className="layout-toolbar-btn layout-save-btn"
-                  onClick={() => setShowSaveDialog(true)}
+                  onClick={() => dialogDispatch({ type: 'OPEN', dialog: 'save' })}
                   type="button"
                 >
-                  {currentLayoutId && !isReadOnly ? 'Save' : 'Save'}
+                  {layoutMeta.id && !isReadOnly ? 'Save' : 'Save'}
                 </button>
               )}
-              {isAuthenticated && currentLayoutId && currentLayoutStatus === 'draft' && (
+              {isAuthenticated && layoutMeta.id && layoutMeta.status === 'draft' && (
                 <button
                   className="layout-toolbar-btn layout-submit-btn"
                   onClick={handleSubmitLayout}
@@ -807,7 +795,7 @@ function App() {
                   {submitLayoutMutation.isPending ? 'Submitting...' : 'Submit'}
                 </button>
               )}
-              {isAuthenticated && currentLayoutId && currentLayoutStatus === 'submitted' && (
+              {isAuthenticated && layoutMeta.id && layoutMeta.status === 'submitted' && (
                 <button
                   className="layout-toolbar-btn layout-withdraw-btn"
                   onClick={handleWithdrawLayout}
@@ -835,7 +823,7 @@ function App() {
               {isAdmin && (
                 <SubmissionsBadge
                   count={submittedCountQuery.data?.submitted ?? 0}
-                  onClick={() => setShowAdminDialog(true)}
+                  onClick={() => dialogDispatch({ type: 'OPEN', dialog: 'admin' })}
                 />
               )}
             </div>
@@ -900,13 +888,13 @@ function App() {
       </main>
 
       <KeyboardShortcutsHelp
-        isOpen={showKeyboardHelp}
-        onClose={() => setShowKeyboardHelp(false)}
+        isOpen={dialogs.keyboard}
+        onClose={() => dialogDispatch({ type: 'CLOSE', dialog: 'keyboard' })}
       />
 
       <SaveLayoutDialog
-        isOpen={showSaveDialog}
-        onClose={() => setShowSaveDialog(false)}
+        isOpen={dialogs.save}
+        onClose={() => dialogDispatch({ type: 'CLOSE', dialog: 'save' })}
         gridX={gridResult.gridX}
         gridY={gridResult.gridY}
         widthMm={drawerWidth}
@@ -914,29 +902,29 @@ function App() {
         spacerConfig={spacerConfig}
         placedItems={placedItems}
         refImagePlacements={refImagePlacements}
-        currentLayoutId={currentLayoutId}
-        currentLayoutName={currentLayoutName}
-        currentLayoutDescription={currentLayoutDescription}
-        currentLayoutStatus={currentLayoutStatus}
+        currentLayoutId={layoutMeta.id}
+        currentLayoutName={layoutMeta.name}
+        currentLayoutDescription={layoutMeta.description}
+        currentLayoutStatus={layoutMeta.status}
         onSaveComplete={handleSaveComplete}
       />
 
       <LoadLayoutDialog
-        isOpen={showLoadDialog}
-        onClose={() => setShowLoadDialog(false)}
+        isOpen={dialogs.load}
+        onClose={() => dialogDispatch({ type: 'CLOSE', dialog: 'load' })}
         onLoad={handleLoadLayout}
         hasItems={placedItems.length > 0 || refImagePlacements.length > 0}
       />
 
       <RebindImageDialog
-        isOpen={showRebindDialog}
-        onClose={() => { setShowRebindDialog(false); setRebindTargetId(null); }}
+        isOpen={dialogs.rebind}
+        onClose={() => dialogDispatch({ type: 'CLOSE_REBIND' })}
         onSelect={handleRebindSelect}
       />
 
       <AdminSubmissionsDialog
-        isOpen={showAdminDialog}
-        onClose={() => setShowAdminDialog(false)}
+        isOpen={dialogs.admin}
+        onClose={() => dialogDispatch({ type: 'CLOSE', dialog: 'admin' })}
         onLoad={handleLoadLayout}
         hasItems={placedItems.length > 0 || refImagePlacements.length > 0}
       />
