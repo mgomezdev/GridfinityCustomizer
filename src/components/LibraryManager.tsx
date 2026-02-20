@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import type { LibraryItem, Category } from '../types/gridfinity';
 import { CategoryManager } from './CategoryManager';
+import { useConfirmDialog } from '../hooks/useConfirmDialog';
+import { ConfirmDialog } from './ConfirmDialog';
 
 interface LibraryManagerProps {
   items: LibraryItem[];
@@ -41,6 +43,7 @@ export function LibraryManager({
   const [formMode, setFormMode] = useState<FormMode>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const { confirm, dialogProps: confirmDialogProps } = useConfirmDialog();
 
   // Focus trap and restore
   useEffect(() => {
@@ -160,8 +163,8 @@ export function LibraryManager({
     }
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this item?')) {
+  const handleDelete = async (id: string) => {
+    if (await confirm({ title: 'Delete Item', message: 'Are you sure you want to delete this item?', variant: 'danger', confirmLabel: 'Delete', cancelLabel: 'Cancel' })) {
       try {
         onDeleteItem(id);
       } catch (err) {
@@ -170,8 +173,8 @@ export function LibraryManager({
     }
   };
 
-  const handleReset = () => {
-    if (window.confirm('Are you sure you want to reset to default library? All custom items will be lost.')) {
+  const handleReset = async () => {
+    if (await confirm({ title: 'Reset Library', message: 'Are you sure you want to reset to default library? All custom items will be lost.', variant: 'danger', confirmLabel: 'Reset', cancelLabel: 'Cancel' })) {
       onResetToDefaults();
       setFormMode(null);
       setEditingId(null);
@@ -391,6 +394,7 @@ export function LibraryManager({
             getItemsUsingCategory={getItemsUsingCategory}
           />
         )}
+        <ConfirmDialog {...confirmDialogProps} />
       </div>
     </div>
   );

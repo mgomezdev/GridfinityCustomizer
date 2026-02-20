@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import App from './App';
 import type { LibraryItem } from './types/gridfinity';
 import type { RefImagePlacement } from './hooks/useRefImagePlacements';
@@ -761,26 +761,32 @@ describe('App Integration Tests', () => {
       expect(screen.getByText(/Clear All/)).toBeInTheDocument();
     });
 
-    it('Clear All with confirm=true calls clearAll', () => {
+    it('Clear All with confirm=true calls clearAll', async () => {
       renderApp();
       placeItemViaGridPreview();
       expect(getPlacedItems().length).toBe(1);
 
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
       fireEvent.click(screen.getByText(/Clear All/));
-      expect(getPlacedItems().length).toBe(0);
-      (window.confirm as Mock).mockRestore();
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Clear All' }));
+      await waitFor(() => {
+        expect(getPlacedItems().length).toBe(0);
+      });
     });
 
-    it('Clear All with confirm=false does not clear', () => {
+    it('Clear All with confirm=false does not clear', async () => {
       renderApp();
       placeItemViaGridPreview();
       expect(getPlacedItems().length).toBe(1);
 
-      vi.spyOn(window, 'confirm').mockReturnValue(false);
       fireEvent.click(screen.getByText(/Clear All/));
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
       expect(getPlacedItems().length).toBe(1);
-      (window.confirm as Mock).mockRestore();
     });
 
     it('ZoomControls receives zoom from useGridTransform', () => {
@@ -955,7 +961,7 @@ describe('App Integration Tests', () => {
       expect(ownerSpan.textContent).toContain('alice@example.com');
     });
 
-    it('clears subtitle on Clear All', () => {
+    it('clears subtitle on Clear All', async () => {
       renderApp();
 
       // Load a layout first
@@ -978,11 +984,15 @@ describe('App Integration Tests', () => {
       expect(screen.getByText('To Clear')).toBeInTheDocument();
 
       // Clear all
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
       fireEvent.click(screen.getByText(/Clear All/));
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Clear All' }));
 
-      expect(screen.queryByText('To Clear')).not.toBeInTheDocument();
-      (window.confirm as Mock).mockRestore();
+      await waitFor(() => {
+        expect(screen.queryByText('To Clear')).not.toBeInTheDocument();
+      });
     });
   });
 });

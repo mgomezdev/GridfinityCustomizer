@@ -14,6 +14,8 @@ import { useRefImagePlacements } from './hooks/useRefImagePlacements';
 import { useGridTransform } from './hooks/useGridTransform';
 import { useAuth } from './contexts/AuthContext';
 import { useSubmitLayoutMutation, useWithdrawLayoutMutation, useCloneLayoutMutation, useSubmittedCountQuery } from './hooks/useLayouts';
+import { useConfirmDialog } from './hooks/useConfirmDialog';
+import { ConfirmDialog } from './components/ConfirmDialog';
 import { DimensionInput } from './components/DimensionInput';
 import { GridPreview } from './components/GridPreview';
 import { GridSummary } from './components/GridSummary';
@@ -62,6 +64,7 @@ function App() {
   const withdrawLayoutMutation = useWithdrawLayoutMutation();
   const cloneLayoutMutation = useCloneLayoutMutation();
   const submittedCountQuery = useSubmittedCountQuery();
+  const { confirm, dialogProps: confirmDialogProps } = useConfirmDialog();
 
   // Library selection and discovery
   const {
@@ -382,11 +385,11 @@ function App() {
     deleteSelected();
   }, [deleteSelected]);
 
-  const handleClearAll = () => {
+  const handleClearAll = async () => {
     const message = refImagePlacements.length > 0
       ? `Remove all ${placedItems.length} placed items and ${refImagePlacements.length} reference images?`
       : `Remove all ${placedItems.length} placed items?`;
-    if (window.confirm(message)) {
+    if (await confirm({ title: 'Clear All', message, variant: 'danger', confirmLabel: 'Clear All', cancelLabel: 'Cancel' })) {
       clearAll();
       clearRefImages();
       setSelectedImageId(null);
@@ -936,6 +939,8 @@ function App() {
           This layout has been delivered and is read-only. Clone to make changes.
         </div>
       )}
+
+      <ConfirmDialog {...confirmDialogProps} />
     </div>
   );
 }

@@ -5,6 +5,8 @@ import { useLayoutsQuery, useDeleteLayoutMutation, useSubmitLayoutMutation, useW
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchLayout } from '../../api/layouts.api';
 import { LayoutList } from './LayoutList';
+import { useConfirmDialog } from '../../hooks/useConfirmDialog';
+import { ConfirmDialog } from '../ConfirmDialog';
 
 interface LoadLayoutDialogProps {
   isOpen: boolean;
@@ -48,6 +50,7 @@ export function LoadLayoutDialog({
 }: LoadLayoutDialogProps) {
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { confirm, dialogProps: confirmDialogProps } = useConfirmDialog();
 
   const { getAccessToken } = useAuth();
   const layoutsQuery = useLayoutsQuery();
@@ -60,7 +63,7 @@ export function LoadLayoutDialog({
 
   const handleSelect = async (layout: ApiLayout) => {
     if (hasItems) {
-      const confirmed = window.confirm('Replace current layout? This will remove all placed items and reference images.');
+      const confirmed = await confirm({ title: 'Replace Layout', message: 'Replace current layout? This will remove all placed items and reference images.', variant: 'danger', confirmLabel: 'Replace', cancelLabel: 'Cancel' });
       if (!confirmed) return;
     }
 
@@ -198,6 +201,7 @@ export function LoadLayoutDialog({
             isDeleting={deleteLayoutMutation.isPending}
           />
         </div>
+        <ConfirmDialog {...confirmDialogProps} />
       </div>
     </div>
   );
