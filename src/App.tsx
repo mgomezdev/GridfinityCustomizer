@@ -532,6 +532,8 @@ function App() {
       }
 
       // Escape: Clear both selections
+      // Note: deselectAll() and setSelectedImageId() are two independent setState calls,
+      // but React 18+ automatic batching ensures they produce a single re-render.
       if (event.key === 'Escape') {
         deselectAll();
         setSelectedImageId(null);

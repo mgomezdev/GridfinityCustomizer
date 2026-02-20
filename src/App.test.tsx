@@ -460,6 +460,59 @@ describe('App Integration Tests', () => {
       expect(mockRemovePlacement).not.toHaveBeenCalled();
     });
 
+    it('Escape clears selectedImageId when an image is selected (React 18 batching)', () => {
+      // Verifies that deselectAll() and setSelectedImageId(null) are both applied
+      // in a single render pass via React 18+ automatic batching.
+      mockPlacements = [{
+        id: 'img-1', refImageId: 1, name: 'test.png', imageUrl: 'ref-lib/test.webp',
+        x: 0, y: 0, width: 50, height: 50, opacity: 0.5, scale: 1, isLocked: false, rotation: 0,
+      }];
+      renderApp();
+
+      // Select the image
+      const onImageSelect = capturedGridPreviewProps.onImageSelect as (id: string) => void;
+      act(() => { onImageSelect('img-1'); });
+
+      // Verify image is selected — R should rotate it
+      fireEvent.keyDown(document, { key: 'r' });
+      expect(mockUpdateRotation).toHaveBeenCalledWith('img-1', 'cw');
+      mockUpdateRotation.mockClear();
+
+      // Press Escape — should clear selectedImageId
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      // After Escape, R should NOT rotate the image (selectedImageId is null)
+      fireEvent.keyDown(document, { key: 'r' });
+      expect(mockUpdateRotation).not.toHaveBeenCalled();
+
+      // Delete should also not remove any image
+      fireEvent.keyDown(document, { key: 'Delete' });
+      expect(mockRemovePlacement).not.toHaveBeenCalled();
+    });
+
+    it('Delete clears selectedImageId after removing image (no stale reference)', () => {
+      // Verifies that removeRefImagePlacement() and setSelectedImageId(null)
+      // are batched correctly — no stale image reference remains after deletion.
+      mockPlacements = [{
+        id: 'img-1', refImageId: 1, name: 'test.png', imageUrl: 'ref-lib/test.webp',
+        x: 0, y: 0, width: 50, height: 50, opacity: 0.5, scale: 1, isLocked: false, rotation: 0,
+      }];
+      renderApp();
+
+      // Select the image
+      const onImageSelect = capturedGridPreviewProps.onImageSelect as (id: string) => void;
+      act(() => { onImageSelect('img-1'); });
+
+      // Delete the selected image
+      fireEvent.keyDown(document, { key: 'Delete' });
+      expect(mockRemovePlacement).toHaveBeenCalledWith('img-1');
+      mockRemovePlacement.mockClear();
+
+      // After deletion, pressing Delete again should NOT try to remove 'img-1' again
+      fireEvent.keyDown(document, { key: 'Delete' });
+      expect(mockRemovePlacement).not.toHaveBeenCalled();
+    });
+
     it('Ctrl+A selects all placed items', () => {
       renderApp();
       placeItemViaGridPreview('bins_standard:bin-1x1', 0, 0);
