@@ -1,4 +1,4 @@
-name: Publish Docker Images
+name: Publish Docker Image
 
 on:
   push:
@@ -6,8 +6,7 @@ on:
       - "v*"
 
 env:
-  FRONTEND_IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/gridfinity-frontend
-  BACKEND_IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/gridfinity-backend
+  IMAGE: ninjabuffalo/gridfinity-customizer
 
 jobs:
   publish:
@@ -34,26 +33,13 @@ jobs:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push frontend
+      - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: Dockerfile.frontend
           push: true
           tags: |
-            ${{ env.FRONTEND_IMAGE }}:${{ steps.meta.outputs.version }}
-            ${{ env.FRONTEND_IMAGE }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build and push backend
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: Dockerfile.backend
-          push: true
-          tags: |
-            ${{ env.BACKEND_IMAGE }}:${{ steps.meta.outputs.version }}
-            ${{ env.BACKEND_IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ steps.meta.outputs.version }}
+            ${{ env.IMAGE }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
