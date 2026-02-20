@@ -15,6 +15,12 @@ export const DEFAULT_IMAGE_HEIGHT = 50;
 export const DEFAULT_IMAGE_OPACITY = 0.5;
 export const DEFAULT_IMAGE_SCALE = 1;
 
+/** Rotation lookup maps */
+import type { Rotation } from '../types/gridfinity';
+
+export const ROTATION_CW: Record<Rotation, Rotation> = { 0: 90, 90: 180, 180: 270, 270: 0 };
+export const ROTATION_CCW: Record<Rotation, Rotation> = { 0: 270, 90: 0, 180: 90, 270: 180 };
+
 /** Gridfinity base unit size in mm */
 export const GRIDFINITY_UNIT_MM = 42;
 

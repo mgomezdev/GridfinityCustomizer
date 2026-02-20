@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
 import type { PlacedItem, PlacedItemWithValidity, DragData, LibraryItem, Rotation, BinCustomization } from '../types/gridfinity';
+import { ROTATION_CW, ROTATION_CCW } from '../utils/constants';
 
 /**
  * Grid-based occupancy count for O(n) collision detection.
@@ -77,8 +78,6 @@ function isOutOfBounds(
   return x < 0 || y < 0 || x + width > gridX || y + height > gridY;
 }
 
-const ROTATION_CW: Record<Rotation, Rotation> = { 0: 90, 90: 180, 180: 270, 270: 0 };
-const ROTATION_CCW: Record<Rotation, Rotation> = { 0: 270, 90: 0, 180: 90, 270: 180 };
 
 function isSideways(rotation: Rotation): boolean {
   return rotation === 90 || rotation === 270;
