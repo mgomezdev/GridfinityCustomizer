@@ -288,6 +288,7 @@ function App() {
       handleWheel(e, rect);
     };
 
+    // passive: false is required — handler calls preventDefault() to capture wheel zoom
     viewport.addEventListener('wheel', onWheel, { passive: false });
     return () => viewport.removeEventListener('wheel', onWheel);
   }, [handleWheel]);
@@ -361,6 +362,7 @@ function App() {
       }
     };
 
+    // passive: false is required — handlers call preventDefault() to capture pinch-to-zoom
     viewport.addEventListener('touchstart', onTouchStart, { passive: false });
     viewport.addEventListener('touchmove', onTouchMove, { passive: false });
 
