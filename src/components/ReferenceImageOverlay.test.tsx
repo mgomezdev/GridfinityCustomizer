@@ -470,6 +470,119 @@ describe('ReferenceImageOverlay', () => {
       expect(overlayElement).not.toHaveClass('reference-image-overlay--dragging');
     });
 
+    it('should end drag on pointercancel', () => {
+      const image = createMockImage({ isLocked: false });
+      const { container } = render(
+        <div style={{ width: '1000px', height: '800px' }}>
+          <ReferenceImageOverlay image={image} {...defaultProps} />
+        </div>
+      );
+
+      const overlayElement = container.querySelector('.reference-image-overlay');
+
+      fireEvent.pointerDown(overlayElement!, { clientX: 100, clientY: 100 });
+      expect(overlayElement).toHaveClass('reference-image-overlay--dragging');
+
+      fireEvent(document, new Event('pointercancel', { bubbles: true }));
+      expect(overlayElement).not.toHaveClass('reference-image-overlay--dragging');
+    });
+
+    it('should not call onPositionChange on pointermove after drag ends', () => {
+      const image = createMockImage({ x: 10, y: 20, isLocked: false });
+      const { container } = render(
+        <div style={{ width: '1000px', height: '800px' }}>
+          <ReferenceImageOverlay image={image} {...defaultProps} />
+        </div>
+      );
+
+      const overlayElement = container.querySelector('.reference-image-overlay');
+      const parentElement = overlayElement!.parentElement!;
+
+      vi.spyOn(parentElement, 'getBoundingClientRect').mockReturnValue({
+        width: 1000, height: 800,
+        left: 0, top: 0, right: 1000, bottom: 800,
+        x: 0, y: 0, toJSON: () => {},
+      });
+
+      fireEvent.pointerDown(overlayElement!, { clientX: 500, clientY: 400 });
+      fireEvent.pointerUp(document);
+
+      mockOnPositionChange.mockClear();
+      fireEvent.pointerMove(document, { clientX: 600, clientY: 500 });
+
+      expect(mockOnPositionChange).not.toHaveBeenCalled();
+    });
+
+    it('should support multiple sequential drag operations', () => {
+      const image = createMockImage({ x: 10, y: 20, isLocked: false });
+      const { container } = render(
+        <div style={{ width: '1000px', height: '800px' }}>
+          <ReferenceImageOverlay image={image} {...defaultProps} />
+        </div>
+      );
+
+      const overlayElement = container.querySelector('.reference-image-overlay');
+      const parentElement = overlayElement!.parentElement!;
+
+      vi.spyOn(parentElement, 'getBoundingClientRect').mockReturnValue({
+        width: 1000, height: 800,
+        left: 0, top: 0, right: 1000, bottom: 800,
+        x: 0, y: 0, toJSON: () => {},
+      });
+
+      // First drag
+      fireEvent.pointerDown(overlayElement!, { clientX: 500, clientY: 400 });
+      fireEvent.pointerMove(document, { clientX: 600, clientY: 500 });
+      expect(mockOnPositionChange).toHaveBeenCalledWith(20, 32.5);
+      fireEvent.pointerUp(document);
+
+      expect(overlayElement).not.toHaveClass('reference-image-overlay--dragging');
+
+      mockOnPositionChange.mockClear();
+
+      // Second drag from different start point
+      fireEvent.pointerDown(overlayElement!, { clientX: 200, clientY: 300 });
+      expect(overlayElement).toHaveClass('reference-image-overlay--dragging');
+      fireEvent.pointerMove(document, { clientX: 300, clientY: 400 });
+      expect(mockOnPositionChange).toHaveBeenCalledWith(20, 32.5);
+      fireEvent.pointerUp(document);
+
+      expect(overlayElement).not.toHaveClass('reference-image-overlay--dragging');
+    });
+
+    it('should calculate drag deltas from initial pointerdown position across all moves', () => {
+      const image = createMockImage({ x: 50, y: 50, isLocked: false });
+      const { container } = render(
+        <div style={{ width: '1000px', height: '1000px' }}>
+          <ReferenceImageOverlay image={image} {...defaultProps} />
+        </div>
+      );
+
+      const overlayElement = container.querySelector('.reference-image-overlay');
+      const parentElement = overlayElement!.parentElement!;
+
+      vi.spyOn(parentElement, 'getBoundingClientRect').mockReturnValue({
+        width: 1000, height: 1000,
+        left: 0, top: 0, right: 1000, bottom: 1000,
+        x: 0, y: 0, toJSON: () => {},
+      });
+
+      // Start drag at (100, 100)
+      fireEvent.pointerDown(overlayElement!, { clientX: 100, clientY: 100 });
+
+      // Move to (150, 150) => delta = (50, 50) => 5%, 5% => position (55, 55)
+      fireEvent.pointerMove(document, { clientX: 150, clientY: 150 });
+      expect(mockOnPositionChange).toHaveBeenLastCalledWith(55, 55);
+
+      // Move to (200, 200) => delta from START = (100, 100) => 10%, 10% => position (60, 60)
+      fireEvent.pointerMove(document, { clientX: 200, clientY: 200 });
+      expect(mockOnPositionChange).toHaveBeenLastCalledWith(60, 60);
+
+      // Move back to (100, 100) => delta from START = (0, 0) => position (50, 50)
+      fireEvent.pointerMove(document, { clientX: 100, clientY: 100 });
+      expect(mockOnPositionChange).toHaveBeenLastCalledWith(50, 50);
+    });
+
     it('should handle drag with no parent element gracefully', () => {
       const image = createMockImage({ isLocked: false });
       const { container } = render(
@@ -1096,4 +1209,5 @@ describe('ReferenceImageOverlay', () => {
       expect(contentElement).toHaveStyle({ transform: 'scale(1) rotate(270deg)' });
     });
   });
+
 });

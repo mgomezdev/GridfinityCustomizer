@@ -17,21 +17,12 @@ interface ReferenceImageOverlayProps {
   onRebind?: () => void;
 }
 
-interface DragState {
-  isDragging: boolean;
+interface DragStartCoords {
   startX: number;
   startY: number;
   startImageX: number;
   startImageY: number;
 }
-
-const INITIAL_DRAG_STATE: DragState = {
-  isDragging: false,
-  startX: 0,
-  startY: 0,
-  startImageX: 0,
-  startImageY: 0,
-};
 
 export const ReferenceImageOverlay = memo(function ReferenceImageOverlay({
   image,
@@ -48,9 +39,10 @@ export const ReferenceImageOverlay = memo(function ReferenceImageOverlay({
   imageUrl,
   onRebind,
 }: ReferenceImageOverlayProps) {
-  const [dragState, setDragState] = useState<DragState>(INITIAL_DRAG_STATE);
+  const [isDragging, setIsDragging] = useState(false);
   const [imageLoadError, setImageLoadError] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dragStartRef = useRef<DragStartCoords | null>(null);
 
   const handleImageError = () => {
     console.error(`Failed to load reference image: ${image.name}`);
@@ -65,13 +57,13 @@ export const ReferenceImageOverlay = memo(function ReferenceImageOverlay({
 
     if (image.isLocked) return;
 
-    setDragState({
-      isDragging: true,
+    dragStartRef.current = {
       startX: e.clientX,
       startY: e.clientY,
       startImageX: image.x,
       startImageY: image.y,
-    });
+    };
+    setIsDragging(true);
   };
 
   const handleToolbarPointerDown = (e: React.PointerEvent) => {
@@ -90,22 +82,25 @@ export const ReferenceImageOverlay = memo(function ReferenceImageOverlay({
 
   // Attach global pointer event listeners during drag
   useEffect(() => {
-    if (!dragState.isDragging) return;
+    if (!isDragging) return;
 
     const handlePointerMove = (e: PointerEvent) => {
+      const coords = dragStartRef.current;
+      if (!coords) return;
+
       const container = containerRef.current?.parentElement;
       if (!container) return;
 
       const rect = container.getBoundingClientRect();
-      const deltaX = e.clientX - dragState.startX;
-      const deltaY = e.clientY - dragState.startY;
+      const deltaX = e.clientX - coords.startX;
+      const deltaY = e.clientY - coords.startY;
 
       // Convert pixel delta to percentage
       const deltaXPercent = (deltaX / rect.width) * 100;
       const deltaYPercent = (deltaY / rect.height) * 100;
 
-      const newX = dragState.startImageX + deltaXPercent;
-      const newY = dragState.startImageY + deltaYPercent;
+      const newX = coords.startImageX + deltaXPercent;
+      const newY = coords.startImageY + deltaYPercent;
 
       // Clamp to 0-100 range
       const clampedX = Math.max(0, Math.min(100, newX));
@@ -115,11 +110,13 @@ export const ReferenceImageOverlay = memo(function ReferenceImageOverlay({
     };
 
     const handlePointerUp = () => {
-      setDragState(INITIAL_DRAG_STATE);
+      dragStartRef.current = null;
+      setIsDragging(false);
     };
 
     const handlePointerCancel = () => {
-      setDragState(INITIAL_DRAG_STATE);
+      dragStartRef.current = null;
+      setIsDragging(false);
     };
 
     document.addEventListener('pointermove', handlePointerMove);
@@ -131,11 +128,11 @@ export const ReferenceImageOverlay = memo(function ReferenceImageOverlay({
       document.removeEventListener('pointerup', handlePointerUp);
       document.removeEventListener('pointercancel', handlePointerCancel);
     };
-  }, [dragState, onPositionChange]);
+  }, [isDragging, onPositionChange]);
 
   const baseClassName = 'reference-image-overlay';
   const interactiveClassName = `${baseClassName}--interactive`;
-  const draggingClassName = dragState.isDragging ? `${baseClassName}--dragging` : '';
+  const draggingClassName = isDragging ? `${baseClassName}--dragging` : '';
   const lockedClassName = image.isLocked ? `${baseClassName}--locked` : '';
   const selectedClassName = isSelected ? `${baseClassName}--selected` : '';
 
