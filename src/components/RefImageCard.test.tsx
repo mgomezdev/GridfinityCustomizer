@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { RefImageCard } from './RefImageCard';
 import type { ApiRefImage } from '@gridfinity/shared';
@@ -59,34 +59,37 @@ describe('RefImageCard', () => {
     expect(deleteButton).not.toBeInTheDocument();
   });
 
-  it('calls onDelete with image id after confirming dialog', () => {
+  it('calls onDelete with image id after confirming dialog', async () => {
     const onDelete = vi.fn();
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     render(<RefImageCard image={mockImage} onDelete={onDelete} />);
 
     const deleteButton = screen.getByRole('button', { name: 'Delete test-ref.png' });
     fireEvent.click(deleteButton);
 
-    expect(confirmSpy).toHaveBeenCalledWith('Delete "test-ref.png"?');
-    expect(onDelete).toHaveBeenCalledWith(42);
-
-    confirmSpy.mockRestore();
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Delete "test-ref.png"?')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    await waitFor(() => {
+      expect(onDelete).toHaveBeenCalledWith(42);
+    });
   });
 
-  it('does NOT call onDelete when confirm is cancelled', () => {
+  it('does NOT call onDelete when confirm is cancelled', async () => {
     const onDelete = vi.fn();
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
 
     render(<RefImageCard image={mockImage} onDelete={onDelete} />);
 
     const deleteButton = screen.getByRole('button', { name: 'Delete test-ref.png' });
     fireEvent.click(deleteButton);
 
-    expect(confirmSpy).toHaveBeenCalledWith('Delete "test-ref.png"?');
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onDelete).not.toHaveBeenCalled();
-
-    confirmSpy.mockRestore();
   });
 
   it('calls onRename with id and trimmed name on double-click', () => {

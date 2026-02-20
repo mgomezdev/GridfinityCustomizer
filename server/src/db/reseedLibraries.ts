@@ -148,6 +148,18 @@ export async function reseedLibraryData(client: Client, logger: Logger): Promise
           const destPath = resolve(destDir, destFilename);
           copyFileSync(sourcePerspectivePath, destPath);
           perspectiveImagePath = `${lib.id}/${destFilename}`;
+
+          // Copy rotation variants (90, 180, 270) from the same source directory
+          if (destFilename.endsWith('-perspective.png')) {
+            const sourceDir = dirname(sourcePerspectivePath);
+            for (const rotation of [90, 180, 270]) {
+              const rotatedFilename = destFilename.replace(/-perspective\.png$/, `-perspective-${rotation}.png`);
+              const rotatedSrcPath = resolve(sourceDir, rotatedFilename);
+              if (existsSync(rotatedSrcPath)) {
+                copyFileSync(rotatedSrcPath, resolve(destDir, rotatedFilename));
+              }
+            }
+          }
         } else {
           logger.warn(`Perspective image not found: ${sourcePerspectivePath}`);
         }

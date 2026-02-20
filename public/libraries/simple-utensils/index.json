@@ -7,8 +7,12 @@
       "widthUnits": 1,
       "heightUnits": 3,
       "color": "#3B82F6",
-      "categories": ["utensil"],
-      "imageUrl": "/libraries/simple-utensils/Utensils1x3.png"
+      "categories": [
+        "utensil"
+      ],
+      "stlFile": "Utensils 1x3.stl",
+      "imageUrl": "Utensils1x3.png",
+      "perspectiveImageUrl": "Utensils1x3-perspective.png"
     },
     {
       "id": "utensils-1x4",
@@ -16,8 +20,12 @@
       "widthUnits": 1,
       "heightUnits": 4,
       "color": "#3B82F6",
-      "categories": ["utensil"],
-      "imageUrl": "/libraries/simple-utensils/Utensils1x4.png"
+      "categories": [
+        "utensil"
+      ],
+      "stlFile": "Utensils 1x4.stl",
+      "imageUrl": "Utensils1x4.png",
+      "perspectiveImageUrl": "Utensils1x4-perspective.png"
     },
     {
       "id": "utensils-1x5",
@@ -25,8 +33,12 @@
       "widthUnits": 1,
       "heightUnits": 5,
       "color": "#3B82F6",
-      "categories": ["utensil"],
-      "imageUrl": "/libraries/simple-utensils/Utensils1x5.png"
+      "categories": [
+        "utensil"
+      ],
+      "stlFile": "Utensils 1x5.stl",
+      "imageUrl": "Utensils1x5.png",
+      "perspectiveImageUrl": "Utensils1x5-perspective.png"
     },
     {
       "id": "utensils-1x6",
@@ -34,8 +46,12 @@
       "widthUnits": 1,
       "heightUnits": 6,
       "color": "#3B82F6",
-      "categories": ["utensil"],
-      "imageUrl": "/libraries/simple-utensils/Utensils1x6.png"
+      "categories": [
+        "utensil"
+      ],
+      "stlFile": "Utensils 1x6.stl",
+      "imageUrl": "Utensils1x6.png",
+      "perspectiveImageUrl": "Utensils1x6-perspective.png"
     },
     {
       "id": "utensils-2x4",
@@ -43,8 +59,10 @@
       "widthUnits": 2,
       "heightUnits": 4,
       "color": "#3B82F6",
-      "categories": ["utensil"],
-      "imageUrl": "/libraries/simple-utensils/Utensils2x4.png"
+      "categories": [
+        "utensil"
+      ],
+      "imageUrl": "Utensils2x4.png"
     },
     {
       "id": "utensils-2x5",
@@ -52,8 +70,10 @@
       "widthUnits": 2,
       "heightUnits": 5,
       "color": "#3B82F6",
-      "categories": ["utensil"],
-      "imageUrl": "/libraries/simple-utensils/Utensils2x5.png"
+      "categories": [
+        "utensil"
+      ],
+      "imageUrl": "Utensils2x5.png"
     },
     {
       "id": "utensils-2x6",
@@ -61,8 +81,10 @@
       "widthUnits": 2,
       "heightUnits": 6,
       "color": "#3B82F6",
-      "categories": ["utensil"],
-      "imageUrl": "/libraries/simple-utensils/Utensils2x6.png"
+      "categories": [
+        "utensil"
+      ],
+      "imageUrl": "Utensils2x6.png"
     },
     {
       "id": "utensils-offset-2x4",
@@ -70,8 +92,10 @@
       "widthUnits": 2,
       "heightUnits": 4,
       "color": "#3B82F6",
-      "categories": ["utensil"],
-      "imageUrl": "/libraries/simple-utensils/Utensilsoffset2x4.png"
+      "categories": [
+        "utensil"
+      ],
+      "imageUrl": "Utensilsoffset2x4.png"
     }
   ]
 }

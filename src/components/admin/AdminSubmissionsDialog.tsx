@@ -8,6 +8,8 @@ import type { PlacedItem, Rotation, SpacerMode } from '@gridfinity/shared';
 import type { RefImagePlacement } from '../../hooks/useRefImagePlacements';
 import { groupLayouts } from './groupLayouts';
 import type { GroupMode } from './groupLayouts';
+import { useConfirmDialog } from '../../hooks/useConfirmDialog';
+import { ConfirmDialog } from '../ConfirmDialog';
 
 interface AdminSubmissionsDialogProps {
   isOpen: boolean;
@@ -34,6 +36,7 @@ export function AdminSubmissionsDialog({
   const [groupBy, setGroupBy] = useState<GroupMode>('none');
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { confirm, dialogProps: confirmDialogProps } = useConfirmDialog();
 
   const { getAccessToken } = useAuth();
   const statusFilter = filter === 'all' ? undefined : filter;
@@ -45,7 +48,7 @@ export function AdminSubmissionsDialog({
 
   const handleLoad = async (layout: ApiLayout) => {
     if (hasItems) {
-      const confirmed = window.confirm('Replace current layout? This will remove all placed items and reference images.');
+      const confirmed = await confirm({ title: 'Replace Layout', message: 'Replace current layout? This will remove all placed items and reference images.', variant: 'danger', confirmLabel: 'Replace', cancelLabel: 'Cancel' });
       if (!confirmed) return;
     }
 
@@ -66,6 +69,7 @@ export function AdminSubmissionsDialog({
         width: item.width,
         height: item.height,
         rotation: item.rotation as Rotation,
+        ...(item.customization ? { customization: item.customization } : {}),
       }));
 
       const refImagePlacements: RefImagePlacement[] = (detail.refImagePlacements ?? []).map((p, index) => ({
@@ -286,6 +290,7 @@ export function AdminSubmissionsDialog({
             </div>
           )}
         </div>
+        <ConfirmDialog {...confirmDialogProps} />
       </div>
     </div>
   );

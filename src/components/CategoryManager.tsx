@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import type { Category, LibraryItem } from '../types/gridfinity';
+import { useConfirmDialog } from '../hooks/useConfirmDialog';
+import { ConfirmDialog } from './ConfirmDialog';
 
 interface CategoryManagerProps {
   categories: Category[];
@@ -31,6 +33,7 @@ export function CategoryManager({
     order: undefined,
   });
   const [error, setError] = useState<string | null>(null);
+  const { confirm, dialogProps: confirmDialogProps } = useConfirmDialog();
 
   const handleStartAdd = () => {
     setFormMode('add');
@@ -79,7 +82,7 @@ export function CategoryManager({
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     const itemsUsing = getItemsUsingCategory(id);
 
     // Check if any items would have no categories left after deletion
@@ -100,7 +103,7 @@ export function CategoryManager({
       ? `Are you sure you want to delete the category "${categoryName}"?\n\nThis category will be removed from ${itemsUsing.length} item(s), but they will remain in other categories.`
       : `Are you sure you want to delete the category "${categoryName}"?`;
 
-    if (window.confirm(warningMessage)) {
+    if (await confirm({ title: 'Delete Category', message: warningMessage, variant: 'danger', confirmLabel: 'Delete', cancelLabel: 'Cancel' })) {
       try {
         onDeleteCategory(id);
         setError(null);
@@ -110,8 +113,8 @@ export function CategoryManager({
     }
   };
 
-  const handleReset = () => {
-    if (window.confirm('Are you sure you want to reset to default categories? All custom categories will be lost.')) {
+  const handleReset = async () => {
+    if (await confirm({ title: 'Reset Categories', message: 'Are you sure you want to reset to default categories? All custom categories will be lost.', variant: 'danger', confirmLabel: 'Reset', cancelLabel: 'Cancel' })) {
       onResetToDefaults();
       setFormMode(null);
       setEditingId(null);
@@ -256,6 +259,7 @@ export function CategoryManager({
             </div>
           </form>
         )}
+        <ConfirmDialog {...confirmDialogProps} />
       </div>
     </div>
   );

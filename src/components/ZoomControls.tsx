@@ -1,5 +1,4 @@
-const MIN_ZOOM = 0.25;
-const MAX_ZOOM = 4.0;
+import { MIN_ZOOM, MAX_ZOOM } from '../utils/constants';
 
 interface ZoomControlsProps {
   zoom: number;

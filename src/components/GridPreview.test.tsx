@@ -975,6 +975,93 @@ describe('GridPreview', () => {
     });
   });
 
+  describe('Default Prop Referential Stability', () => {
+    it('should render correctly when spacers prop is omitted across re-renders', () => {
+      const { container, rerender } = render(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={[]}
+          selectedItemIds={new Set()}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const gridContainer = container.querySelector('.grid-container');
+      expect(gridContainer).toBeInTheDocument();
+      expect(gridContainer).toHaveStyle({ left: '0%', top: '0%', width: '100%', height: '100%' });
+
+      rerender(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={[]}
+          selectedItemIds={new Set()}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      expect(gridContainer).toHaveStyle({ left: '0%', top: '0%', width: '100%', height: '100%' });
+    });
+
+    it('should render correctly when referenceImages prop is omitted across re-renders', () => {
+      const { container, rerender } = render(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={[]}
+          selectedItemIds={new Set()}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const gridContainer = container.querySelector('.grid-container')!;
+      const refImages = gridContainer.querySelectorAll('.reference-image-overlay');
+      expect(refImages).toHaveLength(0);
+
+      rerender(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={[]}
+          selectedItemIds={new Set()}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const refImagesAfter = gridContainer.querySelectorAll('.reference-image-overlay');
+      expect(refImagesAfter).toHaveLength(0);
+    });
+
+    it('should not render spacer overlays when spacers prop is omitted', () => {
+      const { container } = render(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={[]}
+          selectedItemIds={new Set()}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const drawerContainer = container.querySelector('.drawer-container')!;
+      const spacerOverlays = drawerContainer.querySelectorAll('[class*="spacer"]');
+      const gridContainer = container.querySelector('.grid-container');
+      expect(gridContainer).toBeInTheDocument();
+      expect(spacerOverlays).toHaveLength(0);
+    });
+  });
+
   describe('Stacking Order — Reference Images Above Placed Items', () => {
     const createMockRefImage = (overrides?: Partial<ReferenceImage>): ReferenceImage => ({
       id: 'ref-img-1',
@@ -1055,6 +1142,67 @@ describe('GridPreview', () => {
       // The first reference image should come after the last placed item
       const position = lastPlacedItem.compareDocumentPosition(firstRefImage);
       expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+  });
+
+  describe('Keyboard Accessibility', () => {
+    it('should have an onKeyDown handler on the grid container', () => {
+      const { container } = render(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={[]}
+          selectedItemIds={new Set()}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const gridContainer = container.querySelector('.grid-container')!;
+      // Fire a keydown event and verify it doesn't throw
+      fireEvent.keyDown(gridContainer, { key: 'Escape' });
+      // The handler should deselect on Escape
+      expect(mockOnSelectItem).toHaveBeenCalledWith(null);
+    });
+
+    it('should deselect all items when Escape is pressed on the grid container', () => {
+      const items = [createMockItem({ instanceId: 'item-1' })];
+      const { container } = render(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={items}
+          selectedItemIds={new Set(['item-1'])}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const gridContainer = container.querySelector('.grid-container')!;
+      fireEvent.keyDown(gridContainer, { key: 'Escape' });
+
+      expect(mockOnSelectItem).toHaveBeenCalledWith(null);
+    });
+
+    it('should not call onSelectItem for non-handled keys on the grid container', () => {
+      const { container } = render(
+        <GridPreview
+          gridX={4}
+          gridY={4}
+          placedItems={[]}
+          selectedItemIds={new Set()}
+          onDrop={mockOnDrop}
+          onSelectItem={mockOnSelectItem}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const gridContainer = container.querySelector('.grid-container')!;
+      fireEvent.keyDown(gridContainer, { key: 'a' });
+
+      expect(mockOnSelectItem).not.toHaveBeenCalled();
     });
   });
 });

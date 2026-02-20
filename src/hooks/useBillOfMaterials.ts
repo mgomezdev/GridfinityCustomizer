@@ -1,20 +1,34 @@
 import { useMemo } from 'react';
-import type { PlacedItem, BOMItem, LibraryItem } from '../types/gridfinity';
+import type { PlacedItem, BOMItem, LibraryItem, BinCustomization } from '../types/gridfinity';
+import { serializeCustomization, isDefaultCustomization } from '../types/gridfinity';
 
 export function useBillOfMaterials(placedItems: PlacedItem[], libraryItems: LibraryItem[]): BOMItem[] {
   return useMemo(() => {
-    // Group placed items by itemId and count quantities
-    const itemCounts = new Map<string, number>();
+    // Group placed items by itemId + customization and count quantities
+    const itemCounts = new Map<string, { count: number; customization: BinCustomization | undefined }>();
 
     placedItems.forEach(placedItem => {
-      const currentCount = itemCounts.get(placedItem.itemId) || 0;
-      itemCounts.set(placedItem.itemId, currentCount + 1);
+      // Treat undefined and all-default customizations as the same group
+      const customKey = isDefaultCustomization(placedItem.customization)
+        ? ''
+        : serializeCustomization(placedItem.customization);
+      const groupKey = `${placedItem.itemId}::${customKey}`;
+      const existing = itemCounts.get(groupKey);
+      if (existing) {
+        existing.count++;
+      } else {
+        itemCounts.set(groupKey, {
+          count: 1,
+          customization: isDefaultCustomization(placedItem.customization) ? undefined : placedItem.customization,
+        });
+      }
     });
 
     // Convert to BOMItem array with library item details
     const bomItems: BOMItem[] = [];
 
-    itemCounts.forEach((quantity, itemId) => {
+    itemCounts.forEach(({ count, customization }, groupKey) => {
+      const itemId = groupKey.split('::')[0];
       const libraryItem = libraryItems.find(item => item.id === itemId);
       if (libraryItem) {
         bomItems.push({
@@ -24,7 +38,8 @@ export function useBillOfMaterials(placedItems: PlacedItem[], libraryItems: Libr
           heightUnits: libraryItem.heightUnits,
           color: libraryItem.color,
           categories: libraryItem.categories,
-          quantity,
+          quantity: count,
+          customization,
         });
       }
     });

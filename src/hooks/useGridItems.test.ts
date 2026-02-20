@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useGridItems } from './useGridItems';
-import type { LibraryItem } from '../types/gridfinity';
+import type { LibraryItem, BinCustomization } from '../types/gridfinity';
 
 describe('useGridItems', () => {
   // Mock library items
@@ -1596,6 +1596,177 @@ describe('useGridItems', () => {
 
       expect(newDeltaX).toBe(originalDeltaX);
       expect(newDeltaY).toBe(originalDeltaY);
+    });
+  });
+
+  describe('Bin Customization', () => {
+    const sampleCustomization: BinCustomization = {
+      wallPattern: 'grid',
+      lipStyle: 'reduced',
+      fingerSlide: 'rounded',
+      wallCutout: 'vertical',
+    };
+
+    it('updateItemCustomization should update customization for a specific item', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+      });
+
+      const instanceId = result.current.placedItems[0].instanceId;
+
+      act(() => {
+        result.current.updateItemCustomization(instanceId, sampleCustomization);
+      });
+
+      expect(result.current.placedItems[0].customization).toEqual(sampleCustomization);
+    });
+
+    it('updateItemCustomization should not affect other items', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+        result.current.addItem('bin-1x1', 1, 1);
+      });
+
+      const firstId = result.current.placedItems[0].instanceId;
+      const secondId = result.current.placedItems[1].instanceId;
+
+      act(() => {
+        result.current.updateItemCustomization(firstId, sampleCustomization);
+      });
+
+      // First item should have the customization applied
+      expect(result.current.placedItems[0].customization).toEqual(sampleCustomization);
+
+      // Second item should remain unaffected and have no customization
+      expect(result.current.placedItems[1].instanceId).toBe(secondId);
+      expect(result.current.placedItems[1].customization).toBeUndefined();
+    });
+
+    it('updateItemCustomization with undefined should clear customization', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+      });
+
+      const instanceId = result.current.placedItems[0].instanceId;
+
+      // First apply a customization
+      act(() => {
+        result.current.updateItemCustomization(instanceId, sampleCustomization);
+      });
+
+      expect(result.current.placedItems[0].customization).toEqual(sampleCustomization);
+
+      // Then clear it by passing undefined
+      act(() => {
+        result.current.updateItemCustomization(instanceId, undefined);
+      });
+
+      expect(result.current.placedItems[0].customization).toBeUndefined();
+    });
+
+    it('newly added items should have no customization by default', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+      });
+
+      expect(result.current.placedItems[0].customization).toBeUndefined();
+    });
+
+    it('duplicateItem should carry customization to duplicated item', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+      });
+
+      const instanceId = result.current.placedItems[0].instanceId;
+
+      act(() => {
+        result.current.updateItemCustomization(instanceId, sampleCustomization);
+      });
+
+      act(() => {
+        result.current.duplicateItem();
+      });
+
+      expect(result.current.placedItems).toHaveLength(2);
+      // The duplicated item (second one) should carry the same customization
+      expect(result.current.placedItems[1].customization).toEqual(sampleCustomization);
+    });
+
+    it('copyItems and pasteItems should carry customization through', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      act(() => {
+        result.current.addItem('bin-1x1', 0, 0);
+      });
+
+      const instanceId = result.current.placedItems[0].instanceId;
+
+      act(() => {
+        result.current.updateItemCustomization(instanceId, sampleCustomization);
+      });
+
+      act(() => {
+        result.current.copyItems();
+      });
+
+      // Verify customization is captured in clipboard
+      expect(result.current.clipboard[0].customization).toEqual(sampleCustomization);
+
+      act(() => {
+        result.current.pasteItems();
+      });
+
+      expect(result.current.placedItems).toHaveLength(2);
+      // The pasted item should carry the same customization as the original
+      const pastedItem = result.current.placedItems[1];
+      expect(pastedItem.customization).toEqual(sampleCustomization);
+    });
+
+    it('loadItems should preserve customization data', () => {
+      const { result } = renderHook(() => useGridItems(4, 4, mockGetItemById));
+
+      const itemsToLoad = [
+        {
+          instanceId: 'load-test-id',
+          itemId: 'bin-1x1',
+          x: 1,
+          y: 1,
+          width: 1,
+          height: 1,
+          rotation: 0 as const,
+          customization: sampleCustomization,
+        },
+        {
+          instanceId: 'load-test-id-2',
+          itemId: 'bin-2x2',
+          x: 2,
+          y: 2,
+          width: 2,
+          height: 2,
+          rotation: 0 as const,
+          // No customization on second item
+        },
+      ];
+
+      act(() => {
+        result.current.loadItems(itemsToLoad);
+      });
+
+      expect(result.current.placedItems).toHaveLength(2);
+      // First item should retain its customization after load
+      expect(result.current.placedItems[0].customization).toEqual(sampleCustomization);
+      // Second item should have no customization
+      expect(result.current.placedItems[1].customization).toBeUndefined();
     });
   });
 });

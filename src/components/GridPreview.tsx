@@ -1,9 +1,12 @@
 import { useRef, useMemo } from 'react';
-import type { PlacedItemWithValidity, DragData, ComputedSpacer, LibraryItem, ReferenceImage, ImageViewMode } from '../types/gridfinity';
+import type { PlacedItemWithValidity, DragData, ComputedSpacer, LibraryItem, ReferenceImage, ImageViewMode, BinCustomization } from '../types/gridfinity';
 import { PlacedItemOverlay } from './PlacedItemOverlay';
 import { SpacerOverlay } from './SpacerOverlay';
 import { ReferenceImageOverlay } from './ReferenceImageOverlay';
 import { usePointerDropTarget } from '../hooks/usePointerDrag';
+
+const EMPTY_SPACERS: ComputedSpacer[] = [];
+const EMPTY_REF_IMAGES: ReferenceImage[] = [];
 
 interface RefImageMeta {
   isBroken: boolean;
@@ -22,6 +25,8 @@ interface GridPreviewProps {
   onDeleteItem?: (instanceId: string) => void;
   onRotateItemCw?: (instanceId: string) => void;
   onRotateItemCcw?: (instanceId: string) => void;
+  onItemCustomizationChange?: (instanceId: string, customization: BinCustomization) => void;
+  onItemCustomizationReset?: (instanceId: string) => void;
   referenceImages?: ReferenceImage[];
   selectedImageId?: string | null;
   onImagePositionChange?: (id: string, x: number, y: number) => void;
@@ -42,14 +47,16 @@ export function GridPreview({
   gridY,
   placedItems,
   selectedItemIds,
-  spacers = [],
+  spacers = EMPTY_SPACERS,
   onDrop,
   onSelectItem,
   getItemById,
   onDeleteItem,
   onRotateItemCw,
   onRotateItemCcw,
-  referenceImages = [],
+  onItemCustomizationChange,
+  onItemCustomizationReset,
+  referenceImages = EMPTY_REF_IMAGES,
   selectedImageId,
   onImagePositionChange,
   onImageSelect,
@@ -115,6 +122,13 @@ export function GridPreview({
     onSelectItem(null);
   };
 
+  const handleGridKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onSelectItem(null);
+    }
+  };
+
   return (
     <div className="grid-preview" style={{ aspectRatio: `${gridX} / ${gridY}` }}>
       {selectedItemIds.size > 1 && (
@@ -141,6 +155,7 @@ export function GridPreview({
             height: `${gridHeight}%`,
           }}
           onClick={handleGridClick}
+          onKeyDown={handleGridKeyDown}
         >
           {cells}
           {placedItems.map(item => (
@@ -155,6 +170,8 @@ export function GridPreview({
               onDelete={onDeleteItem}
               onRotateCw={onRotateItemCw}
               onRotateCcw={onRotateItemCcw}
+              onCustomizationChange={onItemCustomizationChange}
+              onCustomizationReset={onItemCustomizationReset}
               imageViewMode={imageViewMode}
             />
           ))}

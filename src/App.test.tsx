@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import App from './App';
 import type { LibraryItem } from './types/gridfinity';
 import type { RefImagePlacement } from './hooks/useRefImagePlacements';
@@ -460,6 +460,59 @@ describe('App Integration Tests', () => {
       expect(mockRemovePlacement).not.toHaveBeenCalled();
     });
 
+    it('Escape clears selectedImageId when an image is selected (React 18 batching)', () => {
+      // Verifies that deselectAll() and setSelectedImageId(null) are both applied
+      // in a single render pass via React 18+ automatic batching.
+      mockPlacements = [{
+        id: 'img-1', refImageId: 1, name: 'test.png', imageUrl: 'ref-lib/test.webp',
+        x: 0, y: 0, width: 50, height: 50, opacity: 0.5, scale: 1, isLocked: false, rotation: 0,
+      }];
+      renderApp();
+
+      // Select the image
+      const onImageSelect = capturedGridPreviewProps.onImageSelect as (id: string) => void;
+      act(() => { onImageSelect('img-1'); });
+
+      // Verify image is selected — R should rotate it
+      fireEvent.keyDown(document, { key: 'r' });
+      expect(mockUpdateRotation).toHaveBeenCalledWith('img-1', 'cw');
+      mockUpdateRotation.mockClear();
+
+      // Press Escape — should clear selectedImageId
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      // After Escape, R should NOT rotate the image (selectedImageId is null)
+      fireEvent.keyDown(document, { key: 'r' });
+      expect(mockUpdateRotation).not.toHaveBeenCalled();
+
+      // Delete should also not remove any image
+      fireEvent.keyDown(document, { key: 'Delete' });
+      expect(mockRemovePlacement).not.toHaveBeenCalled();
+    });
+
+    it('Delete clears selectedImageId after removing image (no stale reference)', () => {
+      // Verifies that removeRefImagePlacement() and setSelectedImageId(null)
+      // are batched correctly — no stale image reference remains after deletion.
+      mockPlacements = [{
+        id: 'img-1', refImageId: 1, name: 'test.png', imageUrl: 'ref-lib/test.webp',
+        x: 0, y: 0, width: 50, height: 50, opacity: 0.5, scale: 1, isLocked: false, rotation: 0,
+      }];
+      renderApp();
+
+      // Select the image
+      const onImageSelect = capturedGridPreviewProps.onImageSelect as (id: string) => void;
+      act(() => { onImageSelect('img-1'); });
+
+      // Delete the selected image
+      fireEvent.keyDown(document, { key: 'Delete' });
+      expect(mockRemovePlacement).toHaveBeenCalledWith('img-1');
+      mockRemovePlacement.mockClear();
+
+      // After deletion, pressing Delete again should NOT try to remove 'img-1' again
+      fireEvent.keyDown(document, { key: 'Delete' });
+      expect(mockRemovePlacement).not.toHaveBeenCalled();
+    });
+
     it('Ctrl+A selects all placed items', () => {
       renderApp();
       placeItemViaGridPreview('bins_standard:bin-1x1', 0, 0);
@@ -708,26 +761,32 @@ describe('App Integration Tests', () => {
       expect(screen.getByText(/Clear All/)).toBeInTheDocument();
     });
 
-    it('Clear All with confirm=true calls clearAll', () => {
+    it('Clear All with confirm=true calls clearAll', async () => {
       renderApp();
       placeItemViaGridPreview();
       expect(getPlacedItems().length).toBe(1);
 
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
       fireEvent.click(screen.getByText(/Clear All/));
-      expect(getPlacedItems().length).toBe(0);
-      (window.confirm as Mock).mockRestore();
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Clear All' }));
+      await waitFor(() => {
+        expect(getPlacedItems().length).toBe(0);
+      });
     });
 
-    it('Clear All with confirm=false does not clear', () => {
+    it('Clear All with confirm=false does not clear', async () => {
       renderApp();
       placeItemViaGridPreview();
       expect(getPlacedItems().length).toBe(1);
 
-      vi.spyOn(window, 'confirm').mockReturnValue(false);
       fireEvent.click(screen.getByText(/Clear All/));
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
       expect(getPlacedItems().length).toBe(1);
-      (window.confirm as Mock).mockRestore();
     });
 
     it('ZoomControls receives zoom from useGridTransform', () => {
@@ -902,7 +961,7 @@ describe('App Integration Tests', () => {
       expect(ownerSpan.textContent).toContain('alice@example.com');
     });
 
-    it('clears subtitle on Clear All', () => {
+    it('clears subtitle on Clear All', async () => {
       renderApp();
 
       // Load a layout first
@@ -925,11 +984,15 @@ describe('App Integration Tests', () => {
       expect(screen.getByText('To Clear')).toBeInTheDocument();
 
       // Clear all
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
       fireEvent.click(screen.getByText(/Clear All/));
+      await waitFor(() => {
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Clear All' }));
 
-      expect(screen.queryByText('To Clear')).not.toBeInTheDocument();
-      (window.confirm as Mock).mockRestore();
+      await waitFor(() => {
+        expect(screen.queryByText('To Clear')).not.toBeInTheDocument();
+      });
     });
   });
 });

@@ -2,7 +2,18 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { PlacedItemOverlay } from './PlacedItemOverlay';
 import type { PlacedItemWithValidity, LibraryItem } from '../types/gridfinity';
+import { DEFAULT_BIN_CUSTOMIZATION } from '../types/gridfinity';
 import type React from 'react';
+
+// Mock getRotatedPerspectiveUrl so we can control rotation URL generation in tests
+vi.mock('../utils/imageHelpers', () => ({
+  getRotatedPerspectiveUrl: (url: string, rotation: number) => {
+    if (!url) return url;
+    if (rotation === 0) return url;
+    if (!url.includes('-perspective.png')) return url;
+    return url.replace('-perspective.png', `-perspective-${rotation}.png`);
+  },
+}));
 
 // Mock usePointerDragSource to capture onTap callback
 let capturedOnTap: ((e: PointerEvent) => void) | undefined;
@@ -1362,6 +1373,632 @@ describe('PlacedItemOverlay', () => {
 
       image = container.querySelector('.placed-item-image');
       expect(image).toHaveAttribute('src', 'https://example.com/perspective.png');
+    });
+  });
+
+  describe('rotation-specific perspective images', () => {
+    // Item has both ortho and perspective image URLs using the -perspective.png convention
+    const mockGetItemByIdWithPerspective = (id: string): LibraryItem | undefined => {
+      const items: Record<string, LibraryItem> = {
+        'bin-perspective': {
+          id: 'bin-perspective',
+          name: 'Bin Perspective',
+          widthUnits: 1,
+          heightUnits: 1,
+          color: '#3B82F6',
+          categories: ['bin'],
+          imageUrl: 'https://example.com/bin-ortho.png',
+          perspectiveImageUrl: 'https://example.com/bin-perspective.png',
+        },
+        'bin-ortho-only': {
+          id: 'bin-ortho-only',
+          name: 'Bin Ortho Only',
+          widthUnits: 1,
+          heightUnits: 1,
+          color: '#3B82F6',
+          categories: ['bin'],
+          imageUrl: 'https://example.com/bin-ortho.png',
+        },
+      };
+      return items[id];
+    };
+
+    it('should use base perspectiveImageUrl and apply no CSS rotation for 0° in perspective mode', () => {
+      const item = createMockItem({ itemId: 'bin-perspective', rotation: 0 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithPerspective}
+          imageViewMode="perspective"
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image') as HTMLImageElement;
+      expect(image).toBeInTheDocument();
+      expect(image).toHaveAttribute('src', 'https://example.com/bin-perspective.png');
+      // No rotation at 0° — style should not contain a rotate transform
+      const styleTransform = image.style.transform;
+      expect(styleTransform).not.toMatch(/rotate/);
+    });
+
+    it('should use -perspective-90.png URL and apply no CSS rotation for 90° in perspective mode', () => {
+      const item = createMockItem({ itemId: 'bin-perspective', rotation: 90, width: 1, height: 1 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithPerspective}
+          imageViewMode="perspective"
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image') as HTMLImageElement;
+      expect(image).toBeInTheDocument();
+      expect(image).toHaveAttribute('src', 'https://example.com/bin-perspective-90.png');
+      // Pre-rendered rotated image — no CSS rotation needed
+      const styleTransform = image.style.transform;
+      expect(styleTransform).not.toMatch(/rotate/);
+    });
+
+    it('should use -perspective-180.png URL and apply no CSS rotation for 180° in perspective mode', () => {
+      const item = createMockItem({ itemId: 'bin-perspective', rotation: 180, width: 1, height: 1 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithPerspective}
+          imageViewMode="perspective"
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image') as HTMLImageElement;
+      expect(image).toBeInTheDocument();
+      expect(image).toHaveAttribute('src', 'https://example.com/bin-perspective-180.png');
+      const styleTransform = image.style.transform;
+      expect(styleTransform).not.toMatch(/rotate/);
+    });
+
+    it('should use -perspective-270.png URL and apply no CSS rotation for 270° in perspective mode', () => {
+      const item = createMockItem({ itemId: 'bin-perspective', rotation: 270, width: 1, height: 1 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithPerspective}
+          imageViewMode="perspective"
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image') as HTMLImageElement;
+      expect(image).toBeInTheDocument();
+      expect(image).toHaveAttribute('src', 'https://example.com/bin-perspective-270.png');
+      const styleTransform = image.style.transform;
+      expect(styleTransform).not.toMatch(/rotate/);
+    });
+
+    it('should use imageUrl with CSS rotation for 90° in ortho mode (existing behavior unchanged)', () => {
+      const item = createMockItem({ itemId: 'bin-perspective', rotation: 90, width: 1, height: 1 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithPerspective}
+          imageViewMode="ortho"
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image') as HTMLImageElement;
+      expect(image).toBeInTheDocument();
+      // In ortho mode the base imageUrl is used (not perspective)
+      expect(image).toHaveAttribute('src', 'https://example.com/bin-ortho.png');
+      // Ortho mode still applies CSS rotation
+      const styleTransform = image.style.transform;
+      expect(styleTransform).toMatch(/rotate\(90deg\)/);
+    });
+
+    it('should fall back to imageUrl with CSS rotation when perspectiveImageUrl is absent and rotation is 90°', () => {
+      const item = createMockItem({ itemId: 'bin-ortho-only', rotation: 90, width: 1, height: 1 });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemByIdWithPerspective}
+          imageViewMode="perspective"
+        />
+      );
+
+      const image = container.querySelector('.placed-item-image') as HTMLImageElement;
+      expect(image).toBeInTheDocument();
+      // No perspectiveImageUrl — falls back to ortho imageUrl
+      expect(image).toHaveAttribute('src', 'https://example.com/bin-ortho.png');
+      // Because there is no pre-rendered rotated perspective image, CSS rotation is applied as fallback
+      const styleTransform = image.style.transform;
+      expect(styleTransform).toMatch(/rotate\(90deg\)/);
+    });
+  });
+
+  describe('Customization Badges', () => {
+    it('should NOT render customization badges when customization is undefined', () => {
+      const item = createMockItem({ customization: undefined });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const badges = container.querySelector('.placed-item-badges');
+      expect(badges).not.toBeInTheDocument();
+    });
+
+    it('should NOT render customization badges when customization is default', () => {
+      const item = createMockItem({ customization: DEFAULT_BIN_CUSTOMIZATION });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const badges = container.querySelector('.placed-item-badges');
+      expect(badges).not.toBeInTheDocument();
+    });
+
+    it('should render wall pattern badge when wall pattern is non-default', () => {
+      const item = createMockItem({
+        customization: {
+          ...DEFAULT_BIN_CUSTOMIZATION,
+          wallPattern: 'grid',
+        },
+      });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const badge = container.querySelector('.placed-item-badge');
+      expect(badge).toBeInTheDocument();
+      expect(badge?.textContent).toMatch(/grid/i);
+    });
+
+    it('should render lip style badge when lip style is non-default', () => {
+      const item = createMockItem({
+        customization: {
+          ...DEFAULT_BIN_CUSTOMIZATION,
+          lipStyle: 'reduced',
+        },
+      });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const badge = container.querySelector('.placed-item-badge');
+      expect(badge).toBeInTheDocument();
+      expect(badge?.textContent).toMatch(/lip/i);
+    });
+
+    it('should render finger slide badge when finger slide is non-default', () => {
+      const item = createMockItem({
+        customization: {
+          ...DEFAULT_BIN_CUSTOMIZATION,
+          fingerSlide: 'rounded',
+        },
+      });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const badge = container.querySelector('.placed-item-badge');
+      expect(badge).toBeInTheDocument();
+      expect(badge?.textContent).toMatch(/slide/i);
+    });
+
+    it('should render wall cutout badge when wall cutout is non-default', () => {
+      const item = createMockItem({
+        customization: {
+          ...DEFAULT_BIN_CUSTOMIZATION,
+          wallCutout: 'vertical',
+        },
+      });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const badge = container.querySelector('.placed-item-badge');
+      expect(badge).toBeInTheDocument();
+      expect(badge?.textContent).toMatch(/cutout/i);
+    });
+
+    it('should render multiple badges when multiple customizations are non-default', () => {
+      const item = createMockItem({
+        customization: {
+          wallPattern: 'grid',
+          lipStyle: 'reduced',
+          fingerSlide: 'rounded',
+          wallCutout: 'none',
+        },
+      });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const badges = container.querySelectorAll('.placed-item-badge');
+      expect(badges.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('should render badges even when item is not selected', () => {
+      const item = createMockItem({
+        customization: {
+          ...DEFAULT_BIN_CUSTOMIZATION,
+          wallPattern: 'grid',
+        },
+      });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      const badge = container.querySelector('.placed-item-badge');
+      expect(badge).toBeInTheDocument();
+    });
+  });
+
+  describe('Inline Customize Button', () => {
+    const mockOnCustomizationChange = vi.fn();
+
+    beforeEach(() => {
+      mockOnCustomizationChange.mockClear();
+    });
+
+    it('should render customize button when selected and handlers provided', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onCustomizationChange={mockOnCustomizationChange}
+        />
+      );
+
+      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      expect(customizeBtn).toBeInTheDocument();
+    });
+
+    it('should NOT render customize button when not selected', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onCustomizationChange={mockOnCustomizationChange}
+        />
+      );
+
+      expect(screen.queryByRole('button', { name: 'Customize' })).not.toBeInTheDocument();
+    });
+
+    it('should NOT render customize button when no handler provided', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      expect(screen.queryByRole('button', { name: 'Customize' })).not.toBeInTheDocument();
+    });
+
+    it('should NOT propagate click to parent', () => {
+      const item = createMockItem();
+      const parentClickHandler = vi.fn();
+      render(
+        <div onClick={parentClickHandler}>
+          <PlacedItemOverlay
+            item={item}
+            gridX={4}
+            gridY={4}
+            isSelected={true}
+            onSelect={mockOnSelect}
+            getItemById={mockGetItemById}
+            onCustomizationChange={mockOnCustomizationChange}
+          />
+        </div>
+      );
+
+      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      fireEvent.click(customizeBtn);
+
+      expect(parentClickHandler).not.toHaveBeenCalled();
+    });
+
+    it('should toggle customization popover when clicked', () => {
+      const item = createMockItem();
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onCustomizationChange={mockOnCustomizationChange}
+        />
+      );
+
+      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      fireEvent.click(customizeBtn);
+
+      const popover = container.querySelector('.placed-item-customize-popover');
+      expect(popover).toBeInTheDocument();
+    });
+  });
+
+  describe('Customization Popover', () => {
+    const mockOnCustomizationChange = vi.fn();
+    const mockOnCustomizationReset = vi.fn();
+
+    beforeEach(() => {
+      mockOnCustomizationChange.mockClear();
+      mockOnCustomizationReset.mockClear();
+    });
+
+    it('should render four select fields when popover is open', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onCustomizationChange={mockOnCustomizationChange}
+        />
+      );
+
+      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      fireEvent.click(customizeBtn);
+
+      expect(screen.getByLabelText('Wall Pattern')).toBeInTheDocument();
+      expect(screen.getByLabelText('Lip Style')).toBeInTheDocument();
+      expect(screen.getByLabelText('Finger Slide')).toBeInTheDocument();
+      expect(screen.getByLabelText('Wall Cutout')).toBeInTheDocument();
+    });
+
+    it('should call onCustomizationChange when a select value changes', () => {
+      const item = createMockItem({ instanceId: 'custom-item-123' });
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onCustomizationChange={mockOnCustomizationChange}
+        />
+      );
+
+      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      fireEvent.click(customizeBtn);
+
+      const wallPatternSelect = screen.getByLabelText('Wall Pattern') as HTMLSelectElement;
+      fireEvent.change(wallPatternSelect, { target: { value: 'voronoi' } });
+
+      expect(mockOnCustomizationChange).toHaveBeenCalledWith(
+        'custom-item-123',
+        expect.objectContaining({ wallPattern: 'voronoi' })
+      );
+    });
+
+    it('should render reset button in popover', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onCustomizationChange={mockOnCustomizationChange}
+          onCustomizationReset={mockOnCustomizationReset}
+        />
+      );
+
+      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      fireEvent.click(customizeBtn);
+
+      const resetBtn = screen.getByRole('button', { name: /reset to defaults/i });
+      expect(resetBtn).toBeInTheDocument();
+    });
+
+    it('should call onCustomizationReset when reset is clicked', () => {
+      const item = createMockItem({
+        instanceId: 'custom-item-456',
+        customization: {
+          wallPattern: 'grid',
+          lipStyle: 'normal',
+          fingerSlide: 'none',
+          wallCutout: 'none',
+        },
+      });
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onCustomizationChange={mockOnCustomizationChange}
+          onCustomizationReset={mockOnCustomizationReset}
+        />
+      );
+
+      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      fireEvent.click(customizeBtn);
+
+      const resetBtn = screen.getByRole('button', { name: /reset to defaults/i });
+      fireEvent.click(resetBtn);
+
+      expect(mockOnCustomizationReset).toHaveBeenCalledWith('custom-item-456');
+    });
+
+    it('should close popover when close button is clicked', () => {
+      const item = createMockItem();
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onCustomizationChange={mockOnCustomizationChange}
+        />
+      );
+
+      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      fireEvent.click(customizeBtn);
+
+      const popover = container.querySelector('.placed-item-customize-popover');
+      expect(popover).toBeInTheDocument();
+
+      const closeBtn = screen.getByRole('button', { name: 'Close customization' });
+      fireEvent.click(closeBtn);
+
+      const popoverAfterClose = container.querySelector('.placed-item-customize-popover');
+      expect(popoverAfterClose).not.toBeInTheDocument();
+    });
+
+    it('should have role="dialog" on the popover', () => {
+      const item = createMockItem();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onCustomizationChange={mockOnCustomizationChange}
+        />
+      );
+
+      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      fireEvent.click(customizeBtn);
+
+      const popover = screen.getByRole('dialog');
+      expect(popover).toBeInTheDocument();
+      expect(popover).toHaveClass('placed-item-customize-popover');
+    });
+
+    it('should stop keyboard event propagation from the popover', () => {
+      const item = createMockItem();
+      const mockOnDelete = vi.fn();
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onCustomizationChange={mockOnCustomizationChange}
+          onDelete={mockOnDelete}
+        />
+      );
+
+      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      fireEvent.click(customizeBtn);
+
+      const popover = container.querySelector('.placed-item-customize-popover')!;
+      // Fire a Delete keydown inside the popover — it should NOT propagate
+      // to the parent .placed-item div which would trigger onDelete
+      fireEvent.keyDown(popover, { key: 'Delete' });
+
+      expect(mockOnDelete).not.toHaveBeenCalled();
     });
   });
 });

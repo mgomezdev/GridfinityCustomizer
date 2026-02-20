@@ -1,7 +1,18 @@
 import type { BOMItem } from '../types/gridfinity';
+import { serializeCustomization } from '../types/gridfinity';
 
 interface BillOfMaterialsProps {
   items: BOMItem[];
+}
+
+function formatCustomization(item: BOMItem): string | null {
+  if (!item.customization) return null;
+  const parts: string[] = [];
+  if (item.customization.wallPattern !== 'none') parts.push(item.customization.wallPattern);
+  if (item.customization.lipStyle !== 'normal') parts.push(`lip: ${item.customization.lipStyle}`);
+  if (item.customization.fingerSlide !== 'none') parts.push(`slide: ${item.customization.fingerSlide}`);
+  if (item.customization.wallCutout !== 'none') parts.push(`cutout: ${item.customization.wallCutout}`);
+  return parts.length > 0 ? parts.join(', ') : null;
 }
 
 export function BillOfMaterials({ items }: BillOfMaterialsProps) {
@@ -24,24 +35,29 @@ export function BillOfMaterials({ items }: BillOfMaterialsProps) {
       ) : (
         <div className="bom-content">
           <div className="bom-items">
-            {items.map(item => (
-              <div key={item.itemId} className="bom-item">
-                <div
-                  className="bom-item-color"
-                  style={{ backgroundColor: item.color }}
-                />
-                <div className="bom-item-details">
-                  <div className="bom-item-name">{item.name}</div>
-                  <div className="bom-item-size">
-                    {item.widthUnits}×{item.heightUnits}
+            {items.map(item => {
+              const customText = formatCustomization(item);
+              const key = `${item.itemId}::${serializeCustomization(item.customization)}`;
+              return (
+                <div key={key} className="bom-item">
+                  <div
+                    className="bom-item-color"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <div className="bom-item-details">
+                    <div className="bom-item-name">{item.name}</div>
+                    <div className="bom-item-size">
+                      {item.widthUnits}×{item.heightUnits}
+                    </div>
+                    {customText && (
+                      <div className="bom-item-customization">{customText}</div>
+                    )}
                   </div>
+                  <div className="bom-item-quantity">×{item.quantity}</div>
                 </div>
-                <div className="bom-item-quantity">×{item.quantity}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
-
-
         </div>
       )}
     </div>

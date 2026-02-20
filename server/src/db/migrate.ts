@@ -141,13 +141,21 @@ export async function runMigrations(client: Client): Promise<void> {
       width INTEGER NOT NULL CHECK (width BETWEEN 1 AND 10),
       height INTEGER NOT NULL CHECK (height BETWEEN 1 AND 10),
       rotation INTEGER NOT NULL DEFAULT 0 CHECK (rotation IN (0, 90, 180, 270)),
-      sort_order INTEGER NOT NULL DEFAULT 0
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      customization TEXT
     );
   `);
 
   await client.execute(`
     CREATE INDEX IF NOT EXISTS idx_placed_items_layout ON placed_items(layout_id);
   `);
+
+  // Add customization column to placed_items if missing (existing databases)
+  try {
+    await client.execute(`ALTER TABLE placed_items ADD COLUMN customization TEXT;`);
+  } catch {
+    // Column already exists — ignore
+  }
 
   await client.execute(`
     CREATE TABLE IF NOT EXISTS user_storage (

@@ -58,6 +58,18 @@ export interface LibraryItem {
   perspectiveImageUrl?: string;
 }
 
+export type WallPattern = 'none' | 'grid' | 'hexgrid' | 'voronoi' | 'voronoigrid' | 'voronoihexgrid';
+export type LipStyle = 'normal' | 'reduced' | 'minimum' | 'none';
+export type FingerSlide = 'none' | 'rounded' | 'chamfered';
+export type WallCutout = 'none' | 'vertical' | 'horizontal' | 'both';
+
+export interface BinCustomization {
+  wallPattern: WallPattern;
+  lipStyle: LipStyle;
+  fingerSlide: FingerSlide;
+  wallCutout: WallCutout;
+}
+
 export interface PlacedItem {
   instanceId: string;
   itemId: string;
@@ -66,6 +78,7 @@ export interface PlacedItem {
   width: number;
   height: number;
   rotation: Rotation;
+  customization?: BinCustomization;
 }
 
 export interface PlacedItemWithValidity extends PlacedItem {
@@ -89,6 +102,7 @@ export interface BOMItem {
   color: string;
   categories: string[];
   quantity: number;
+  customization?: BinCustomization;
 }
 
 export interface ReferenceImage {
@@ -224,6 +238,7 @@ export interface ApiPlacedItem {
   height: number;
   rotation: number;
   sortOrder: number;
+  customization?: BinCustomization;
 }
 
 export interface ApiReferenceImage {
@@ -290,6 +305,7 @@ export interface CreateLayoutRequest {
     width: number;
     height: number;
     rotation: number;
+    customization?: BinCustomization;
   }>;
   refImagePlacements?: Array<{
     refImageId: number;
