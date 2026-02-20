@@ -1,9 +1,8 @@
-import { useState, useReducer, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { UnitSystem, ImperialFormat, GridSpacerConfig, ImageViewMode, ReferenceImage, DragData } from './types/gridfinity';
-import type { LayoutStatus } from '@gridfinity/shared';
 import { calculateGrid, mmToInches, inchesToMm } from './utils/conversions';
-import { layoutMetaReducer, initialLayoutMetaState } from './reducers/layoutMetaReducer';
-import { dialogReducer, initialDialogState } from './reducers/dialogReducer';
+import { useLayoutMeta } from './hooks/useLayoutMeta';
+import { useDialogState } from './hooks/useDialogState';
 import { useGridItems } from './hooks/useGridItems';
 import { useSpacerCalculation } from './hooks/useSpacerCalculation';
 import { useBillOfMaterials } from './hooks/useBillOfMaterials';
@@ -29,6 +28,8 @@ import { RebindImageDialog } from './components/RebindImageDialog';
 import { ZoomControls } from './components/ZoomControls';
 import { ImageViewToggle } from './components/ImageViewToggle';
 import { KeyboardShortcutsHelp } from './components/KeyboardShortcutsHelp';
+import { GridViewport } from './components/GridViewport';
+import { SidebarPanel } from './components/SidebarPanel';
 import { UserMenu } from './components/auth/UserMenu';
 import { SaveLayoutDialog } from './components/layouts/SaveLayoutDialog';
 import { LoadLayoutDialog } from './components/layouts/LoadLayoutDialog';
@@ -49,16 +50,19 @@ function App() {
     vertical: 'none',
   });
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
-  const [dialogs, dialogDispatch] = useReducer(dialogReducer, initialDialogState);
-  const [layoutMeta, layoutDispatch] = useReducer(layoutMetaReducer, initialLayoutMetaState);
   const [sidebarTab, setSidebarTab] = useState<'items' | 'images'>('items');
   const [imageViewMode, setImageViewMode] = useState<ImageViewMode>(
     () => (localStorage.getItem('gridfinity-image-view-mode') as ImageViewMode) || 'ortho'
   );
 
+  const { dialogs, dialogDispatch, closeRebind } = useDialogState();
+  const {
+    layoutMeta, layoutDispatch, isReadOnly,
+    handleSaveComplete, handleSetStatus, handleCloneComplete, handleClearLayout,
+  } = useLayoutMeta();
+
   const { isAuthenticated, user } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const isReadOnly = layoutMeta.status === 'delivered';
 
   const submitLayoutMutation = useSubmitLayoutMutation();
   const withdrawLayoutMutation = useWithdrawLayoutMutation();
@@ -86,9 +90,7 @@ function App() {
   } = useLibraryData(selectedLibraryIds);
 
   // Category discovery from items
-  const {
-    categories,
-  } = useCategoryData(libraryItems);
+  const { categories } = useCategoryData(libraryItems);
 
   // Reference image placements (server-backed)
   const {
@@ -106,8 +108,6 @@ function App() {
   } = useRefImagePlacements();
 
   const handleRefreshAll = async () => {
-    // Refresh library manifest and all selected libraries
-    // Categories will be auto-derived from refreshed items
     try {
       await refreshLibraries();
       await refreshLibrary();
@@ -118,7 +118,6 @@ function App() {
 
   const handleUnitChange = (newUnit: UnitSystem) => {
     if (newUnit === unitSystem) return;
-
     if (newUnit === 'imperial') {
       setWidth(parseFloat(mmToInches(width).toFixed(4)));
       setDepth(parseFloat(mmToInches(depth).toFixed(4)));
@@ -126,12 +125,10 @@ function App() {
       setWidth(Math.round(inchesToMm(width)));
       setDepth(Math.round(inchesToMm(depth)));
     }
-
     setUnitSystem(newUnit);
   };
 
   const gridResult = useMemo(() => calculateGrid(width, depth, unitSystem), [width, depth, unitSystem]);
-
   const drawerWidth = unitSystem === 'metric' ? width : inchesToMm(width);
   const drawerDepth = unitSystem === 'metric' ? depth : inchesToMm(depth);
 
@@ -144,22 +141,9 @@ function App() {
   );
 
   const {
-    placedItems,
-    selectedItemIds,
-    rotateItem,
-    deleteItem,
-    clearAll,
-    loadItems,
-    selectItem,
-    selectAll,
-    deselectAll,
-    handleDrop,
-    duplicateItem,
-    copyItems,
-    pasteItems,
-    deleteSelected,
-    rotateSelected,
-    updateItemCustomization,
+    placedItems, selectedItemIds, rotateItem, deleteItem, clearAll, loadItems,
+    selectItem, selectAll, deselectAll, handleDrop, duplicateItem,
+    copyItems, pasteItems, deleteSelected, rotateSelected, updateItemCustomization,
   } = useGridItems(gridResult.gridX, gridResult.gridY, getItemById);
 
   const bomItems = useBillOfMaterials(placedItems, libraryItems);
@@ -167,17 +151,9 @@ function App() {
   // Convert ref image placements to ReferenceImage format for GridPreview
   const referenceImagesForGrid: ReferenceImage[] = useMemo(() =>
     refImagePlacements.map(p => ({
-      id: p.id,
-      name: p.name,
-      dataUrl: '',
-      x: p.x,
-      y: p.y,
-      width: p.width,
-      height: p.height,
-      opacity: p.opacity,
-      scale: p.scale,
-      isLocked: p.isLocked,
-      rotation: p.rotation,
+      id: p.id, name: p.name, dataUrl: '',
+      x: p.x, y: p.y, width: p.width, height: p.height,
+      opacity: p.opacity, scale: p.scale, isLocked: p.isLocked, rotation: p.rotation,
     })),
     [refImagePlacements]
   );
@@ -198,171 +174,56 @@ function App() {
   const handleCombinedDrop = useCallback((dragData: DragData, x: number, y: number) => {
     if (isReadOnly) return;
     if (dragData.type === 'ref-image' && dragData.refImageId != null) {
-      // Convert grid cell coordinates to percentage of grid
       const xPercent = (x / gridResult.gridX) * 100;
       const yPercent = (y / gridResult.gridY) * 100;
       addRefImagePlacement({
-        refImageId: dragData.refImageId,
-        name: dragData.refImageName ?? 'Reference Image',
-        imageUrl: dragData.refImageUrl ?? '',
-        x: xPercent,
-        y: yPercent,
-        width: 25,
-        height: 25,
-        opacity: 0.5,
-        scale: 1,
-        isLocked: false,
-        rotation: 0,
+        refImageId: dragData.refImageId, name: dragData.refImageName ?? 'Reference Image',
+        imageUrl: dragData.refImageUrl ?? '', x: xPercent, y: yPercent,
+        width: 25, height: 25, opacity: 0.5, scale: 1, isLocked: false, rotation: 0,
       });
     } else {
       handleDrop(dragData, x, y);
     }
   }, [isReadOnly, gridResult.gridX, gridResult.gridY, addRefImagePlacement, handleDrop]);
 
-  const handleSaveComplete = useCallback((layoutId: number, name: string, status: LayoutStatus) => {
-    layoutDispatch({ type: 'SAVE_COMPLETE', payload: { id: layoutId, name, status } });
-  }, []);
-
   const handleSubmitLayout = useCallback(async () => {
     if (!layoutMeta.id) return;
     try {
       const result = await submitLayoutMutation.mutateAsync(layoutMeta.id);
-      layoutDispatch({ type: 'SET_STATUS', payload: result.status });
+      handleSetStatus(result.status);
     } catch {
       // Error handled by mutation
     }
-  }, [layoutMeta.id, submitLayoutMutation]);
+  }, [layoutMeta.id, submitLayoutMutation, handleSetStatus]);
 
   const handleWithdrawLayout = useCallback(async () => {
     if (!layoutMeta.id) return;
     try {
       const result = await withdrawLayoutMutation.mutateAsync(layoutMeta.id);
-      layoutDispatch({ type: 'SET_STATUS', payload: result.status });
+      handleSetStatus(result.status);
     } catch {
       // Error handled by mutation
     }
-  }, [layoutMeta.id, withdrawLayoutMutation]);
+  }, [layoutMeta.id, withdrawLayoutMutation, handleSetStatus]);
 
   const handleCloneCurrentLayout = useCallback(async () => {
     if (!layoutMeta.id) return;
     try {
       const result = await cloneLayoutMutation.mutateAsync(layoutMeta.id);
-      layoutDispatch({ type: 'CLONE_COMPLETE', payload: { id: result.id, name: result.name, status: result.status } });
+      handleCloneComplete(result.id, result.name, result.status);
     } catch {
       // Error handled by mutation
     }
-  }, [layoutMeta.id, cloneLayoutMutation]);
+  }, [layoutMeta.id, cloneLayoutMutation, handleCloneComplete]);
 
   // Zoom and pan
   const {
-    transform,
-    zoomIn,
-    zoomOut,
-    resetZoom,
-    fitToScreen,
-    handleWheel,
-    setZoomLevel,
-    pan,
+    transform, zoomIn, zoomOut, resetZoom, fitToScreen,
+    handleWheel, setZoomLevel, pan,
   } = useGridTransform();
 
   const viewportRef = useRef<HTMLDivElement>(null);
-  const isPanningRef = useRef(false);
-  const panStartRef = useRef({ x: 0, y: 0 });
   const isSpaceHeldRef = useRef(false);
-
-  // Wheel zoom handler
-  useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-
-    const onWheel = (e: WheelEvent) => {
-      const rect = viewport.getBoundingClientRect();
-      handleWheel(e, rect);
-    };
-
-    // passive: false is required — handler calls preventDefault() to capture wheel zoom
-    viewport.addEventListener('wheel', onWheel, { passive: false });
-    return () => viewport.removeEventListener('wheel', onWheel);
-  }, [handleWheel]);
-
-  // Middle-mouse and space+drag pan
-  useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-
-    const onMouseDown = (e: MouseEvent) => {
-      // Middle mouse button (button === 1) or space held
-      if (e.button === 1 || isSpaceHeldRef.current) {
-        e.preventDefault();
-        isPanningRef.current = true;
-        panStartRef.current = { x: e.clientX, y: e.clientY };
-        viewport.style.cursor = 'grabbing';
-      }
-    };
-
-    const onMouseMove = (e: MouseEvent) => {
-      if (!isPanningRef.current) return;
-      const dx = (e.clientX - panStartRef.current.x) / transform.zoom;
-      const dy = (e.clientY - panStartRef.current.y) / transform.zoom;
-      pan(dx, dy);
-      panStartRef.current = { x: e.clientX, y: e.clientY };
-    };
-
-    const onMouseUp = () => {
-      if (isPanningRef.current) {
-        isPanningRef.current = false;
-        viewport.style.cursor = isSpaceHeldRef.current ? 'grab' : '';
-      }
-    };
-
-    viewport.addEventListener('mousedown', onMouseDown);
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
-
-    return () => {
-      viewport.removeEventListener('mousedown', onMouseDown);
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
-    };
-  }, [pan, transform.zoom]);
-
-  // Pinch-to-zoom touch support
-  useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-
-    let lastPinchDist = 0;
-    let lastPinchZoom = 1;
-
-    const getDistance = (t1: Touch, t2: Touch) =>
-      Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-
-    const onTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 2) {
-        e.preventDefault();
-        lastPinchDist = getDistance(e.touches[0], e.touches[1]);
-        lastPinchZoom = transform.zoom;
-      }
-    };
-
-    const onTouchMove = (e: TouchEvent) => {
-      if (e.touches.length === 2) {
-        e.preventDefault();
-        const dist = getDistance(e.touches[0], e.touches[1]);
-        const scale = dist / lastPinchDist;
-        setZoomLevel(lastPinchZoom * scale);
-      }
-    };
-
-    // passive: false is required — handlers call preventDefault() to capture pinch-to-zoom
-    viewport.addEventListener('touchstart', onTouchStart, { passive: false });
-    viewport.addEventListener('touchmove', onTouchMove, { passive: false });
-
-    return () => {
-      viewport.removeEventListener('touchstart', onTouchStart);
-      viewport.removeEventListener('touchmove', onTouchMove);
-    };
-  }, [transform.zoom, setZoomLevel]);
 
   const handleFitToScreen = useCallback(() => {
     const viewport = viewportRef.current;
@@ -373,17 +234,9 @@ function App() {
     fitToScreen(viewportRect.width, viewportRect.height, content.offsetWidth, content.offsetHeight);
   }, [fitToScreen]);
 
-  const handleRotateSelectedCw = useCallback(() => {
-    rotateSelected('cw');
-  }, [rotateSelected]);
-
-  const handleRotateSelectedCcw = useCallback(() => {
-    rotateSelected('ccw');
-  }, [rotateSelected]);
-
-  const handleDeleteSelected = useCallback(() => {
-    deleteSelected();
-  }, [deleteSelected]);
+  const handleRotateSelectedCw = useCallback(() => { rotateSelected('cw'); }, [rotateSelected]);
+  const handleRotateSelectedCcw = useCallback(() => { rotateSelected('ccw'); }, [rotateSelected]);
+  const handleDeleteSelected = useCallback(() => { deleteSelected(); }, [deleteSelected]);
 
   const handleClearAll = async () => {
     const message = refImagePlacements.length > 0
@@ -393,12 +246,11 @@ function App() {
       clearAll();
       clearRefImages();
       setSelectedImageId(null);
-      layoutDispatch({ type: 'CLEAR_LAYOUT' });
+      handleClearLayout();
     }
   };
 
   const handleLoadLayout = useCallback((config: LoadedLayoutConfig) => {
-    // Set dimensions (always in mm)
     if (unitSystem === 'imperial') {
       setWidth(parseFloat(mmToInches(config.widthMm).toFixed(4)));
       setDepth(parseFloat(mmToInches(config.depthMm).toFixed(4)));
@@ -411,7 +263,6 @@ function App() {
     loadRefImagePlacements(config.refImagePlacements ?? []);
     setSelectedImageId(null);
 
-    // Build owner string for admin views
     let owner = '';
     if (config.ownerUsername) {
       owner = config.ownerUsername;
@@ -423,32 +274,27 @@ function App() {
     layoutDispatch({
       type: 'LOAD_LAYOUT',
       payload: {
-        id: config.layoutId,
-        name: config.layoutName,
-        description: config.layoutDescription ?? '',
-        status: config.layoutStatus,
-        owner,
+        id: config.layoutId, name: config.layoutName,
+        description: config.layoutDescription ?? '', status: config.layoutStatus, owner,
       },
     });
-  }, [unitSystem, loadItems, loadRefImagePlacements]);
+  }, [unitSystem, loadItems, loadRefImagePlacements, layoutDispatch]);
 
   const handleRemoveImage = (id: string) => {
     removeRefImagePlacement(id);
-    if (selectedImageId === id) {
-      setSelectedImageId(null);
-    }
+    if (selectedImageId === id) setSelectedImageId(null);
   };
 
   const handleRebindImage = useCallback((id: string) => {
     dialogDispatch({ type: 'OPEN_REBIND', targetId: id });
-  }, []);
+  }, [dialogDispatch]);
 
   const handleRebindSelect = useCallback((refImageId: number, imageUrl: string, name: string) => {
     if (dialogs.rebindTargetId) {
       rebindRefImage(dialogs.rebindTargetId, refImageId, imageUrl, name);
     }
-    dialogDispatch({ type: 'CLOSE_REBIND' });
-  }, [dialogs.rebindTargetId, rebindRefImage]);
+    closeRebind();
+  }, [dialogs.rebindTargetId, rebindRefImage, closeRebind]);
 
   const toggleImageViewMode = useCallback(() => {
     setImageViewMode(prev => {
@@ -458,22 +304,17 @@ function App() {
     });
   }, []);
 
-  // Keyboard shortcuts — use ref to avoid re-registering listener on every state change
+  // Keyboard shortcuts
   const keyDownHandlerRef = useRef<((event: KeyboardEvent) => void) | undefined>(undefined);
 
   useEffect(() => {
     keyDownHandlerRef.current = (event: KeyboardEvent) => {
-      // Don't fire shortcuts when user is typing in an input element
       const activeElement = document.activeElement;
       const isTyping = activeElement?.tagName === 'INPUT' ||
                        activeElement?.tagName === 'TEXTAREA' ||
                        activeElement?.tagName === 'SELECT';
+      if (isTyping) return;
 
-      if (isTyping) {
-        return;
-      }
-
-      // Delete or Backspace: Remove selected image or selected items
       if ((event.key === 'Delete' || event.key === 'Backspace')) {
         if (selectedImageId) {
           event.preventDefault();
@@ -481,14 +322,9 @@ function App() {
           setSelectedImageId(null);
           return;
         }
-        if (selectedItemIds.size > 0) {
-          event.preventDefault();
-          deleteSelected();
-          return;
-        }
+        if (selectedItemIds.size > 0) { event.preventDefault(); deleteSelected(); return; }
       }
 
-      // R: Rotate selected item(s) CW, Shift+R: CCW
       if (event.key === 'r' || event.key === 'R') {
         if (selectedImageId) {
           event.preventDefault();
@@ -497,97 +333,42 @@ function App() {
         }
         if (selectedItemIds.size > 0) {
           event.preventDefault();
-          if (event.shiftKey) {
-            rotateSelected('ccw');
-          } else {
-            rotateSelected('cw');
-          }
+          rotateSelected(event.shiftKey ? 'ccw' : 'cw');
           return;
         }
       }
 
-      // Ctrl+D: Duplicate selected item
       if ((event.key === 'd' || event.key === 'D') && (event.ctrlKey || event.metaKey)) {
-        event.preventDefault();
-        duplicateItem();
-        return;
+        event.preventDefault(); duplicateItem(); return;
       }
-
-      // Ctrl+C: Copy selected item
       if ((event.key === 'c' || event.key === 'C') && (event.ctrlKey || event.metaKey)) {
-        event.preventDefault();
-        copyItems();
-        return;
+        event.preventDefault(); copyItems(); return;
       }
-
-      // Ctrl+V: Paste from clipboard
       if ((event.key === 'v' || event.key === 'V') && (event.ctrlKey || event.metaKey)) {
-        event.preventDefault();
-        pasteItems();
-        return;
+        event.preventDefault(); pasteItems(); return;
       }
-
-      // V (no modifier): Toggle image view mode
       if ((event.key === 'v' || event.key === 'V') && !event.ctrlKey && !event.metaKey) {
-        event.preventDefault();
-        toggleImageViewMode();
-        return;
+        event.preventDefault(); toggleImageViewMode(); return;
       }
-
-      // Escape: Clear both selections
-      // Note: deselectAll() and setSelectedImageId() are two independent setState calls,
-      // but React 18+ automatic batching ensures they produce a single re-render.
-      if (event.key === 'Escape') {
-        deselectAll();
-        setSelectedImageId(null);
-        return;
-      }
-
-      // Ctrl+A: Select all items
+      if (event.key === 'Escape') { deselectAll(); setSelectedImageId(null); return; }
       if ((event.key === 'a' || event.key === 'A') && (event.ctrlKey || event.metaKey)) {
-        event.preventDefault();
-        selectAll();
-        return;
+        event.preventDefault(); selectAll(); return;
       }
-
-      // L: Toggle lock on selected image
       if ((event.key === 'l' || event.key === 'L') && selectedImageId) {
-        event.preventDefault();
-        toggleRefImageLock(selectedImageId);
-        return;
+        event.preventDefault(); toggleRefImageLock(selectedImageId); return;
       }
-
-      // +/=: Zoom in, -: Zoom out, 0: Reset zoom
-      if (event.key === '+' || event.key === '=') {
-        event.preventDefault();
-        zoomIn();
-        return;
-      }
-      if (event.key === '-' || event.key === '_') {
-        event.preventDefault();
-        zoomOut();
-        return;
-      }
+      if (event.key === '+' || event.key === '=') { event.preventDefault(); zoomIn(); return; }
+      if (event.key === '-' || event.key === '_') { event.preventDefault(); zoomOut(); return; }
       if (event.key === '0' && (event.ctrlKey || event.metaKey)) {
-        event.preventDefault();
-        resetZoom();
-        return;
+        event.preventDefault(); resetZoom(); return;
       }
-
-      // ?: Show keyboard shortcuts help
       if (event.key === '?') {
-        event.preventDefault();
-        dialogDispatch({ type: 'TOGGLE', dialog: 'keyboard' });
-        return;
+        event.preventDefault(); dialogDispatch({ type: 'TOGGLE', dialog: 'keyboard' }); return;
       }
-
-      // Space: Track for pan mode
       if (event.key === ' ') {
         event.preventDefault();
         isSpaceHeldRef.current = true;
-        if (viewportRef.current) {
-          viewportRef.current.style.cursor = 'grab';
-        }
+        if (viewportRef.current) viewportRef.current.style.cursor = 'grab';
         return;
       }
     };
@@ -600,9 +381,7 @@ function App() {
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === ' ') {
         isSpaceHeldRef.current = false;
-        if (viewportRef.current) {
-          viewportRef.current.style.cursor = '';
-        }
+        if (viewportRef.current) viewportRef.current.style.cursor = '';
       }
     };
     document.addEventListener('keyup', handleKeyUp);
@@ -612,6 +391,53 @@ function App() {
       document.removeEventListener('keyup', handleKeyUp);
     };
   }, []);
+
+  // Sidebar content
+  const itemLibraryContent = (
+    <ItemLibrary
+      items={libraryItems}
+      categories={categories}
+      isLoading={isLibraryLoading || isLibrariesLoading}
+      error={libraryError || librariesError}
+      onRefreshLibrary={handleRefreshAll}
+      availableLibraries={availableLibraries}
+      selectedLibraryIds={selectedLibraryIds}
+      onToggleLibrary={toggleLibrary}
+      isLibrariesLoading={isLibrariesLoading}
+    />
+  );
+
+  const imageTabContent = isAuthenticated ? (
+    <RefImageLibrary />
+  ) : (
+    <div className="ref-image-auth-prompt">
+      <p>Sign in to upload and manage reference images.</p>
+    </div>
+  );
+
+  const selectionControls = (
+    <>
+      {selectedItemIds.size > 0 && (
+        <ItemControls
+          onRotateCw={handleRotateSelectedCw}
+          onRotateCcw={handleRotateSelectedCcw}
+          onDelete={handleDeleteSelected}
+        />
+      )}
+      {selectedItemIds.size === 1 && (() => {
+        const selectedId = selectedItemIds.values().next().value as string;
+        const selectedItem = placedItems.find(i => i.instanceId === selectedId);
+        if (!selectedItem) return null;
+        return (
+          <BinCustomizationPanel
+            customization={selectedItem.customization}
+            onChange={(c) => updateItemCustomization(selectedId, c)}
+            onReset={() => updateItemCustomization(selectedId, undefined)}
+          />
+        );
+      })()}
+    </>
+  );
 
   return (
     <div className="app">
@@ -641,276 +467,130 @@ function App() {
 
       <section className="grid-controls">
         <div className="unit-toggle-compact">
-          <button
-            className={unitSystem === 'metric' ? 'active' : ''}
-            onClick={() => handleUnitChange('metric')}
-          >
-            mm
-          </button>
-          <button
-            className={unitSystem === 'imperial' ? 'active' : ''}
-            onClick={() => handleUnitChange('imperial')}
-          >
-            in
-          </button>
+          <button className={unitSystem === 'metric' ? 'active' : ''} onClick={() => handleUnitChange('metric')}>mm</button>
+          <button className={unitSystem === 'imperial' ? 'active' : ''} onClick={() => handleUnitChange('imperial')}>in</button>
         </div>
 
         {unitSystem === 'imperial' && (
           <div className="format-toggle-compact">
-            <button
-              className={imperialFormat === 'decimal' ? 'active' : ''}
-              onClick={() => setImperialFormat('decimal')}
-            >
-              .00
-            </button>
-            <button
-              className={imperialFormat === 'fractional' ? 'active' : ''}
-              onClick={() => setImperialFormat('fractional')}
-            >
-              ½
-            </button>
+            <button className={imperialFormat === 'decimal' ? 'active' : ''} onClick={() => setImperialFormat('decimal')}>.00</button>
+            <button className={imperialFormat === 'fractional' ? 'active' : ''} onClick={() => setImperialFormat('fractional')}>{'\u00BD'}</button>
           </div>
         )}
 
         <div className="dimension-inputs-row">
-          <DimensionInput
-            label="Width"
-            value={width}
-            onChange={setWidth}
-            unit={unitSystem}
-            imperialFormat={imperialFormat}
-          />
+          <DimensionInput label="Width" value={width} onChange={setWidth} unit={unitSystem} imperialFormat={imperialFormat} />
           <span className="dimension-separator">x</span>
-          <DimensionInput
-            label="Depth"
-            value={depth}
-            onChange={setDepth}
-            unit={unitSystem}
-            imperialFormat={imperialFormat}
-          />
+          <DimensionInput label="Depth" value={depth} onChange={setDepth} unit={unitSystem} imperialFormat={imperialFormat} />
         </div>
 
-        <SpacerControls
-          config={spacerConfig}
-          onConfigChange={setSpacerConfig}
-        />
+        <SpacerControls config={spacerConfig} onConfigChange={setSpacerConfig} />
 
         <GridSummary
-          gridX={gridResult.gridX}
-          gridY={gridResult.gridY}
-          gapWidth={gridResult.gapWidth}
-          gapDepth={gridResult.gapDepth}
-          unit={unitSystem}
-          imperialFormat={imperialFormat}
+          gridX={gridResult.gridX} gridY={gridResult.gridY}
+          gapWidth={gridResult.gapWidth} gapDepth={gridResult.gapDepth}
+          unit={unitSystem} imperialFormat={imperialFormat}
         />
-
       </section>
 
       <main className="app-main">
-        <section className="sidebar">
-          <div className="sidebar-tabs">
-            <button
-              className={`sidebar-tab${sidebarTab === 'items' ? ' active' : ''}`}
-              onClick={() => setSidebarTab('items')}
-              type="button"
-            >
-              Items
-            </button>
-            <button
-              className={`sidebar-tab${sidebarTab === 'images' ? ' active' : ''}`}
-              onClick={() => setSidebarTab('images')}
-              type="button"
-            >
-              Images
-            </button>
-          </div>
-
-          {sidebarTab === 'items' ? (
-            <ItemLibrary
-              items={libraryItems}
-              categories={categories}
-              isLoading={isLibraryLoading || isLibrariesLoading}
-              error={libraryError || librariesError}
-              onRefreshLibrary={handleRefreshAll}
-              availableLibraries={availableLibraries}
-              selectedLibraryIds={selectedLibraryIds}
-              onToggleLibrary={toggleLibrary}
-              isLibrariesLoading={isLibrariesLoading}
-            />
-          ) : (
-            isAuthenticated ? (
-              <RefImageLibrary />
-            ) : (
-              <div className="ref-image-auth-prompt">
-                <p>Sign in to upload and manage reference images.</p>
-              </div>
-            )
-          )}
-
-          {selectedItemIds.size > 0 && (
-            <ItemControls
-              onRotateCw={handleRotateSelectedCw}
-              onRotateCcw={handleRotateSelectedCcw}
-              onDelete={handleDeleteSelected}
-            />
-          )}
-
-          {selectedItemIds.size === 1 && (() => {
-            const selectedId = selectedItemIds.values().next().value as string;
-            const selectedItem = placedItems.find(i => i.instanceId === selectedId);
-            if (!selectedItem) return null;
-            return (
-              <BinCustomizationPanel
-                customization={selectedItem.customization}
-                onChange={(c) => updateItemCustomization(selectedId, c)}
-                onReset={() => updateItemCustomization(selectedId, undefined)}
-              />
-            );
-          })()}
-        </section>
+        <SidebarPanel
+          sidebarTab={sidebarTab}
+          onTabChange={setSidebarTab}
+          itemLibraryContent={itemLibraryContent}
+          imageTabContent={imageTabContent}
+          selectionControls={selectionControls}
+        />
 
         <section className="preview">
           <div className="preview-toolbar">
             <div className="reference-image-toolbar">
               {isAuthenticated && (
-                <button
-                  className="layout-toolbar-btn layout-load-btn"
-                  onClick={() => dialogDispatch({ type: 'OPEN', dialog: 'load' })}
-                  type="button"
-                >
-                  Load
-                </button>
+                <button className="layout-toolbar-btn layout-load-btn" onClick={() => dialogDispatch({ type: 'OPEN', dialog: 'load' })} type="button">Load</button>
               )}
               {isAuthenticated && (placedItems.length > 0 || refImagePlacements.length > 0) && (
-                <button
-                  className="layout-toolbar-btn layout-save-btn"
-                  onClick={() => dialogDispatch({ type: 'OPEN', dialog: 'save' })}
-                  type="button"
-                >
-                  {layoutMeta.id && !isReadOnly ? 'Save' : 'Save'}
-                </button>
+                <button className="layout-toolbar-btn layout-save-btn" onClick={() => dialogDispatch({ type: 'OPEN', dialog: 'save' })} type="button">Save</button>
               )}
               {isAuthenticated && layoutMeta.id && layoutMeta.status === 'draft' && (
-                <button
-                  className="layout-toolbar-btn layout-submit-btn"
-                  onClick={handleSubmitLayout}
-                  type="button"
-                  disabled={submitLayoutMutation.isPending}
-                >
+                <button className="layout-toolbar-btn layout-submit-btn" onClick={handleSubmitLayout} type="button" disabled={submitLayoutMutation.isPending}>
                   {submitLayoutMutation.isPending ? 'Submitting...' : 'Submit'}
                 </button>
               )}
               {isAuthenticated && layoutMeta.id && layoutMeta.status === 'submitted' && (
-                <button
-                  className="layout-toolbar-btn layout-withdraw-btn"
-                  onClick={handleWithdrawLayout}
-                  type="button"
-                  disabled={withdrawLayoutMutation.isPending}
-                >
+                <button className="layout-toolbar-btn layout-withdraw-btn" onClick={handleWithdrawLayout} type="button" disabled={withdrawLayoutMutation.isPending}>
                   {withdrawLayoutMutation.isPending ? 'Withdrawing...' : 'Withdraw'}
                 </button>
               )}
               {isAuthenticated && isReadOnly && (
-                <button
-                  className="layout-toolbar-btn layout-clone-btn"
-                  onClick={handleCloneCurrentLayout}
-                  type="button"
-                  disabled={cloneLayoutMutation.isPending}
-                >
+                <button className="layout-toolbar-btn layout-clone-btn" onClick={handleCloneCurrentLayout} type="button" disabled={cloneLayoutMutation.isPending}>
                   {cloneLayoutMutation.isPending ? 'Cloning...' : 'Clone'}
                 </button>
               )}
               {!isReadOnly && (placedItems.length > 0 || refImagePlacements.length > 0) && (
-                <button className="clear-all-button" onClick={handleClearAll}>
-                  Clear All ({placedItems.length + refImagePlacements.length})
-                </button>
+                <button className="clear-all-button" onClick={handleClearAll}>Clear All ({placedItems.length + refImagePlacements.length})</button>
               )}
               {isAdmin && (
-                <SubmissionsBadge
-                  count={submittedCountQuery.data?.submitted ?? 0}
-                  onClick={() => dialogDispatch({ type: 'OPEN', dialog: 'admin' })}
-                />
+                <SubmissionsBadge count={submittedCountQuery.data?.submitted ?? 0} onClick={() => dialogDispatch({ type: 'OPEN', dialog: 'admin' })} />
               )}
             </div>
             <ImageViewToggle mode={imageViewMode} onToggle={toggleImageViewMode} />
-            <ZoomControls
-              zoom={transform.zoom}
-              onZoomIn={zoomIn}
-              onZoomOut={zoomOut}
-              onResetZoom={resetZoom}
-              onFitToScreen={handleFitToScreen}
-            />
+            <ZoomControls zoom={transform.zoom} onZoomIn={zoomIn} onZoomOut={zoomOut} onResetZoom={resetZoom} onFitToScreen={handleFitToScreen} />
           </div>
-          <div
-            ref={viewportRef}
-            className={`preview-viewport${transform.zoom !== 1 || transform.panX !== 0 || transform.panY !== 0 ? ' zoomed' : ''}`}
-            data-testid="preview-viewport"
+          <GridViewport
+            viewportRef={viewportRef}
+            transform={transform}
+            handleWheel={handleWheel}
+            setZoomLevel={setZoomLevel}
+            pan={pan}
+            isSpaceHeldRef={isSpaceHeldRef}
           >
-            <div
-              className={`preview-content${transform.zoom !== 1 || transform.panX !== 0 || transform.panY !== 0 ? ' transformed' : ''}`}
-              style={transform.zoom !== 1 || transform.panX !== 0 || transform.panY !== 0 ? {
-                transform: `scale(${transform.zoom}) translate(${transform.panX}px, ${transform.panY}px)`,
-                transformOrigin: '0 0',
-              } : undefined}
-            >
-              <GridPreview
-                gridX={gridResult.gridX}
-                gridY={gridResult.gridY}
-                placedItems={placedItems}
-                selectedItemIds={selectedItemIds}
-                spacers={spacers}
-                imageViewMode={imageViewMode}
-                onDrop={handleCombinedDrop}
-                onSelectItem={(id, mods) => { selectItem(id, mods); if (id) setSelectedImageId(null); }}
-                getItemById={getItemById}
-                onDeleteItem={deleteItem}
-                onRotateItemCw={(id) => rotateItem(id, 'cw')}
-                onRotateItemCcw={(id) => rotateItem(id, 'ccw')}
-                onItemCustomizationChange={updateItemCustomization}
-                onItemCustomizationReset={(id) => updateItemCustomization(id, undefined)}
-                referenceImages={referenceImagesForGrid}
-                selectedImageId={selectedImageId}
-                onImagePositionChange={updateRefImagePosition}
-                onImageSelect={(id) => { setSelectedImageId(id); deselectAll(); }}
-                onImageScaleChange={updateRefImageScale}
-                onImageOpacityChange={updateRefImageOpacity}
-                onImageRemove={handleRemoveImage}
-                onImageToggleLock={toggleRefImageLock}
-                onImageRotateCw={(id) => updateRefImageRotation(id, 'cw')}
-                onImageRotateCcw={(id) => updateRefImageRotation(id, 'ccw')}
-                refImageMetadata={refImageMetadata}
-                onRefImageRebind={handleRebindImage}
-              />
-            </div>
-          </div>
+            <GridPreview
+              gridX={gridResult.gridX}
+              gridY={gridResult.gridY}
+              placedItems={placedItems}
+              selectedItemIds={selectedItemIds}
+              spacers={spacers}
+              imageViewMode={imageViewMode}
+              onDrop={handleCombinedDrop}
+              onSelectItem={(id, mods) => { selectItem(id, mods); if (id) setSelectedImageId(null); }}
+              getItemById={getItemById}
+              onDeleteItem={deleteItem}
+              onRotateItemCw={(id) => rotateItem(id, 'cw')}
+              onRotateItemCcw={(id) => rotateItem(id, 'ccw')}
+              onItemCustomizationChange={updateItemCustomization}
+              onItemCustomizationReset={(id) => updateItemCustomization(id, undefined)}
+              referenceImages={referenceImagesForGrid}
+              selectedImageId={selectedImageId}
+              onImagePositionChange={updateRefImagePosition}
+              onImageSelect={(id) => { setSelectedImageId(id); deselectAll(); }}
+              onImageScaleChange={updateRefImageScale}
+              onImageOpacityChange={updateRefImageOpacity}
+              onImageRemove={handleRemoveImage}
+              onImageToggleLock={toggleRefImageLock}
+              onImageRotateCw={(id) => updateRefImageRotation(id, 'cw')}
+              onImageRotateCcw={(id) => updateRefImageRotation(id, 'ccw')}
+              refImageMetadata={refImageMetadata}
+              onRefImageRebind={handleRebindImage}
+            />
+          </GridViewport>
         </section>
 
         <section className="bom-sidebar">
-          <BillOfMaterials
-            items={bomItems}
-          />
+          <BillOfMaterials items={bomItems} />
         </section>
       </main>
 
-      <KeyboardShortcutsHelp
-        isOpen={dialogs.keyboard}
-        onClose={() => dialogDispatch({ type: 'CLOSE', dialog: 'keyboard' })}
-      />
+      <KeyboardShortcutsHelp isOpen={dialogs.keyboard} onClose={() => dialogDispatch({ type: 'CLOSE', dialog: 'keyboard' })} />
 
       <SaveLayoutDialog
         isOpen={dialogs.save}
         onClose={() => dialogDispatch({ type: 'CLOSE', dialog: 'save' })}
-        gridX={gridResult.gridX}
-        gridY={gridResult.gridY}
-        widthMm={drawerWidth}
-        depthMm={drawerDepth}
-        spacerConfig={spacerConfig}
-        placedItems={placedItems}
+        gridX={gridResult.gridX} gridY={gridResult.gridY}
+        widthMm={drawerWidth} depthMm={drawerDepth}
+        spacerConfig={spacerConfig} placedItems={placedItems}
         refImagePlacements={refImagePlacements}
-        currentLayoutId={layoutMeta.id}
-        currentLayoutName={layoutMeta.name}
-        currentLayoutDescription={layoutMeta.description}
-        currentLayoutStatus={layoutMeta.status}
+        currentLayoutId={layoutMeta.id} currentLayoutName={layoutMeta.name}
+        currentLayoutDescription={layoutMeta.description} currentLayoutStatus={layoutMeta.status}
         onSaveComplete={handleSaveComplete}
       />
 
