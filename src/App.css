@@ -1766,58 +1766,43 @@
 }
 
 /* Placed Item Inline Delete Button */
-.placed-item-delete-btn {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 1.5px solid var(--border-secondary);
-  background: var(--bg-primary);
-  color: var(--text-tertiary);
-  font-size: 12px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 3;
-  padding: 0;
-  animation: delete-btn-appear 0.15s ease-out;
-}
-
-.placed-item-delete-btn:hover {
-  background: var(--invalid-primary);
-  border-color: var(--invalid-primary);
-  color: white;
-  transform: scale(1.15);
-}
-
-.placed-item-delete-btn:active {
-  transform: scale(0.95);
-}
-
 @keyframes delete-btn-appear {
   from {
     opacity: 0;
-    transform: scale(0.5);
+    transform: translateX(-50%) scale(0.85);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: translateX(-50%) scale(1);
   }
 }
 
-/* Placed Item Inline Rotate Buttons */
-.placed-item-rotate-btn {
+/* Placed Item Toolbar */
+.placed-item-toolbar {
   position: absolute;
-  top: -8px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 1.5px solid var(--border-secondary);
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 2px;
   background: var(--bg-primary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 20px;
+  padding: 2px 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  z-index: 3;
+  white-space: nowrap;
+  animation: delete-btn-appear 0.15s ease-out;
+}
+
+.placed-item-toolbar-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
   color: var(--text-tertiary);
   font-size: 12px;
   line-height: 1;
@@ -1825,28 +1810,23 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 3;
   padding: 0;
-  animation: delete-btn-appear 0.15s ease-out;
+  flex-shrink: 0;
 }
 
-.placed-item-rotate-btn--ccw {
-  left: -8px;
+.placed-item-toolbar-btn:hover {
+  background: var(--blue-100, #dbeafe);
+  color: var(--blue-700, #1d4ed8);
+  transform: scale(1.1);
 }
 
-.placed-item-rotate-btn--cw {
-  left: 16px;
-}
-
-.placed-item-rotate-btn:hover {
-  background: var(--valid-primary);
-  border-color: var(--valid-primary);
-  color: white;
-  transform: scale(1.15);
-}
-
-.placed-item-rotate-btn:active {
+.placed-item-toolbar-btn:active {
   transform: scale(0.95);
+}
+
+.placed-item-toolbar-btn--danger:hover {
+  background: var(--invalid-bg, #fee2e2);
+  color: var(--invalid-primary, #ef4444);
 }
 
 /* Placed Item Image Support */
@@ -1911,72 +1891,6 @@
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-/* Placed Item Inline Customize Button */
-.placed-item-customize-btn {
-  position: absolute;
-  bottom: -8px;
-  left: -8px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 1.5px solid var(--border-secondary);
-  background: var(--bg-primary);
-  color: var(--text-tertiary);
-  font-size: 11px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 3;
-  padding: 0;
-  animation: delete-btn-appear 0.15s ease-out;
-}
-
-.placed-item-customize-btn:hover {
-  background: var(--blue-500, #3b82f6);
-  border-color: var(--blue-500, #3b82f6);
-  color: white;
-  transform: scale(1.15);
-}
-
-.placed-item-customize-btn:active {
-  transform: scale(0.95);
-}
-
-/* Placed Item Inline Duplicate Button */
-.placed-item-duplicate-btn {
-  position: absolute;
-  bottom: -8px;
-  right: -8px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 1.5px solid var(--border-secondary);
-  background: var(--bg-primary);
-  color: var(--text-tertiary);
-  font-size: 11px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 3;
-  padding: 0;
-  animation: delete-btn-appear 0.15s ease-out;
-}
-
-.placed-item-duplicate-btn:hover {
-  background: var(--blue-500, #3b82f6);
-  border-color: var(--blue-500, #3b82f6);
-  color: white;
-  transform: scale(1.15);
-}
-
-.placed-item-duplicate-btn:active {
-  transform: scale(0.95);
 }
 
 /* Placed Item Customization Popover */
@@ -2722,43 +2636,16 @@
 
 /* Larger touch targets for coarse pointer devices (touch screens) */
 @media (pointer: coarse) {
-  .placed-item-delete-btn {
-    width: 36px;
-    height: 36px;
+  .placed-item-toolbar {
+    top: -44px;
+    padding: 4px 6px;
+    gap: 4px;
+  }
+
+  .placed-item-toolbar-btn {
+    width: 32px;
+    height: 32px;
     font-size: 18px;
-    top: -12px;
-    right: -12px;
-  }
-
-  .placed-item-rotate-btn {
-    width: 36px;
-    height: 36px;
-    font-size: 18px;
-    top: -12px;
-  }
-
-  .placed-item-rotate-btn--ccw {
-    left: -12px;
-  }
-
-  .placed-item-rotate-btn--cw {
-    left: 30px;
-  }
-
-  .placed-item-customize-btn {
-    width: 36px;
-    height: 36px;
-    font-size: 18px;
-    bottom: -12px;
-    left: -12px;
-  }
-
-  .placed-item-duplicate-btn {
-    width: 36px;
-    height: 36px;
-    font-size: 18px;
-    bottom: -12px;
-    right: -12px;
   }
 
   .reference-image-overlay__toolbar-btn {
@@ -2793,13 +2680,10 @@
     transform: none;
   }
 
-  .placed-item-delete-btn:hover,
-  .placed-item-rotate-btn:hover,
-  .placed-item-customize-btn:hover,
-  .placed-item-duplicate-btn:hover {
+  .placed-item-toolbar-btn:hover,
+  .placed-item-toolbar-btn--danger:hover {
     transform: none;
-    background: var(--bg-primary);
-    border-color: var(--border-secondary);
+    background: transparent;
     color: var(--text-tertiary);
   }
 

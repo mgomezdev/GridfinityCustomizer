@@ -209,74 +209,68 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
           ))}
         </div>
       )}
-      {isSelected && (onRotateCcw || onRotateCw) && (
-        <>
+      {isSelected && (onRotateCcw || onRotateCw || onDuplicate || onCustomizationChange || onDelete) && (
+        <div
+          className="placed-item-toolbar"
+          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           {onRotateCcw && (
             <button
-              className="placed-item-rotate-btn placed-item-rotate-btn--ccw"
+              className="placed-item-toolbar-btn"
               onClick={handleRotateCcwClick}
-              onMouseDown={(e) => e.stopPropagation()}
-              onPointerDown={(e) => e.stopPropagation()}
               draggable={false}
               aria-label="Rotate counter-clockwise"
-              title="Rotate counter-clockwise"
+              title="Rotate counter-clockwise (Shift+R)"
             >
               &#8634;
             </button>
           )}
           {onRotateCw && (
             <button
-              className="placed-item-rotate-btn placed-item-rotate-btn--cw"
+              className="placed-item-toolbar-btn"
               onClick={handleRotateCwClick}
-              onMouseDown={(e) => e.stopPropagation()}
-              onPointerDown={(e) => e.stopPropagation()}
               draggable={false}
               aria-label="Rotate clockwise"
-              title="Rotate clockwise"
+              title="Rotate clockwise (R)"
             >
               &#8635;
             </button>
           )}
-        </>
-      )}
-      {isSelected && onDelete && (
-        <button
-          className="placed-item-delete-btn"
-          onClick={handleDeleteClick}
-          onMouseDown={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
-          draggable={false}
-          aria-label="Remove item"
-          title="Remove item"
-        >
-          &times;
-        </button>
-      )}
-      {isSelected && onDuplicate && (
-        <button
-          className="placed-item-duplicate-btn"
-          onClick={handleDuplicateClick}
-          onMouseDown={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
-          draggable={false}
-          aria-label="Duplicate"
-          title="Duplicate (Ctrl+D)"
-        >
-          &#x29C9;
-        </button>
-      )}
-      {isSelected && onCustomizationChange && (
-        <button
-          className="placed-item-customize-btn"
-          onClick={handleCustomizeClick}
-          onMouseDown={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
-          draggable={false}
-          aria-label="Customize"
-          title="Customize bin options"
-        >
-          &#9881;
-        </button>
+          {onDuplicate && (
+            <button
+              className="placed-item-toolbar-btn"
+              onClick={handleDuplicateClick}
+              draggable={false}
+              aria-label="Duplicate"
+              title="Duplicate (Ctrl+D)"
+            >
+              &#x29C9;
+            </button>
+          )}
+          {onCustomizationChange && (
+            <button
+              className="placed-item-toolbar-btn"
+              onClick={handleCustomizeClick}
+              draggable={false}
+              aria-label="Customize"
+              title="Customize bin options"
+            >
+              &#9881;
+            </button>
+          )}
+          {onDelete && (
+            <button
+              className="placed-item-toolbar-btn placed-item-toolbar-btn--danger"
+              onClick={handleDeleteClick}
+              draggable={false}
+              aria-label="Remove item"
+              title="Remove item (Del)"
+            >
+              &times;
+            </button>
+          )}
+        </div>
       )}
       {showPopover && isSelected && onCustomizationChange && (
         <div
