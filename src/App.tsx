@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { UnitSystem, ImperialFormat, GridSpacerConfig, ImageViewMode, ReferenceImage, DragData } from './types/gridfinity';
+import type { LayoutStatus } from '@gridfinity/shared';
 import { calculateGrid, mmToInches, inchesToMm } from './utils/conversions';
 import { useLayoutMeta } from './hooks/useLayoutMeta';
 import { useDialogState } from './hooks/useDialogState';
@@ -196,6 +197,25 @@ function App() {
     }
   }, [layoutMeta.id, submitLayoutMutation, handleSetStatus]);
 
+  const handleSubmitClick = useCallback(() => {
+    if (!layoutMeta.id) {
+      submitAfterSaveRef.current = true;
+      dialogDispatch({ type: 'OPEN', dialog: 'save' });
+    } else {
+      handleSubmitLayout();
+    }
+  }, [layoutMeta.id, dialogDispatch, handleSubmitLayout]);
+
+  const handleSaveCompleteWithSubmit = useCallback((layoutId: number, name: string, status: LayoutStatus) => {
+    handleSaveComplete(layoutId, name, status);
+    if (submitAfterSaveRef.current) {
+      submitAfterSaveRef.current = false;
+      submitLayoutMutation.mutate(layoutId, {
+        onSuccess: (result) => handleSetStatus(result.status),
+      });
+    }
+  }, [handleSaveComplete, submitLayoutMutation, handleSetStatus]);
+
   const handleWithdrawLayout = useCallback(async () => {
     if (!layoutMeta.id) return;
     try {
@@ -224,6 +244,7 @@ function App() {
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const isSpaceHeldRef = useRef(false);
+  const submitAfterSaveRef = useRef(false);
 
   const handleFitToScreen = useCallback(() => {
     const viewport = viewportRef.current;
@@ -511,9 +532,19 @@ function App() {
               {isAuthenticated && (placedItems.length > 0 || refImagePlacements.length > 0) && (
                 <button className="layout-toolbar-btn layout-save-btn" onClick={() => dialogDispatch({ type: 'OPEN', dialog: 'save' })} type="button">Save</button>
               )}
-              {isAuthenticated && layoutMeta.id && layoutMeta.status === 'draft' && (
-                <button className="layout-toolbar-btn layout-submit-btn" onClick={handleSubmitLayout} type="button" disabled={submitLayoutMutation.isPending}>
+              {isAuthenticated && layoutMeta.status !== 'submitted' && layoutMeta.status !== 'delivered' && (
+                <button
+                  className="layout-toolbar-btn layout-submit-btn"
+                  onClick={handleSubmitClick}
+                  type="button"
+                  disabled={submitLayoutMutation.isPending}
+                >
                   {submitLayoutMutation.isPending ? 'Submitting...' : 'Submit'}
+                </button>
+              )}
+              {isAuthenticated && layoutMeta.status === 'delivered' && (
+                <button className="layout-toolbar-btn layout-submit-btn" disabled type="button" title="This layout has been fulfilled">
+                  Submit
                 </button>
               )}
               {isAuthenticated && layoutMeta.id && layoutMeta.status === 'submitted' && (
@@ -592,7 +623,7 @@ function App() {
         refImagePlacements={refImagePlacements}
         currentLayoutId={layoutMeta.id} currentLayoutName={layoutMeta.name}
         currentLayoutDescription={layoutMeta.description} currentLayoutStatus={layoutMeta.status}
-        onSaveComplete={handleSaveComplete}
+        onSaveComplete={handleSaveCompleteWithSubmit}
       />
 
       <LoadLayoutDialog

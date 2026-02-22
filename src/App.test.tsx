@@ -72,20 +72,26 @@ vi.mock('./components/auth/UserMenu', () => ({
   UserMenu: () => <div data-testid="user-menu" />,
 }));
 
+let mockIsAuthenticated = false;
+
 vi.mock('./contexts/AuthContext', () => ({
   useAuth: () => ({
-    user: null,
-    isAuthenticated: false,
+    user: mockIsAuthenticated ? { id: 1, username: 'testuser', role: 'user' } : null,
+    isAuthenticated: mockIsAuthenticated,
     isLoading: false,
     login: vi.fn(),
     register: vi.fn(),
     logout: vi.fn(),
-    getAccessToken: () => null,
+    getAccessToken: () => (mockIsAuthenticated ? 'test-token' : null),
   }),
 }));
 
+let capturedSaveLayoutDialogProps: Record<string, unknown> = {};
 vi.mock('./components/layouts/SaveLayoutDialog', () => ({
-  SaveLayoutDialog: () => null,
+  SaveLayoutDialog: (props: Record<string, unknown>) => {
+    capturedSaveLayoutDialogProps = props;
+    return null;
+  },
 }));
 
 let capturedLoadLayoutDialogProps: Record<string, unknown> = {};
@@ -105,9 +111,9 @@ vi.mock('./components/admin/SubmissionsBadge', () => ({
 }));
 
 vi.mock('./hooks/useLayouts', () => ({
-  useSubmitLayoutMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  useWithdrawLayoutMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  useCloneLayoutMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useSubmitLayoutMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
+  useWithdrawLayoutMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
+  useCloneLayoutMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
   useSubmittedCountQuery: () => ({ data: null, isLoading: false }),
 }));
 
@@ -245,7 +251,9 @@ describe('App Integration Tests', () => {
     capturedItemLibraryProps = {};
     capturedZoomControlsProps = {};
     capturedLoadLayoutDialogProps = {};
+    capturedSaveLayoutDialogProps = {};
     mockPlacements = [];
+    mockIsAuthenticated = false;
     localStorage.removeItem('gridfinity-image-view-mode');
   });
 
@@ -993,6 +1001,26 @@ describe('App Integration Tests', () => {
       await waitFor(() => {
         expect(screen.queryByText('To Clear')).not.toBeInTheDocument();
       });
+    });
+  });
+
+  // ==========================================
+  // 9. Always-visible Submit button
+  // ==========================================
+  describe('Always-visible Submit button', () => {
+    it('Submit button is visible when authenticated and no layout is saved', () => {
+      mockIsAuthenticated = true;
+      renderApp();
+      expect(screen.getByRole('button', { name: 'Submit' })).toBeInTheDocument();
+    });
+
+    it('clicking Submit when no layout is saved opens the Save dialog', () => {
+      mockIsAuthenticated = true;
+      renderApp();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+      expect(capturedSaveLayoutDialogProps.isOpen).toBe(true);
     });
   });
 });
