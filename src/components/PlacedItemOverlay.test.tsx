@@ -1710,6 +1710,122 @@ describe('PlacedItemOverlay', () => {
     });
   });
 
+  describe('Right-click Context Menu', () => {
+    it('opens context menu on right-click', () => {
+      render(
+        <PlacedItemOverlay
+          item={createMockItem()}
+          gridX={4} gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onDelete={vi.fn()}
+          onRotateCw={vi.fn()}
+          onRotateCcw={vi.fn()}
+          onDuplicate={vi.fn()}
+          onCustomizationChange={vi.fn()}
+          onCustomizationReset={vi.fn()}
+        />
+      );
+      const root = document.querySelector('.placed-item') as HTMLElement;
+      fireEvent.contextMenu(root);
+      expect(screen.getByRole('menu')).toBeDefined();
+    });
+
+    it('selects the bin on right-click if not selected', () => {
+      const onSelect = vi.fn();
+      render(
+        <PlacedItemOverlay
+          item={createMockItem()}
+          gridX={4} gridY={4}
+          isSelected={false}
+          onSelect={onSelect}
+          getItemById={mockGetItemById}
+          onDelete={vi.fn()}
+          onRotateCw={vi.fn()}
+          onRotateCcw={vi.fn()}
+          onDuplicate={vi.fn()}
+        />
+      );
+      const root = document.querySelector('.placed-item') as HTMLElement;
+      fireEvent.contextMenu(root);
+      expect(onSelect).toHaveBeenCalledWith('test-item-1', { shift: false, ctrl: false });
+    });
+
+    it('closes context menu when a menu action is taken', () => {
+      const onDelete = vi.fn();
+      render(
+        <PlacedItemOverlay
+          item={createMockItem()}
+          gridX={4} gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onDelete={onDelete}
+          onRotateCw={vi.fn()}
+          onRotateCcw={vi.fn()}
+          onDuplicate={vi.fn()}
+          onCustomizationChange={vi.fn()}
+          onCustomizationReset={vi.fn()}
+        />
+      );
+      const root = document.querySelector('.placed-item') as HTMLElement;
+      fireEvent.contextMenu(root);
+      expect(screen.getByRole('menu')).toBeDefined();
+      fireEvent.click(screen.getByRole('menuitem', { name: /delete/i }));
+      expect(onDelete).toHaveBeenCalledTimes(1);
+      expect(screen.queryByRole('menu')).toBeNull();
+    });
+  });
+
+  describe('Duplicate Button', () => {
+    it('does not render duplicate button when not selected', () => {
+      const onDuplicate = vi.fn();
+      render(
+        <PlacedItemOverlay
+          item={createMockItem()}
+          gridX={4} gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onDuplicate={onDuplicate}
+        />
+      );
+      expect(screen.queryByRole('button', { name: /duplicate/i })).toBeNull();
+    });
+
+    it('renders duplicate button when selected', () => {
+      const onDuplicate = vi.fn();
+      render(
+        <PlacedItemOverlay
+          item={createMockItem()}
+          gridX={4} gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onDuplicate={onDuplicate}
+        />
+      );
+      expect(screen.getByRole('button', { name: /duplicate/i })).toBeDefined();
+    });
+
+    it('calls onDuplicate when duplicate button is clicked', () => {
+      const onDuplicate = vi.fn();
+      render(
+        <PlacedItemOverlay
+          item={createMockItem()}
+          gridX={4} gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onDuplicate={onDuplicate}
+        />
+      );
+      fireEvent.click(screen.getByRole('button', { name: /duplicate/i }));
+      expect(onDuplicate).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('Inline Customize Button', () => {
     const mockOnCustomizationChange = vi.fn();
 

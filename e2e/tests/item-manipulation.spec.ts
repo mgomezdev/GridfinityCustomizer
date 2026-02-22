@@ -210,7 +210,7 @@ test.describe('Item Manipulation', () => {
     expect(await gridPage.getPlacedItemCount()).toBe(1);
 
     // Item should be selected after placement — delete button should be visible
-    const deleteBtn = page.locator('.placed-item-delete-btn');
+    const deleteBtn = page.locator('[aria-label="Remove item"]');
     await expect(deleteBtn).toBeVisible();
 
     // Click the inline delete button
@@ -231,7 +231,7 @@ test.describe('Item Manipulation', () => {
     await page.waitForTimeout(100);
 
     // Delete button should not be visible
-    const deleteBtn = page.locator('.placed-item-delete-btn');
+    const deleteBtn = page.locator('[aria-label="Remove item"]');
     await expect(deleteBtn).not.toBeVisible();
   });
 
@@ -250,7 +250,7 @@ test.describe('Item Manipulation', () => {
     await page.waitForTimeout(50);
 
     // Delete button should be on the selected (first) item
-    const deleteBtn = page.locator('.placed-item-delete-btn');
+    const deleteBtn = page.locator('[aria-label="Remove item"]');
     await expect(deleteBtn).toBeVisible();
     await deleteBtn.click();
     await page.waitForTimeout(100);

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { UnitSystem, ImperialFormat, GridSpacerConfig, ImageViewMode, ReferenceImage, DragData } from './types/gridfinity';
+import type { LayoutStatus } from '@gridfinity/shared';
 import { calculateGrid, mmToInches, inchesToMm } from './utils/conversions';
 import { useLayoutMeta } from './hooks/useLayoutMeta';
 import { useDialogState } from './hooks/useDialogState';
@@ -12,6 +13,7 @@ import { useCategoryData } from './hooks/useCategoryData';
 import { useRefImagePlacements } from './hooks/useRefImagePlacements';
 import { useGridTransform } from './hooks/useGridTransform';
 import { useAuth } from './contexts/AuthContext';
+import { useWalkthrough, WALKTHROUGH_STEPS } from './contexts/WalkthroughContext';
 import { useSubmitLayoutMutation, useWithdrawLayoutMutation, useCloneLayoutMutation, useSubmittedCountQuery } from './hooks/useLayouts';
 import { useConfirmDialog } from './hooks/useConfirmDialog';
 import { ConfirmDialog } from './components/ConfirmDialog';
@@ -36,6 +38,8 @@ import { LoadLayoutDialog } from './components/layouts/LoadLayoutDialog';
 import type { LoadedLayoutConfig } from './components/layouts/LoadLayoutDialog';
 import { AdminSubmissionsDialog } from './components/admin/AdminSubmissionsDialog';
 import { SubmissionsBadge } from './components/admin/SubmissionsBadge';
+import { WalkthroughOverlay } from './components/WalkthroughOverlay';
+import { STORAGE_KEYS } from './utils/storageKeys';
 import './App.css';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:3001/api/v1';
@@ -63,6 +67,18 @@ function App() {
 
   const { isAuthenticated, user } = useAuth();
   const isAdmin = user?.role === 'admin';
+
+  const { isActive, currentStep, startTour, nextStep, dismissTour } = useWalkthrough();
+  const prevAuthenticatedRef = useRef(isAuthenticated);
+
+  useEffect(() => {
+    if (isAuthenticated && !prevAuthenticatedRef.current) {
+      if (!localStorage.getItem(STORAGE_KEYS.WALKTHROUGH_SEEN)) {
+        startTour();
+      }
+    }
+    prevAuthenticatedRef.current = isAuthenticated;
+  }, [isAuthenticated, startTour]);
 
   const submitLayoutMutation = useSubmitLayoutMutation();
   const withdrawLayoutMutation = useWithdrawLayoutMutation();
@@ -195,6 +211,27 @@ function App() {
       // Error handled by mutation
     }
   }, [layoutMeta.id, submitLayoutMutation, handleSetStatus]);
+
+  const submitAfterSaveRef = useRef(false);
+
+  const handleSubmitClick = useCallback(() => {
+    if (!layoutMeta.id) {
+      submitAfterSaveRef.current = true;
+      dialogDispatch({ type: 'OPEN', dialog: 'save' });
+    } else {
+      handleSubmitLayout();
+    }
+  }, [layoutMeta.id, dialogDispatch, handleSubmitLayout]);
+
+  const handleSaveCompleteWithSubmit = useCallback((layoutId: number, name: string, status: LayoutStatus) => {
+    handleSaveComplete(layoutId, name, status);
+    if (submitAfterSaveRef.current) {
+      submitAfterSaveRef.current = false;
+      submitLayoutMutation.mutate(layoutId, {
+        onSuccess: (result) => handleSetStatus(result.status),
+      });
+    }
+  }, [handleSaveComplete, submitLayoutMutation, handleSetStatus]);
 
   const handleWithdrawLayout = useCallback(async () => {
     if (!layoutMeta.id) return;
@@ -508,12 +545,29 @@ function App() {
               {isAuthenticated && (
                 <button className="layout-toolbar-btn layout-load-btn" onClick={() => dialogDispatch({ type: 'OPEN', dialog: 'load' })} type="button">Load</button>
               )}
-              {isAuthenticated && (placedItems.length > 0 || refImagePlacements.length > 0) && (
-                <button className="layout-toolbar-btn layout-save-btn" onClick={() => dialogDispatch({ type: 'OPEN', dialog: 'save' })} type="button">Save</button>
+              {isAuthenticated && (
+                <button
+                  className="layout-toolbar-btn layout-save-btn"
+                  onClick={() => dialogDispatch({ type: 'OPEN', dialog: 'save' })}
+                  type="button"
+                  disabled={placedItems.length === 0 && refImagePlacements.length === 0}
+                >
+                  Save
+                </button>
               )}
-              {isAuthenticated && layoutMeta.id && layoutMeta.status === 'draft' && (
-                <button className="layout-toolbar-btn layout-submit-btn" onClick={handleSubmitLayout} type="button" disabled={submitLayoutMutation.isPending}>
+              {isAuthenticated && layoutMeta.status !== 'submitted' && layoutMeta.status !== 'delivered' && (
+                <button
+                  className="layout-toolbar-btn layout-submit-btn"
+                  onClick={handleSubmitClick}
+                  type="button"
+                  disabled={submitLayoutMutation.isPending}
+                >
                   {submitLayoutMutation.isPending ? 'Submitting...' : 'Submit'}
+                </button>
+              )}
+              {isAuthenticated && layoutMeta.status === 'delivered' && (
+                <button className="layout-toolbar-btn layout-submit-btn" disabled type="button" title="This layout has been fulfilled">
+                  Submit
                 </button>
               )}
               {isAuthenticated && layoutMeta.id && layoutMeta.status === 'submitted' && (
@@ -559,6 +613,7 @@ function App() {
               onRotateItemCcw={(id) => rotateItem(id, 'ccw')}
               onItemCustomizationChange={updateItemCustomization}
               onItemCustomizationReset={(id) => updateItemCustomization(id, undefined)}
+              onDuplicateItem={duplicateItem}
               referenceImages={referenceImagesForGrid}
               selectedImageId={selectedImageId}
               onImagePositionChange={updateRefImagePosition}
@@ -591,7 +646,7 @@ function App() {
         refImagePlacements={refImagePlacements}
         currentLayoutId={layoutMeta.id} currentLayoutName={layoutMeta.name}
         currentLayoutDescription={layoutMeta.description} currentLayoutStatus={layoutMeta.status}
-        onSaveComplete={handleSaveComplete}
+        onSaveComplete={handleSaveCompleteWithSubmit}
       />
 
       <LoadLayoutDialog
@@ -621,6 +676,14 @@ function App() {
       )}
 
       <ConfirmDialog {...confirmDialogProps} />
+
+      <WalkthroughOverlay
+        isActive={isActive}
+        currentStep={currentStep}
+        steps={WALKTHROUGH_STEPS}
+        onNext={nextStep}
+        onDismiss={dismissTour}
+      />
     </div>
   );
 }
