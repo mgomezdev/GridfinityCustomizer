@@ -69,7 +69,7 @@ function App() {
   const isAdmin = user?.role === 'admin';
 
   const { isActive, currentStep, startTour, nextStep, dismissTour } = useWalkthrough();
-  const prevAuthenticatedRef = useRef(false);
+  const prevAuthenticatedRef = useRef(isAuthenticated);
 
   useEffect(() => {
     if (isAuthenticated && !prevAuthenticatedRef.current) {

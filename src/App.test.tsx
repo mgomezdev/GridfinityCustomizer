@@ -1091,20 +1091,17 @@ describe('App Integration Tests', () => {
   // ==========================================
   describe('Walkthrough auto-start', () => {
     it('auto-starts walkthrough on first login', async () => {
-      // Start unauthenticated
+      // Start unauthenticated — capture rerender from the original render
       mockIsAuthenticated = false;
-      renderApp();
+      const { rerender } = render(<App />);
 
       // No walkthrough yet
       expect(mockStartTour).not.toHaveBeenCalled();
 
-      // Simulate login transition: set authenticated and re-render
+      // Simulate login transition: mutate flag then rerender the same instance
       act(() => {
         mockIsAuthenticated = true;
       });
-
-      // Re-render to trigger the useEffect
-      const { rerender } = render(<App />);
       rerender(<App />);
 
       await waitFor(() => {
@@ -1116,15 +1113,14 @@ describe('App Integration Tests', () => {
       // Mark as seen before render
       localStorage.setItem('gridfinity-walkthrough-seen', 'true');
 
+      // Start unauthenticated — capture rerender from the original render
       mockIsAuthenticated = false;
-      renderApp();
+      const { rerender } = render(<App />);
 
-      // Simulate login
+      // Simulate login transition: mutate flag then rerender the same instance
       act(() => {
         mockIsAuthenticated = true;
       });
-
-      const { rerender } = render(<App />);
       rerender(<App />);
 
       // Should NOT have called startTour since WALKTHROUGH_SEEN is set
