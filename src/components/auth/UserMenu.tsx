@@ -84,6 +84,7 @@ export function UserMenu() {
             className="user-menu-item"
             onClick={() => { setShowDropdown(false); startTour(); }}
             type="button"
+            role="menuitem"
           >
             Take the tour
           </button>

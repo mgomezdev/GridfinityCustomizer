@@ -131,14 +131,14 @@ describe('UserMenu', () => {
     it('renders Take the tour button', () => {
       renderAuthenticatedUserMenu();
       openDropdown();
-      expect(screen.getByRole('button', { name: /take the tour/i })).toBeInTheDocument();
+      expect(screen.getByRole('menuitem', { name: /take the tour/i })).toBeInTheDocument();
     });
 
     it('calls startTour when Take the tour is clicked', () => {
       const startTour = vi.fn();
       renderAuthenticatedUserMenu({ startTour });
       openDropdown();
-      fireEvent.click(screen.getByRole('button', { name: /take the tour/i }));
+      fireEvent.click(screen.getByRole('menuitem', { name: /take the tour/i }));
       expect(startTour).toHaveBeenCalledTimes(1);
     });
 
@@ -146,7 +146,7 @@ describe('UserMenu', () => {
       renderAuthenticatedUserMenu();
       openDropdown();
       expect(screen.getByRole('menu')).toBeInTheDocument();
-      fireEvent.click(screen.getByRole('button', { name: /take the tour/i }));
+      fireEvent.click(screen.getByRole('menuitem', { name: /take the tour/i }));
       expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     });
 
