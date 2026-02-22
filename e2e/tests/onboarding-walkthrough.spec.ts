@@ -91,28 +91,32 @@ test.describe('Onboarding Walkthrough', () => {
     // Tour should appear automatically after auth resolves
     const counter = page.locator('.walkthrough-counter');
     await expect(counter).toBeVisible({ timeout: 10000 });
-    await expect(counter).toHaveText('Step 1 of 3');
+    await expect(counter).toHaveText('Step 1 of 4');
 
     const title = page.locator('.walkthrough-title');
-    await expect(title).toHaveText('Drag a bin onto your grid');
+    await expect(title).toHaveText('Open a bin category');
   });
 
-  test('clicking Next advances through all 3 steps and ends with Finish', async ({ page }) => {
+  test('clicking Next advances through all 4 steps and ends with Finish', async ({ page }) => {
     await setupAuthMocks(page);
     await seedAuth(page);
     await gridPage.goto();
 
     // Wait for step 1
     await expect(page.locator('.walkthrough-counter')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('.walkthrough-counter')).toHaveText('Step 1 of 3');
+    await expect(page.locator('.walkthrough-counter')).toHaveText('Step 1 of 4');
 
     // Advance to step 2
     await page.locator('.walkthrough-next-btn').click();
-    await expect(page.locator('.walkthrough-counter')).toHaveText('Step 2 of 3');
+    await expect(page.locator('.walkthrough-counter')).toHaveText('Step 2 of 4');
 
     // Advance to step 3
     await page.locator('.walkthrough-next-btn').click();
-    await expect(page.locator('.walkthrough-counter')).toHaveText('Step 3 of 3');
+    await expect(page.locator('.walkthrough-counter')).toHaveText('Step 3 of 4');
+
+    // Advance to step 4
+    await page.locator('.walkthrough-next-btn').click();
+    await expect(page.locator('.walkthrough-counter')).toHaveText('Step 4 of 4');
 
     // On the last step the button reads "Finish"
     await expect(page.locator('.walkthrough-next-btn')).toHaveText('Finish');
@@ -174,7 +178,7 @@ test.describe('Onboarding Walkthrough', () => {
 
     // Tour should restart at step 1
     await expect(page.locator('.walkthrough-card')).toBeVisible();
-    await expect(page.locator('.walkthrough-counter')).toHaveText('Step 1 of 3');
-    await expect(page.locator('.walkthrough-title')).toHaveText('Drag a bin onto your grid');
+    await expect(page.locator('.walkthrough-counter')).toHaveText('Step 1 of 4');
+    await expect(page.locator('.walkthrough-title')).toHaveText('Open a bin category');
   });
 });

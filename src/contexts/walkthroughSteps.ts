@@ -7,6 +7,12 @@ export interface WalkthroughStep {
 
 export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
+    id: 'expand-category',
+    title: 'Open a bin category',
+    body: 'Click any category in the library panel to expand it and see the available bins.',
+    target: '.category-title.collapsible',
+  },
+  {
     id: 'place-bin',
     title: 'Drag a bin onto your grid',
     body: 'Pick any bin from the library on the left and drag it onto the grid to place it.',

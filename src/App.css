@@ -2726,6 +2726,11 @@
   background: var(--grid-primary, #3B82F6);
 }
 
+.layout-save-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 /* Layout Dialog Overlay */
 .layout-dialog-overlay {
   position: fixed;

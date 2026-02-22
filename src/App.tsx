@@ -545,8 +545,15 @@ function App() {
               {isAuthenticated && (
                 <button className="layout-toolbar-btn layout-load-btn" onClick={() => dialogDispatch({ type: 'OPEN', dialog: 'load' })} type="button">Load</button>
               )}
-              {isAuthenticated && (placedItems.length > 0 || refImagePlacements.length > 0) && (
-                <button className="layout-toolbar-btn layout-save-btn" onClick={() => dialogDispatch({ type: 'OPEN', dialog: 'save' })} type="button">Save</button>
+              {isAuthenticated && (
+                <button
+                  className="layout-toolbar-btn layout-save-btn"
+                  onClick={() => dialogDispatch({ type: 'OPEN', dialog: 'save' })}
+                  type="button"
+                  disabled={placedItems.length === 0 && refImagePlacements.length === 0}
+                >
+                  Save
+                </button>
               )}
               {isAuthenticated && layoutMeta.status !== 'submitted' && layoutMeta.status !== 'delivered' && (
                 <button
