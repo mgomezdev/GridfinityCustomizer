@@ -11,8 +11,8 @@
         "labeled"
       ],
       "stlFile": "bin_1x1_labeled.stl",
-      "imageUrl": "bin__labeled1x1.png",
-      "perspectiveImageUrl": "bin__labeled1x1-perspective.png"
+      "imageUrl": "bin_1x1_labeled.png",
+      "perspectiveImageUrl": "bin_1x1_labeled-perspective.png"
     },
     {
       "id": "bin-1x2-labeled",
@@ -24,8 +24,8 @@
         "labeled"
       ],
       "stlFile": "bin_1x2_labeled.stl",
-      "imageUrl": "bin__labeled1x2.png",
-      "perspectiveImageUrl": "bin__labeled1x2-perspective.png"
+      "imageUrl": "bin_1x2_labeled.png",
+      "perspectiveImageUrl": "bin_1x2_labeled-perspective.png"
     },
     {
       "id": "bin-1x3-labeled",
@@ -37,8 +37,8 @@
         "labeled"
       ],
       "stlFile": "bin_1x3_labeled.stl",
-      "imageUrl": "bin__labeled1x3.png",
-      "perspectiveImageUrl": "bin__labeled1x3-perspective.png"
+      "imageUrl": "bin_1x3_labeled.png",
+      "perspectiveImageUrl": "bin_1x3_labeled-perspective.png"
     },
     {
       "id": "bin-1x4-labeled",
@@ -50,8 +50,8 @@
         "labeled"
       ],
       "stlFile": "bin_1x4_labeled.stl",
-      "imageUrl": "bin__labeled1x4.png",
-      "perspectiveImageUrl": "bin__labeled1x4-perspective.png"
+      "imageUrl": "bin_1x4_labeled.png",
+      "perspectiveImageUrl": "bin_1x4_labeled-perspective.png"
     },
     {
       "id": "bin-1x5-labeled",
@@ -63,8 +63,8 @@
         "labeled"
       ],
       "stlFile": "bin_1x5_labeled.stl",
-      "imageUrl": "bin__labeled1x5.png",
-      "perspectiveImageUrl": "bin__labeled1x5-perspective.png"
+      "imageUrl": "bin_1x5_labeled.png",
+      "perspectiveImageUrl": "bin_1x5_labeled-perspective.png"
     },
     {
       "id": "bin-2x1-labeled",
@@ -76,8 +76,8 @@
         "labeled"
       ],
       "stlFile": "bin_2x1_labeled.stl",
-      "imageUrl": "bin__labeled2x1.png",
-      "perspectiveImageUrl": "bin__labeled2x1-perspective.png"
+      "imageUrl": "bin_2x1_labeled.png",
+      "perspectiveImageUrl": "bin_2x1_labeled-perspective.png"
     },
     {
       "id": "bin-2x2-labeled",
@@ -89,8 +89,8 @@
         "labeled"
       ],
       "stlFile": "bin_2x2_labeled.stl",
-      "imageUrl": "bin__labeled2x2.png",
-      "perspectiveImageUrl": "bin__labeled2x2-perspective.png"
+      "imageUrl": "bin_2x2_labeled.png",
+      "perspectiveImageUrl": "bin_2x2_labeled-perspective.png"
     },
     {
       "id": "bin-2x3-labeled",
@@ -102,8 +102,8 @@
         "labeled"
       ],
       "stlFile": "bin_2x3_labeled.stl",
-      "imageUrl": "bin__labeled2x3.png",
-      "perspectiveImageUrl": "bin__labeled2x3-perspective.png"
+      "imageUrl": "bin_2x3_labeled.png",
+      "perspectiveImageUrl": "bin_2x3_labeled-perspective.png"
     },
     {
       "id": "bin-2x4-labeled",
@@ -115,8 +115,8 @@
         "labeled"
       ],
       "stlFile": "bin_2x4_labeled.stl",
-      "imageUrl": "bin__labeled2x4.png",
-      "perspectiveImageUrl": "bin__labeled2x4-perspective.png"
+      "imageUrl": "bin_2x4_labeled.png",
+      "perspectiveImageUrl": "bin_2x4_labeled-perspective.png"
     },
     {
       "id": "bin-2x5-labeled",
@@ -128,8 +128,8 @@
         "labeled"
       ],
       "stlFile": "bin_2x5_labeled.stl",
-      "imageUrl": "bin__labeled2x5.png",
-      "perspectiveImageUrl": "bin__labeled2x5-perspective.png"
+      "imageUrl": "bin_2x5_labeled.png",
+      "perspectiveImageUrl": "bin_2x5_labeled-perspective.png"
     },
     {
       "id": "bin-3x1-labeled",
@@ -141,8 +141,8 @@
         "labeled"
       ],
       "stlFile": "bin_3x1_labeled.stl",
-      "imageUrl": "bin__labeled3x1.png",
-      "perspectiveImageUrl": "bin__labeled3x1-perspective.png"
+      "imageUrl": "bin_3x1_labeled.png",
+      "perspectiveImageUrl": "bin_3x1_labeled-perspective.png"
     },
     {
       "id": "bin-3x2-labeled",
@@ -154,8 +154,8 @@
         "labeled"
       ],
       "stlFile": "bin_3x2_labeled.stl",
-      "imageUrl": "bin__labeled3x2.png",
-      "perspectiveImageUrl": "bin__labeled3x2-perspective.png"
+      "imageUrl": "bin_3x2_labeled.png",
+      "perspectiveImageUrl": "bin_3x2_labeled-perspective.png"
     },
     {
       "id": "bin-3x3-labeled",
@@ -167,8 +167,8 @@
         "labeled"
       ],
       "stlFile": "bin_3x3_labeled.stl",
-      "imageUrl": "bin__labeled3x3.png",
-      "perspectiveImageUrl": "bin__labeled3x3-perspective.png"
+      "imageUrl": "bin_3x3_labeled.png",
+      "perspectiveImageUrl": "bin_3x3_labeled-perspective.png"
     },
     {
       "id": "bin-3x4-labeled",
@@ -180,8 +180,8 @@
         "labeled"
       ],
       "stlFile": "bin_3x4_labeled.stl",
-      "imageUrl": "bin__labeled3x4.png",
-      "perspectiveImageUrl": "bin__labeled3x4-perspective.png"
+      "imageUrl": "bin_3x4_labeled.png",
+      "perspectiveImageUrl": "bin_3x4_labeled-perspective.png"
     },
     {
       "id": "bin-3x5-labeled",
@@ -193,8 +193,8 @@
         "labeled"
       ],
       "stlFile": "bin_3x5_labeled.stl",
-      "imageUrl": "bin__labeled3x5.png",
-      "perspectiveImageUrl": "bin__labeled3x5-perspective.png"
+      "imageUrl": "bin_3x5_labeled.png",
+      "perspectiveImageUrl": "bin_3x5_labeled-perspective.png"
     },
     {
       "id": "bin-4x1-labeled",
@@ -206,8 +206,8 @@
         "labeled"
       ],
       "stlFile": "bin_4x1_labeled.stl",
-      "imageUrl": "bin__labeled4x1.png",
-      "perspectiveImageUrl": "bin__labeled4x1-perspective.png"
+      "imageUrl": "bin_4x1_labeled.png",
+      "perspectiveImageUrl": "bin_4x1_labeled-perspective.png"
     },
     {
       "id": "bin-4x2-labeled",
@@ -219,8 +219,8 @@
         "labeled"
       ],
       "stlFile": "bin_4x2_labeled.stl",
-      "imageUrl": "bin__labeled4x2.png",
-      "perspectiveImageUrl": "bin__labeled4x2-perspective.png"
+      "imageUrl": "bin_4x2_labeled.png",
+      "perspectiveImageUrl": "bin_4x2_labeled-perspective.png"
     },
     {
       "id": "bin-4x3-labeled",
@@ -232,8 +232,8 @@
         "labeled"
       ],
       "stlFile": "bin_4x3_labeled.stl",
-      "imageUrl": "bin__labeled4x3.png",
-      "perspectiveImageUrl": "bin__labeled4x3-perspective.png"
+      "imageUrl": "bin_4x3_labeled.png",
+      "perspectiveImageUrl": "bin_4x3_labeled-perspective.png"
     },
     {
       "id": "bin-4x4-labeled",
@@ -245,8 +245,8 @@
         "labeled"
       ],
       "stlFile": "bin_4x4_labeled.stl",
-      "imageUrl": "bin__labeled4x4.png",
-      "perspectiveImageUrl": "bin__labeled4x4-perspective.png"
+      "imageUrl": "bin_4x4_labeled.png",
+      "perspectiveImageUrl": "bin_4x4_labeled-perspective.png"
     },
     {
       "id": "bin-4x5-labeled",
@@ -258,8 +258,8 @@
         "labeled"
       ],
       "stlFile": "bin_4x5_labeled.stl",
-      "imageUrl": "bin__labeled4x5.png",
-      "perspectiveImageUrl": "bin__labeled4x5-perspective.png"
+      "imageUrl": "bin_4x5_labeled.png",
+      "perspectiveImageUrl": "bin_4x5_labeled-perspective.png"
     },
     {
       "id": "bin-5x1-labeled",
@@ -271,8 +271,8 @@
         "labeled"
       ],
       "stlFile": "bin_5x1_labeled.stl",
-      "imageUrl": "bin__labeled5x1.png",
-      "perspectiveImageUrl": "bin__labeled5x1-perspective.png"
+      "imageUrl": "bin_5x1_labeled.png",
+      "perspectiveImageUrl": "bin_5x1_labeled-perspective.png"
     },
     {
       "id": "bin-5x2-labeled",
@@ -284,8 +284,8 @@
         "labeled"
       ],
       "stlFile": "bin_5x2_labeled.stl",
-      "imageUrl": "bin__labeled5x2.png",
-      "perspectiveImageUrl": "bin__labeled5x2-perspective.png"
+      "imageUrl": "bin_5x2_labeled.png",
+      "perspectiveImageUrl": "bin_5x2_labeled-perspective.png"
     },
     {
       "id": "bin-5x3-labeled",
@@ -297,8 +297,8 @@
         "labeled"
       ],
       "stlFile": "bin_5x3_labeled.stl",
-      "imageUrl": "bin__labeled5x3.png",
-      "perspectiveImageUrl": "bin__labeled5x3-perspective.png"
+      "imageUrl": "bin_5x3_labeled.png",
+      "perspectiveImageUrl": "bin_5x3_labeled-perspective.png"
     },
     {
       "id": "bin-5x4-labeled",
@@ -310,8 +310,8 @@
         "labeled"
       ],
       "stlFile": "bin_5x4_labeled.stl",
-      "imageUrl": "bin__labeled5x4.png",
-      "perspectiveImageUrl": "bin__labeled5x4-perspective.png"
+      "imageUrl": "bin_5x4_labeled.png",
+      "perspectiveImageUrl": "bin_5x4_labeled-perspective.png"
     },
     {
       "id": "bin-5x5-labeled",
@@ -323,8 +323,8 @@
         "labeled"
       ],
       "stlFile": "bin_5x5_labeled.stl",
-      "imageUrl": "bin__labeled5x5.png",
-      "perspectiveImageUrl": "bin__labeled5x5-perspective.png"
+      "imageUrl": "bin_5x5_labeled.png",
+      "perspectiveImageUrl": "bin_5x5_labeled-perspective.png"
     }
   ]
 }

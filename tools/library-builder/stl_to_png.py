@@ -191,37 +191,45 @@ def render_stl_to_png(stl_path, output_path, max_dimension=800, dpi=100, quiet=F
 def render_stl_to_png_perspective(stl_path, output_path, max_dimension=800, camera_tilt=22.5,
                                    fov=45, dpi=100, quiet=False, rotation=0):
     """
-    Render an STL file to a PNG image with 3D perspective using matplotlib.
+    Render an STL file to a PNG image with perspective projection.
 
-    Uses matplotlib's mplot3d for headless 3D rendering — no OpenGL/pyglet required.
+    Uses manual perspective projection + a software z-buffer. Every pixel
+    independently tracks the closest triangle covering it, giving correct
+    occlusion for all geometry regardless of complexity or view angle.
 
     Args:
         stl_path: Path to input STL file
-        output_path: Path to output PNG file
+        output_path: Path to output PNG file (must be .png for transparency)
         max_dimension: Maximum width or height in pixels (default: 800)
         camera_tilt: Camera tilt angle in degrees from top-down (default: 22.5)
-        fov: Field of view in degrees (default: 45, unused — kept for API compat)
-        dpi: Dots per inch for output image
-        quiet: If True, suppress verbose output (for batch mode)
+        fov: Vertical field of view in degrees (default: 45)
+        dpi: Unused in z-buffer mode; kept for API compatibility
+        quiet: If True, suppress verbose output
         rotation: Z-axis rotation in degrees (0, 90, 180, 270)
 
     Returns:
         True on success, False on failure
     """
-    from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-
     try:
-        # Use non-interactive backend for headless rendering
         import matplotlib
         matplotlib.use('Agg')
 
         stl_mesh = mesh.Mesh.from_file(stl_path)
         debug_mesh_info(stl_mesh, quiet=quiet)
 
-        # Apply user rotation around Z-axis
+        # Exact sin/cos for 90-degree rotation stops (avoids floating-point noise)
+        EXACT_ROTATIONS = {
+            0:   (1.0,  0.0),
+            90:  (0.0,  1.0),
+            180: (-1.0, 0.0),
+            270: (0.0, -1.0),
+        }
+
         if rotation != 0:
-            angle_rad = np.radians(rotation)
-            cos_a, sin_a = np.cos(angle_rad), np.sin(angle_rad)
+            key = rotation % 360
+            cos_a, sin_a = EXACT_ROTATIONS.get(
+                key, (np.cos(np.radians(rotation)), np.sin(np.radians(rotation)))
+            )
             v = stl_mesh.vectors
             x_all = v[:, :, 0].copy()
             y_all = v[:, :, 1].copy()
@@ -239,106 +247,141 @@ def render_stl_to_png_perspective(stl_path, output_path, max_dimension=800, came
         min_b = stl_mesh.min_
         max_b = stl_mesh.max_
         extents = max_b - min_b
+        centroid = (min_b + max_b) / 2.0
 
-        # Compute per-face shading
+        # ── Per-face shading ──────────────────────────────────────────────────
         normals = stl_mesh.normals.copy()
         norms = np.linalg.norm(normals, axis=1, keepdims=True)
         norms[norms == 0] = 1
         normals /= norms
 
-        # Light from upper-left at 45° elevation
-        el, az = np.radians(45), np.radians(225)
+        el_light, az_light = np.radians(45), np.radians(225)
         light_dir = np.array([
-            np.cos(el) * np.sin(az),
-            np.cos(el) * np.cos(az),
-            np.sin(el)
+            np.cos(el_light) * np.sin(az_light),
+            np.cos(el_light) * np.cos(az_light),
+            np.sin(el_light),
         ])
         light_dir /= np.linalg.norm(light_dir)
+        brightness = 0.3 + 0.7 * np.clip(normals.dot(light_dir), 0, 1)
+        base_color = np.array([0.7, 0.7, 0.75], dtype=np.float32)
+        face_rgb = (brightness[:, None] * base_color).astype(np.float32)  # (N, 3)
 
-        ambient = 0.3
-        diffuse = np.clip(np.dot(normals, light_dir), 0, 1)
-        brightness = ambient + (1 - ambient) * diffuse
+        # ── Camera ───────────────────────────────────────────────────────────
+        tilt_rad = np.radians(camera_tilt)
+        scene_radius = np.linalg.norm(extents) * 0.5
+        cam_dist = scene_radius / np.sin(np.radians(fov) / 2) * 1.5
 
-        base_color = np.array([0.7, 0.7, 0.75])
-        face_colors = brightness[:, np.newaxis] * base_color
-        face_colors = np.column_stack([face_colors, np.ones(len(face_colors))])
-
-        # Sort faces by distance from camera (painter's algorithm)
-        # Camera elevation = 90 - camera_tilt (matplotlib convention)
-        # Camera looks from azimuth = 0 (front), elevated above
-        elev = 90 - camera_tilt  # e.g., 22.5° tilt → 67.5° elevation
-        azim = -90  # Looking from front-left (matplotlib azimuth convention)
-
-        # Approximate camera direction for depth sorting
-        elev_rad = np.radians(elev)
-        azim_rad = np.radians(azim)
-        cam_dir = np.array([
-            np.cos(elev_rad) * np.cos(azim_rad),
-            np.cos(elev_rad) * np.sin(azim_rad),
-            np.sin(elev_rad)
+        cam_pos = centroid + np.array([
+            0.0,
+            -cam_dist * np.sin(tilt_rad),   # in front (-Y)
+             cam_dist * np.cos(tilt_rad),   # above   (+Z)
         ])
-        centroids = np.mean(stl_mesh.vectors, axis=1)
-        depths = np.dot(centroids, cam_dir)
-        sort_idx = np.argsort(depths)
+        forward = centroid - cam_pos
+        forward /= np.linalg.norm(forward)
 
-        sorted_vectors = stl_mesh.vectors[sort_idx]
-        sorted_colors = face_colors[sort_idx]
+        world_up = np.array([0.0, 0.0, 1.0])
+        if abs(forward.dot(world_up)) > 0.999:
+            world_up = np.array([0.0, -1.0, 0.0])
+        right = np.cross(forward, world_up)
+        right /= np.linalg.norm(right)
+        cam_up = np.cross(right, forward)
 
-        # Compute figure size from XY aspect ratio
-        x_range = extents[0]
-        y_range = extents[1]
-        aspect_ratio = x_range / y_range if y_range > 0 else 1.0
+        # ── Perspective projection → NDC ──────────────────────────────────────
+        N = stl_mesh.vectors.shape[0]
+        vf = (stl_mesh.vectors.reshape(-1, 3) - cam_pos).astype(np.float32)
+
+        x_view = vf.dot(right.astype(np.float32))
+        y_view = vf.dot(cam_up.astype(np.float32))
+        z_view = vf.dot(forward.astype(np.float32))
+
+        f_focal = float(1.0 / np.tan(np.radians(fov) / 2))
+        z_safe = np.where(z_view > 0.01 * cam_dist, z_view, np.float32(0.01 * cam_dist))
+        x_ndc = (x_view / z_safe * f_focal).reshape(N, 3)
+        y_ndc = (y_view / z_safe * f_focal).reshape(N, 3)
+        z_view = z_view.reshape(N, 3)
+
+        # ── Image dimensions from projected bounds ────────────────────────────
+        all_xn = x_ndc.ravel()
+        all_yn = y_ndc.ravel()
+        xr = float(all_xn.max() - all_xn.min())
+        yr = float(all_yn.max() - all_yn.min())
+        aspect_ratio = xr / yr if yr > 0 else 1.0
 
         if aspect_ratio >= 1.0:
-            fig_width = max_dimension / dpi
-            fig_height = (max_dimension / aspect_ratio) / dpi
+            W, H = max_dimension, max(1, int(round(max_dimension / aspect_ratio)))
         else:
-            fig_width = (max_dimension * aspect_ratio) / dpi
-            fig_height = max_dimension / dpi
+            W, H = max(1, int(round(max_dimension * aspect_ratio))), max_dimension
 
-        fig = plt.figure(figsize=(fig_width, fig_height), dpi=dpi)
-        ax = fig.add_subplot(111, projection='3d')
-
-        # Transparent background
-        fig.patch.set_alpha(0)
-        ax.set_facecolor((0, 0, 0, 0))
-
-        # Remove axes, ticks, grid, panes
-        ax.set_axis_off()
-        for pane in [ax.xaxis.pane, ax.yaxis.pane, ax.zaxis.pane]:
-            pane.set_visible(False)
-
-        # Add mesh polygons
-        poly = Poly3DCollection(
-            sorted_vectors,
-            facecolors=sorted_colors,
-            edgecolors=sorted_colors * [1, 1, 1, 0.3],  # Subtle edges
-            linewidths=0.3,
-        )
-        ax.add_collection3d(poly)
-
-        # Set axis limits with small padding
+        # ── NDC → pixel coordinates (y-axis flipped) ─────────────────────────
         pad = 0.02
-        ax.set_xlim(min_b[0] - extents[0] * pad, max_b[0] + extents[0] * pad)
-        ax.set_ylim(min_b[1] - extents[1] * pad, max_b[1] + extents[1] * pad)
-        ax.set_zlim(min_b[2] - extents[2] * pad, max_b[2] + extents[2] * pad)
+        xn_lo = float(all_xn.min()) - xr * pad
+        xn_hi = float(all_xn.max()) + xr * pad
+        yn_lo = float(all_yn.min()) - yr * pad
+        yn_hi = float(all_yn.max()) + yr * pad
 
-        # Set camera angle
-        ax.view_init(elev=elev, azim=azim)
+        px = ((x_ndc - xn_lo) / (xn_hi - xn_lo) * (W - 1)).astype(np.float32)
+        py = ((yn_hi - y_ndc) / (yn_hi - yn_lo) * (H - 1)).astype(np.float32)
 
-        # Remove all margins
-        plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
+        # ── Software z-buffer rasterization ───────────────────────────────────
+        # color_buf: RGBA float32; alpha=0 → transparent background.
+        # depth_buf: view-space z per pixel; smaller z = closer to camera.
+        color_buf = np.zeros((H, W, 4), dtype=np.float32)
+        depth_buf = np.full((H, W), np.inf, dtype=np.float32)
 
-        plt.savefig(output_path, bbox_inches='tight', pad_inches=0,
-                    transparent=True, dpi=dpi)
-        plt.close()
+        for i in range(N):
+            vx = px[i]      # (3,) pixel x
+            vy = py[i]      # (3,) pixel y
+            vz = z_view[i]  # (3,) view-space depth per vertex
+
+            # Bounding box clipped to image extents
+            bx0 = max(0, int(vx.min()))
+            bx1 = min(W - 1, int(np.ceil(vx.max())))
+            by0 = max(0, int(vy.min()))
+            by1 = min(H - 1, int(np.ceil(vy.max())))
+            if bx0 > bx1 or by0 > by1:
+                continue
+
+            # Pixel grid within bounding box
+            gx, gy = np.meshgrid(
+                np.arange(bx0, bx1 + 1, dtype=np.float32),
+                np.arange(by0, by1 + 1, dtype=np.float32),
+            )
+
+            # Barycentric coordinates via edge equations
+            x0, y0 = vx[0], vy[0]
+            x1, y1 = vx[1], vy[1]
+            x2, y2 = vx[2], vy[2]
+            denom = (y1 - y2) * (x0 - x2) + (x2 - x1) * (y0 - y2)
+            if abs(denom) < 0.5:
+                continue  # Degenerate / sub-pixel triangle
+
+            inv_d = 1.0 / denom
+            w0 = ((y1 - y2) * (gx - x2) + (x2 - x1) * (gy - y2)) * inv_d
+            w1 = ((y2 - y0) * (gx - x2) + (x0 - x2) * (gy - y2)) * inv_d
+            w2 = 1.0 - w0 - w1
+
+            inside = (w0 >= 0) & (w1 >= 0) & (w2 >= 0)
+            if not np.any(inside):
+                continue
+
+            # Interpolate view-space depth at covered pixels
+            z_interp = (w0 * vz[0] + w1 * vz[1] + w2 * vz[2])[inside]
+            ay = gy[inside].astype(np.int32)
+            ax = gx[inside].astype(np.int32)
+
+            # Write pixel only where this triangle is closer than what's there
+            closer = z_interp < depth_buf[ay, ax]
+            uy, ux = ay[closer], ax[closer]
+            depth_buf[uy, ux] = z_interp[closer]
+            color_buf[uy, ux, :3] = face_rgb[i]
+            color_buf[uy, ux, 3] = 1.0
+
+        plt.imsave(output_path, color_buf)
 
         if not quiet:
-            actual_width = int(fig_width * dpi)
-            actual_height = int(fig_height * dpi)
             print(f"Successfully rendered {stl_path} to {output_path}")
-            print(f"Output dimensions: ~{actual_width}x{actual_height} pixels (aspect ratio: {aspect_ratio:.2f})")
-            print(f"Camera: tilt={camera_tilt}°, elev={elev}°, azim={azim}°")
+            print(f"Output dimensions: {W}x{H} pixels (aspect ratio: {aspect_ratio:.2f})")
+            print(f"Camera: tilt={camera_tilt}°, fov={fov}°, dist={cam_dist:.1f}mm from centroid")
         return True
 
     except FileNotFoundError:
