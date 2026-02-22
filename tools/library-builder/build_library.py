@@ -1087,9 +1087,186 @@ def generate_library_json(directory, color_hex=None, output_file='index.json',
     return True
 
 
+def update_library_item(item, library_dir, force=False):
+    """Generate missing images for a single library item in update mode.
+
+    Reads the item's stlFile, derives expected image filenames, and renders
+    any that are missing (or all of them when force=True).
+
+    Args:
+        item: Library item dict from index.json
+        library_dir: Path to the library directory
+        force: If True, regenerate even if files exist
+
+    Returns:
+        True if the index.json entry was modified, False otherwise
+    """
+    item_id = item['id']
+    stl_file = item.get('stlFile')
+
+    if not stl_file:
+        print(f"  [{item_id}] No stlFile defined, skipping")
+        return False
+
+    stl_path = os.path.join(library_dir, stl_file)
+    if not os.path.exists(stl_path):
+        print(f"  [{item_id}] STL file not found: {stl_file}, skipping")
+        return False
+
+    base_stem = os.path.splitext(stl_file)[0]
+    ortho_name = f"{base_stem}.png"
+    perspective_name = f"{base_stem}-perspective.png"
+    modified = False
+
+    # --- Orthographic image ---
+    ortho_path = os.path.join(library_dir, ortho_name)
+    current_ortho = item.get('imageUrl')
+
+    if force or not current_ortho or not os.path.exists(os.path.join(library_dir, current_ortho)):
+        if force or not os.path.exists(ortho_path):
+            print(f"  [{item_id}] Generating ortho: {ortho_name}")
+            success = render_stl_to_png(
+                stl_path, ortho_path,
+                max_dimension=DEFAULT_PNG_MAX_DIMENSION, dpi=DEFAULT_PNG_DPI, quiet=True
+            )
+            if not success:
+                print(f"  [{item_id}] FAILED to generate ortho")
+                return modified
+        else:
+            print(f"  [{item_id}] Ortho exists on disk: {ortho_name}")
+
+        if current_ortho != ortho_name:
+            item['imageUrl'] = ortho_name
+            modified = True
+
+    # --- Perspective image ---
+    perspective_path = os.path.join(library_dir, perspective_name)
+    current_perspective = item.get('perspectiveImageUrl')
+
+    if force or not current_perspective or not os.path.exists(os.path.join(library_dir, current_perspective)):
+        if force or not os.path.exists(perspective_path):
+            print(f"  [{item_id}] Generating perspective: {perspective_name}")
+            success = render_stl_to_png_perspective(
+                stl_path, perspective_path,
+                max_dimension=DEFAULT_PNG_MAX_DIMENSION,
+                camera_tilt=PERSPECTIVE_CAMERA_TILT,
+                fov=PERSPECTIVE_FOV,
+                dpi=DEFAULT_PNG_DPI,
+                quiet=True,
+                rotation=0
+            )
+            if not success:
+                print(f"  [{item_id}] FAILED to generate perspective")
+                return modified
+        else:
+            print(f"  [{item_id}] Perspective exists on disk: {perspective_name}")
+
+        if current_perspective != perspective_name:
+            item['perspectiveImageUrl'] = perspective_name
+            modified = True
+
+    # --- Rotation variants (90°, 180°, 270°) ---
+    for angle in [90, 180, 270]:
+        rot_filename = f"{base_stem}-perspective-{angle}.png"
+        rot_path = os.path.join(library_dir, rot_filename)
+
+        if force or not os.path.exists(rot_path):
+            print(f"  [{item_id}] Generating perspective {angle}°: {rot_filename}")
+            success = render_stl_to_png_perspective(
+                stl_path, rot_path,
+                max_dimension=DEFAULT_PNG_MAX_DIMENSION,
+                camera_tilt=PERSPECTIVE_CAMERA_TILT,
+                fov=PERSPECTIVE_FOV,
+                dpi=DEFAULT_PNG_DPI,
+                quiet=True,
+                rotation=angle
+            )
+            if not success:
+                print(f"  [{item_id}] FAILED to generate perspective {angle}°")
+
+    return modified
+
+
+def update_library(library_dir, force=False):
+    """Update images for all items in a single library directory.
+
+    Reads index.json, generates any missing images, and rewrites index.json
+    if any imageUrl/perspectiveImageUrl fields were added or corrected.
+
+    Args:
+        library_dir: Path to library directory containing index.json
+        force: If True, regenerate all images
+
+    Returns:
+        True if index.json was modified, False otherwise
+    """
+    index_path = os.path.join(library_dir, 'index.json')
+    if not os.path.exists(index_path):
+        return False
+
+    lib_name = os.path.basename(library_dir)
+    print(f"\n{'=' * 60}")
+    print(f"Updating library: {lib_name}")
+    print(f"{'=' * 60}")
+
+    with open(index_path, 'r', encoding='utf-8') as f:
+        library = json.load(f)
+
+    items = library.get('items', [])
+    print(f"Found {len(items)} items")
+
+    index_modified = False
+    for item in items:
+        if update_library_item(item, library_dir, force):
+            index_modified = True
+
+    if index_modified:
+        with open(index_path, 'w', encoding='utf-8') as f:
+            json.dump(library, f, indent=2, ensure_ascii=False)
+            f.write('\n')
+        print(f"  Updated {index_path}")
+
+    return index_modified
+
+
+def update_all_libraries(libraries_dir, force=False):
+    """Update images for all libraries under the given path.
+
+    If libraries_dir itself contains an index.json, treats it as a single
+    library. Otherwise iterates all subdirectories that have an index.json.
+
+    Args:
+        libraries_dir: Path to a library directory or parent of multiple libraries
+        force: If True, regenerate all images
+
+    Returns:
+        True on success
+    """
+    # Single library dir (has its own index.json)
+    if os.path.exists(os.path.join(libraries_dir, 'index.json')):
+        update_library(libraries_dir, force)
+        return True
+
+    # Parent directory — iterate each subdirectory with an index.json
+    updated_count = 0
+    for entry in sorted(os.listdir(libraries_dir)):
+        lib_dir = os.path.join(libraries_dir, entry)
+        if not os.path.isdir(lib_dir):
+            continue
+        if not os.path.exists(os.path.join(lib_dir, 'index.json')):
+            continue
+        if update_library(lib_dir, force):
+            updated_count += 1
+
+    print(f"\n{'=' * 60}")
+    print(f"Done. {updated_count} index.json file(s) updated.")
+    print(f"{'=' * 60}")
+    return True
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description='Generate index.json from a folder of STL files.',
+        description='Generate index.json from a folder of STL files, or update images for existing libraries.',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -1099,11 +1276,16 @@ Examples:
   python build_library.py --non-interactive --color "#3B82F6"
   python build_library.py --library-name "my-bins" --color red
   python build_library.py ./models -n "storage" --color blue
+
+  # Update mode: regenerate missing images for existing libraries
+  python build_library.py ../../public/libraries --update
+  python build_library.py ../../public/libraries/bins_standard --update
+  python build_library.py ../../public/libraries --update --force
         """
     )
 
     parser.add_argument('directory', nargs='?', default='.',
-                        help='Directory containing STL files (default: current directory)')
+                        help='Directory containing STL files, or libraries root (default: current directory)')
     parser.add_argument('-o', '--output', default='index.json',
                         help='Output filename (default: index.json)')
     parser.add_argument('-c', '--color',
@@ -1116,6 +1298,12 @@ Examples:
                         help='Always re-render PNGs even if they exist')
     parser.add_argument('--non-interactive', action='store_true',
                         help='Skip files with missing dimensions instead of prompting')
+
+    # Update mode
+    parser.add_argument('--update', action='store_true',
+                        help='Update mode: read existing index.json files and generate missing images')
+    parser.add_argument('--force', action='store_true',
+                        help='Force regeneration of all images (use with --update)')
 
     # Rendering mode options
     parser.add_argument('--both-modes', action='store_true', default=None,
@@ -1137,6 +1325,13 @@ Examples:
     if not os.path.isdir(args.directory):
         print(f"Error: Directory not found: {args.directory}", file=sys.stderr)
         sys.exit(1)
+
+    # --- Update mode ---
+    if args.update:
+        success = update_all_libraries(args.directory, force=args.force)
+        sys.exit(0 if success else 1)
+
+    # --- Build mode ---
 
     # Parse color if provided
     color_hex = None

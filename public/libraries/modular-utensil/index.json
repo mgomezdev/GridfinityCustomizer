@@ -12,8 +12,8 @@
         "utensil"
       ],
       "stlFile": "1x1-blank.stl",
-      "imageUrl": "blank1x1.png",
-      "perspectiveImageUrl": "blank1x1-perspective.png"
+      "imageUrl": "1x1-blank.png",
+      "perspectiveImageUrl": "1x1-blank-perspective.png"
     },
     {
       "id": "1x1-endcap",
@@ -26,8 +26,8 @@
         "utensil"
       ],
       "stlFile": "1x1-endcap.stl",
-      "imageUrl": "endcap1x1.png",
-      "perspectiveImageUrl": "endcap1x1-perspective.png"
+      "imageUrl": "1x1-endcap.png",
+      "perspectiveImageUrl": "1x1-endcap-perspective.png"
     },
     {
       "id": "1x2-endcap",
@@ -40,8 +40,8 @@
         "utensil"
       ],
       "stlFile": "1x2-endcap.stl",
-      "imageUrl": "endcap1x2.png",
-      "perspectiveImageUrl": "endcap1x2-perspective.png"
+      "imageUrl": "1x2-endcap.png",
+      "perspectiveImageUrl": "1x2-endcap-perspective.png"
     },
     {
       "id": "1x3-endcap",
@@ -54,8 +54,8 @@
         "utensil"
       ],
       "stlFile": "1x3-endcap.stl",
-      "imageUrl": "endcap1x3.png",
-      "perspectiveImageUrl": "endcap1x3-perspective.png"
+      "imageUrl": "1x3-endcap.png",
+      "perspectiveImageUrl": "1x3-endcap-perspective.png"
     },
     {
       "id": "2x1-blank",
@@ -68,8 +68,8 @@
         "utensil"
       ],
       "stlFile": "2x1-blank.stl",
-      "imageUrl": "blank2x1.png",
-      "perspectiveImageUrl": "blank2x1-perspective.png"
+      "imageUrl": "2x1-blank.png",
+      "perspectiveImageUrl": "2x1-blank-perspective.png"
     },
     {
       "id": "2x2-blank",
@@ -82,8 +82,8 @@
         "utensil"
       ],
       "stlFile": "2x2-blank.stl",
-      "imageUrl": "blank2x2.png",
-      "perspectiveImageUrl": "blank2x2-perspective.png"
+      "imageUrl": "2x2-blank.png",
+      "perspectiveImageUrl": "2x2-blank-perspective.png"
     },
     {
       "id": "2x2-endcap",
@@ -96,8 +96,8 @@
         "utensil"
       ],
       "stlFile": "2x2-endcap.stl",
-      "imageUrl": "endcap2x2.png",
-      "perspectiveImageUrl": "endcap2x2-perspective.png"
+      "imageUrl": "2x2-endcap.png",
+      "perspectiveImageUrl": "2x2-endcap-perspective.png"
     },
     {
       "id": "2x3-blank",
@@ -110,8 +110,8 @@
         "utensil"
       ],
       "stlFile": "2x3-blank.stl",
-      "imageUrl": "blank2x3.png",
-      "perspectiveImageUrl": "blank2x3-perspective.png"
+      "imageUrl": "2x3-blank.png",
+      "perspectiveImageUrl": "2x3-blank-perspective.png"
     },
     {
       "id": "3x2-endcap",
@@ -124,8 +124,8 @@
         "utensil"
       ],
       "stlFile": "3x2-endcap.stl",
-      "imageUrl": "endcap3x2.png",
-      "perspectiveImageUrl": "endcap3x2-perspective.png"
+      "imageUrl": "3x2-endcap.png",
+      "perspectiveImageUrl": "3x2-endcap-perspective.png"
     }
   ]
 }
