@@ -1,6 +1,6 @@
 import { eq, and, lt, desc, sql, or, count } from 'drizzle-orm';
 import { AppError, ErrorCodes } from '@gridfinity/shared';
-import type { ApiLayout, ApiLayoutDetail, ApiPlacedItem, ApiRefImagePlacement, LayoutStatus } from '@gridfinity/shared';
+import type { ApiLayout, ApiLayoutDetail, ApiPlacedItem, ApiRefImagePlacement, LayoutStatus, BinCustomization } from '@gridfinity/shared';
 import { db } from '../db/connection.js';
 import { layouts, placedItems, userStorage, referenceImages, refImages, users } from '../db/schema.js';
 import * as referenceImageService from './referenceImage.service.js';
@@ -50,6 +50,15 @@ function formatLayout(row: typeof layouts.$inferSelect, ownerUsername?: string, 
   };
 }
 
+function parseCustomization(json: string | null): BinCustomization | undefined {
+  if (!json) return undefined;
+  try {
+    return JSON.parse(json) as BinCustomization;
+  } catch {
+    return undefined;
+  }
+}
+
 function formatPlacedItem(row: typeof placedItems.$inferSelect): ApiPlacedItem {
   return {
     id: row.id,
@@ -62,6 +71,7 @@ function formatPlacedItem(row: typeof placedItems.$inferSelect): ApiPlacedItem {
     height: row.height,
     rotation: row.rotation,
     sortOrder: row.sortOrder,
+    ...(row.customization ? { customization: parseCustomization(row.customization) } : {}),
   };
 }
 
@@ -212,6 +222,7 @@ interface CreateLayoutData {
     width: number;
     height: number;
     rotation: number;
+    customization?: BinCustomization;
   }>;
   refImagePlacements?: Array<{
     refImageId: number;
@@ -295,6 +306,7 @@ export async function createLayout(
       height: item.height,
       rotation: item.rotation,
       sortOrder: index,
+      customization: item.customization ? JSON.stringify(item.customization) : null,
     };
   });
 
@@ -427,6 +439,7 @@ export async function updateLayout(
       height: item.height,
       rotation: item.rotation,
       sortOrder: index,
+      customization: item.customization ? JSON.stringify(item.customization) : null,
     };
   });
 
@@ -802,6 +815,7 @@ export async function cloneLayout(
       height: item.height,
       rotation: item.rotation,
       sortOrder: item.sortOrder,
+      customization: item.customization,
     }));
     insertedItems = await db
       .insert(placedItems)

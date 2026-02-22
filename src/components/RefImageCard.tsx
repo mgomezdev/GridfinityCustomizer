@@ -1,6 +1,8 @@
 import { useCallback, useRef } from 'react';
 import type { ApiRefImage } from '@gridfinity/shared';
 import { usePointerDragSource } from '../hooks/usePointerDrag';
+import { useConfirmDialog } from '../hooks/useConfirmDialog';
+import { ConfirmDialog } from './ConfirmDialog';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:3001/api/v1';
 
@@ -13,6 +15,7 @@ interface RefImageCardProps {
 export function RefImageCard({ image, onDelete, onRename }: RefImageCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const imageUrl = `${API_BASE_URL}/images/${image.imageUrl}`;
+  const { confirm, dialogProps: confirmDialogProps } = useConfirmDialog();
 
   const { onPointerDown } = usePointerDragSource({
     dragData: {
@@ -24,13 +27,13 @@ export function RefImageCard({ image, onDelete, onRename }: RefImageCardProps) {
     },
   });
 
-  const handleDelete = useCallback((e: React.MouseEvent) => {
+  const handleDelete = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    if (onDelete && window.confirm(`Delete "${image.name}"?`)) {
+    if (onDelete && await confirm({ title: 'Delete Image', message: `Delete "${image.name}"?`, variant: 'danger', confirmLabel: 'Delete', cancelLabel: 'Cancel' })) {
       onDelete(image.id);
     }
-  }, [image.id, image.name, onDelete]);
+  }, [image.id, image.name, onDelete, confirm]);
 
   const handleDoubleClick = useCallback(() => {
     if (!onRename) return;
@@ -41,37 +44,40 @@ export function RefImageCard({ image, onDelete, onRename }: RefImageCardProps) {
   }, [image.id, image.name, onRename]);
 
   return (
-    <div
-      ref={cardRef}
-      className="ref-image-card"
-      onPointerDown={onPointerDown}
-      onDoubleClick={handleDoubleClick}
-      style={{ touchAction: 'none' }}
-      role="button"
-      tabIndex={0}
-      aria-label={`${image.name}. Drag to place on grid.`}
-    >
-      <div className="ref-image-card-thumbnail">
-        <img
-          src={imageUrl}
-          alt={image.name}
-          loading="lazy"
-          draggable={false}
-        />
+    <>
+      <div
+        ref={cardRef}
+        className="ref-image-card"
+        onPointerDown={onPointerDown}
+        onDoubleClick={handleDoubleClick}
+        style={{ touchAction: 'none' }}
+        role="button"
+        tabIndex={0}
+        aria-label={`${image.name}. Drag to place on grid.`}
+      >
+        <div className="ref-image-card-thumbnail">
+          <img
+            src={imageUrl}
+            alt={image.name}
+            loading="lazy"
+            draggable={false}
+          />
+        </div>
+        <div className="ref-image-card-info">
+          <span className="ref-image-card-name" title={image.name}>{image.name}</span>
+        </div>
+        {onDelete && (
+          <button
+            className="ref-image-card-delete"
+            onClick={handleDelete}
+            title="Delete image"
+            aria-label={`Delete ${image.name}`}
+          >
+            &times;
+          </button>
+        )}
       </div>
-      <div className="ref-image-card-info">
-        <span className="ref-image-card-name" title={image.name}>{image.name}</span>
-      </div>
-      {onDelete && (
-        <button
-          className="ref-image-card-delete"
-          onClick={handleDelete}
-          title="Delete image"
-          aria-label={`Delete ${image.name}`}
-        >
-          &times;
-        </button>
-      )}
-    </div>
+      <ConfirmDialog {...confirmDialogProps} />
+    </>
   );
 }

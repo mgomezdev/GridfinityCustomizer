@@ -3,6 +3,8 @@ import type { LibraryItem, Category, Library } from '../types/gridfinity';
 import { LibraryItemCard } from './LibraryItemCard';
 import { LibrarySelector } from './LibrarySelector';
 import { STORAGE_KEYS } from '../utils/storageKeys';
+import { useConfirmDialog } from '../hooks/useConfirmDialog';
+import { ConfirmDialog } from './ConfirmDialog';
 
 const STORAGE_KEY = STORAGE_KEYS.COLLAPSED_CATEGORIES;
 
@@ -34,6 +36,7 @@ export function ItemLibrary({
   const [selectedHeights, setSelectedHeights] = useState<Set<number>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
   const [showLibrarySelector, setShowLibrarySelector] = useState(false);
+  const { confirm, dialogProps: confirmDialogProps } = useConfirmDialog();
 
   // Filter items by search query and dimensions
   const filteredItems = items.filter(item => {
@@ -214,8 +217,8 @@ export function ItemLibrary({
         <>
           <button
             className="refresh-library-button"
-            onClick={() => {
-              if (window.confirm('Refresh all libraries from files?')) {
+            onClick={async () => {
+              if (await confirm({ title: 'Refresh Library', message: 'Refresh all libraries from files?' })) {
                 onRefreshLibrary();
               }
             }}
@@ -333,6 +336,7 @@ export function ItemLibrary({
           )}
         </>
       )}
+      <ConfirmDialog {...confirmDialogProps} />
     </div>
   );
 }

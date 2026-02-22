@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
-import type { PlacedItem, PlacedItemWithValidity, DragData, LibraryItem, Rotation } from '../types/gridfinity';
+import type { PlacedItem, PlacedItemWithValidity, DragData, LibraryItem, Rotation, BinCustomization } from '../types/gridfinity';
+import { ROTATION_CW, ROTATION_CCW } from '../utils/constants';
 
 /**
  * Grid-based occupancy count for O(n) collision detection.
@@ -77,8 +78,6 @@ function isOutOfBounds(
   return x < 0 || y < 0 || x + width > gridX || y + height > gridY;
 }
 
-const ROTATION_CW: Record<Rotation, Rotation> = { 0: 90, 90: 180, 180: 270, 270: 0 };
-const ROTATION_CCW: Record<Rotation, Rotation> = { 0: 270, 90: 0, 180: 90, 270: 180 };
 
 function isSideways(rotation: Rotation): boolean {
   return rotation === 90 || rotation === 270;
@@ -217,6 +216,13 @@ export function useGridItems(
   const moveItem = useCallback((instanceId: string, newX: number, newY: number) => {
     const updated = itemsRef.current.map(item =>
       item.instanceId === instanceId ? { ...item, x: newX, y: newY } : item
+    );
+    updateItems(updated);
+  }, [updateItems]);
+
+  const updateItemCustomization = useCallback((instanceId: string, customization: BinCustomization | undefined) => {
+    const updated = itemsRef.current.map(item =>
+      item.instanceId === instanceId ? { ...item, customization } : item
     );
     updateItems(updated);
   }, [updateItems]);
@@ -384,13 +390,10 @@ export function useGridItems(
       if (!pos) continue;
 
       const newItem: PlacedItem = {
+        ...source,
         instanceId: generateInstanceId(),
-        itemId: source.itemId,
         x: pos.x,
         y: pos.y,
-        width: source.width,
-        height: source.height,
-        rotation: source.rotation,
       };
 
       allItems.push(newItem);
@@ -442,13 +445,10 @@ export function useGridItems(
       if (!pos) continue;
 
       newItems.push({
+        ...item,
         instanceId: generateInstanceId(),
-        itemId: item.itemId,
         x: pos.x,
         y: pos.y,
-        width: item.width,
-        height: item.height,
-        rotation: item.rotation,
       });
     }
 
@@ -466,6 +466,7 @@ export function useGridItems(
     addItem,
     moveItem,
     rotateItem,
+    updateItemCustomization,
     deleteItem,
     clearAll,
     loadItems,

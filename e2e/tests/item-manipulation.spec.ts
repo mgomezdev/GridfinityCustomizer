@@ -184,9 +184,10 @@ test.describe('Item Manipulation', () => {
     await expect(clearAllButton).toBeVisible();
     await expect(clearAllButton).toContainText('Clear All (2)');
 
-    // Accept the confirm dialog
-    page.on('dialog', dialog => dialog.accept());
+    // Click Clear All and confirm in the custom dialog
     await clearAllButton.click();
+    const confirmBtn = page.locator('.confirm-dialog-confirm');
+    await confirmBtn.click();
     await page.waitForTimeout(100);
 
     // All items should be removed

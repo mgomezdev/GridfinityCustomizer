@@ -7,8 +7,13 @@
       "widthUnits": 1,
       "heightUnits": 1,
       "color": "#10B981",
-      "categories": ["modular", "utensil"],
-      "imageUrl": "blank1x1.png"
+      "categories": [
+        "modular",
+        "utensil"
+      ],
+      "stlFile": "1x1-blank.stl",
+      "imageUrl": "1x1-blank.png",
+      "perspectiveImageUrl": "1x1-blank-perspective.png"
     },
     {
       "id": "1x1-endcap",
@@ -16,8 +21,13 @@
       "widthUnits": 1,
       "heightUnits": 1,
       "color": "#10B981",
-      "categories": ["modular", "utensil"],
-      "imageUrl": "endcap1x1.png"
+      "categories": [
+        "modular",
+        "utensil"
+      ],
+      "stlFile": "1x1-endcap.stl",
+      "imageUrl": "1x1-endcap.png",
+      "perspectiveImageUrl": "1x1-endcap-perspective.png"
     },
     {
       "id": "1x2-endcap",
@@ -25,8 +35,13 @@
       "widthUnits": 1,
       "heightUnits": 2,
       "color": "#10B981",
-      "categories": ["modular", "utensil"],
-      "imageUrl": "endcap1x2.png"
+      "categories": [
+        "modular",
+        "utensil"
+      ],
+      "stlFile": "1x2-endcap.stl",
+      "imageUrl": "1x2-endcap.png",
+      "perspectiveImageUrl": "1x2-endcap-perspective.png"
     },
     {
       "id": "1x3-endcap",
@@ -34,8 +49,13 @@
       "widthUnits": 1,
       "heightUnits": 3,
       "color": "#10B981",
-      "categories": ["modular", "utensil"],
-      "imageUrl": "endcap1x3.png"
+      "categories": [
+        "modular",
+        "utensil"
+      ],
+      "stlFile": "1x3-endcap.stl",
+      "imageUrl": "1x3-endcap.png",
+      "perspectiveImageUrl": "1x3-endcap-perspective.png"
     },
     {
       "id": "2x1-blank",
@@ -43,8 +63,13 @@
       "widthUnits": 2,
       "heightUnits": 1,
       "color": "#10B981",
-      "categories": ["modular", "utensil"],
-      "imageUrl": "blank2x1.png"
+      "categories": [
+        "modular",
+        "utensil"
+      ],
+      "stlFile": "2x1-blank.stl",
+      "imageUrl": "2x1-blank.png",
+      "perspectiveImageUrl": "2x1-blank-perspective.png"
     },
     {
       "id": "2x2-blank",
@@ -52,8 +77,13 @@
       "widthUnits": 2,
       "heightUnits": 2,
       "color": "#10B981",
-      "categories": ["modular", "utensil"],
-      "imageUrl": "blank2x2.png"
+      "categories": [
+        "modular",
+        "utensil"
+      ],
+      "stlFile": "2x2-blank.stl",
+      "imageUrl": "2x2-blank.png",
+      "perspectiveImageUrl": "2x2-blank-perspective.png"
     },
     {
       "id": "2x2-endcap",
@@ -61,8 +91,13 @@
       "widthUnits": 2,
       "heightUnits": 2,
       "color": "#10B981",
-      "categories": ["modular", "utensil"],
-      "imageUrl": "endcap2x2.png"
+      "categories": [
+        "modular",
+        "utensil"
+      ],
+      "stlFile": "2x2-endcap.stl",
+      "imageUrl": "2x2-endcap.png",
+      "perspectiveImageUrl": "2x2-endcap-perspective.png"
     },
     {
       "id": "2x3-blank",
@@ -70,8 +105,13 @@
       "widthUnits": 2,
       "heightUnits": 3,
       "color": "#10B981",
-      "categories": ["modular", "utensil"],
-      "imageUrl": "blank2x3.png"
+      "categories": [
+        "modular",
+        "utensil"
+      ],
+      "stlFile": "2x3-blank.stl",
+      "imageUrl": "2x3-blank.png",
+      "perspectiveImageUrl": "2x3-blank-perspective.png"
     },
     {
       "id": "3x2-endcap",
@@ -79,8 +119,13 @@
       "widthUnits": 3,
       "heightUnits": 2,
       "color": "#10B981",
-      "categories": ["modular", "utensil"],
-      "imageUrl": "endcap3x2.png"
+      "categories": [
+        "modular",
+        "utensil"
+      ],
+      "stlFile": "3x2-endcap.stl",
+      "imageUrl": "3x2-endcap.png",
+      "perspectiveImageUrl": "3x2-endcap-perspective.png"
     }
   ]
 }

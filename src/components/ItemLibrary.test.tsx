@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ItemLibrary } from './ItemLibrary';
 import type { LibraryItem, Category, Library } from '../types/gridfinity';
 
@@ -303,32 +303,33 @@ describe('ItemLibrary', () => {
     expect(refreshButton).toBeInTheDocument();
   });
 
-  it('should call onRefreshLibrary when refresh button is clicked and confirmed', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-
+  it('should call onRefreshLibrary when refresh button is clicked and confirmed', async () => {
     render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const refreshButton = screen.getByText('Refresh Library');
     fireEvent.click(refreshButton);
 
-    expect(window.confirm).toHaveBeenCalledWith('Refresh all libraries from files?');
-    expect(mockProps.onRefreshLibrary).toHaveBeenCalledTimes(1);
-
-    vi.restoreAllMocks();
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Refresh all libraries from files?')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    await waitFor(() => {
+      expect(mockProps.onRefreshLibrary).toHaveBeenCalledTimes(1);
+    });
   });
 
-  it('should not call onRefreshLibrary when refresh is cancelled', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-
+  it('should not call onRefreshLibrary when refresh is cancelled', async () => {
     render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
 
     const refreshButton = screen.getByText('Refresh Library');
     fireEvent.click(refreshButton);
 
-    expect(window.confirm).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(mockProps.onRefreshLibrary).not.toHaveBeenCalled();
-
-    vi.restoreAllMocks();
   });
 
   it('should have library selector collapsed by default', () => {

@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useBillOfMaterials } from './useBillOfMaterials';
-import type { PlacedItem, LibraryItem } from '../types/gridfinity';
+import type { PlacedItem, LibraryItem, BinCustomization } from '../types/gridfinity';
+import { DEFAULT_BIN_CUSTOMIZATION } from '../types/gridfinity';
 
 const mockLibraryItems: LibraryItem[] = [
   { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', categories: ['bin'] },
@@ -311,5 +312,215 @@ describe('useBillOfMaterials', () => {
 
     expect(result.current).toHaveLength(1);
     expect(result.current[0].quantity).toBe(2);
+  });
+
+  describe('Customization grouping', () => {
+    const gridCustomization: BinCustomization = {
+      wallPattern: 'grid',
+      lipStyle: 'normal',
+      fingerSlide: 'none',
+      wallCutout: 'none',
+    };
+
+    const hexCustomization: BinCustomization = {
+      wallPattern: 'hexgrid',
+      lipStyle: 'reduced',
+      fingerSlide: 'rounded',
+      wallCutout: 'vertical',
+    };
+
+    it('should treat items with same itemId but different customizations as separate BOM lines', () => {
+      // Arrange: two bin-1x1 items, each with a distinct customization
+      const placedItems: PlacedItem[] = [
+        {
+          instanceId: 'instance-1',
+          itemId: 'bin-1x1',
+          x: 0,
+          y: 0,
+          width: 1,
+          height: 1,
+          rotation: 0,
+          customization: gridCustomization,
+        },
+        {
+          instanceId: 'instance-2',
+          itemId: 'bin-1x1',
+          x: 1,
+          y: 0,
+          width: 1,
+          height: 1,
+          rotation: 0,
+          customization: hexCustomization,
+        },
+      ];
+
+      const { result } = renderHook(() => useBillOfMaterials(placedItems, mockLibraryItems));
+
+      // Each customization variant must produce its own BOM line
+      expect(result.current).toHaveLength(2);
+      expect(result.current.every(item => item.itemId === 'bin-1x1')).toBe(true);
+      expect(result.current.every(item => item.quantity === 1)).toBe(true);
+    });
+
+    it('should group items with same itemId and identical customization together', () => {
+      // Arrange: two bin-2x2 items sharing the same non-default customization
+      const placedItems: PlacedItem[] = [
+        {
+          instanceId: 'instance-1',
+          itemId: 'bin-2x2',
+          x: 0,
+          y: 0,
+          width: 2,
+          height: 2,
+          rotation: 0,
+          customization: gridCustomization,
+        },
+        {
+          instanceId: 'instance-2',
+          itemId: 'bin-2x2',
+          x: 2,
+          y: 0,
+          width: 2,
+          height: 2,
+          rotation: 0,
+          customization: gridCustomization,
+        },
+      ];
+
+      const { result } = renderHook(() => useBillOfMaterials(placedItems, mockLibraryItems));
+
+      // Identical customization → single BOM line with count 2
+      expect(result.current).toHaveLength(1);
+      expect(result.current[0].itemId).toBe('bin-2x2');
+      expect(result.current[0].quantity).toBe(2);
+    });
+
+    it('should group items with undefined customization and all-default customization together', () => {
+      // Arrange: one item with no customization field and one with explicit default values
+      const placedItems: PlacedItem[] = [
+        {
+          instanceId: 'instance-1',
+          itemId: 'bin-1x1',
+          x: 0,
+          y: 0,
+          width: 1,
+          height: 1,
+          rotation: 0,
+          // customization intentionally omitted
+        },
+        {
+          instanceId: 'instance-2',
+          itemId: 'bin-1x1',
+          x: 1,
+          y: 0,
+          width: 1,
+          height: 1,
+          rotation: 0,
+          customization: DEFAULT_BIN_CUSTOMIZATION,
+        },
+      ];
+
+      const { result } = renderHook(() => useBillOfMaterials(placedItems, mockLibraryItems));
+
+      // undefined and all-default values represent the same physical item → one BOM line
+      expect(result.current).toHaveLength(1);
+      expect(result.current[0].itemId).toBe('bin-1x1');
+      expect(result.current[0].quantity).toBe(2);
+    });
+
+    it('should include the customization object on the BOMItem when present', () => {
+      // Arrange: one item carrying a non-default customization
+      const placedItems: PlacedItem[] = [
+        {
+          instanceId: 'instance-1',
+          itemId: 'bin-1x2',
+          x: 0,
+          y: 0,
+          width: 1,
+          height: 2,
+          rotation: 0,
+          customization: hexCustomization,
+        },
+      ];
+
+      const { result } = renderHook(() => useBillOfMaterials(placedItems, mockLibraryItems));
+
+      expect(result.current).toHaveLength(1);
+      expect(result.current[0].customization).toEqual(hexCustomization);
+    });
+
+    it('should sort different customization variants of the same item in alphabetical name order', () => {
+      // Arrange: three bin-1x1 items, each with a distinct customization, placed in non-alphabetical order
+      const voronoiCustomization: BinCustomization = {
+        wallPattern: 'voronoi',
+        lipStyle: 'none',
+        fingerSlide: 'chamfered',
+        wallCutout: 'both',
+      };
+
+      const placedItems: PlacedItem[] = [
+        {
+          instanceId: 'instance-1',
+          itemId: 'bin-1x1',
+          x: 0,
+          y: 0,
+          width: 1,
+          height: 1,
+          rotation: 0,
+          customization: voronoiCustomization,
+        },
+        {
+          instanceId: 'instance-2',
+          itemId: 'bin-2x1',
+          x: 1,
+          y: 0,
+          width: 2,
+          height: 1,
+          rotation: 0,
+          customization: gridCustomization,
+        },
+        {
+          instanceId: 'instance-3',
+          itemId: 'bin-1x1',
+          x: 3,
+          y: 0,
+          width: 1,
+          height: 1,
+          rotation: 0,
+          customization: gridCustomization,
+        },
+        {
+          instanceId: 'instance-4',
+          itemId: 'bin-1x1',
+          x: 0,
+          y: 1,
+          width: 1,
+          height: 1,
+          rotation: 0,
+          customization: hexCustomization,
+        },
+      ];
+
+      const { result } = renderHook(() => useBillOfMaterials(placedItems, mockLibraryItems));
+
+      // Expect four BOM lines (three bin-1x1 variants + one bin-2x1)
+      expect(result.current).toHaveLength(4);
+
+      // All four should be sorted alphabetically by name; items with the same base
+      // name ("1x1 Bin") come before "2x1 Bin"
+      const names = result.current.map(item => item.name);
+      const sorted = [...names].sort((a, b) => a.localeCompare(b));
+      expect(names).toEqual(sorted);
+
+      // The first three entries are all "1x1 Bin" variants — each has quantity 1
+      const bin1x1Lines = result.current.filter(item => item.itemId === 'bin-1x1');
+      expect(bin1x1Lines).toHaveLength(3);
+      bin1x1Lines.forEach(line => expect(line.quantity).toBe(1));
+
+      // The bin-2x1 entry is also present with quantity 1
+      const bin2x1Line = result.current.find(item => item.itemId === 'bin-2x1');
+      expect(bin2x1Line).toBeDefined();
+      expect(bin2x1Line?.quantity).toBe(1);
+    });
   });
 });

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { Rotation } from '../types/gridfinity';
+import { ROTATION_CW, ROTATION_CCW } from '../utils/constants';
 
 export interface RefImagePlacement {
   id: string;
@@ -16,8 +17,6 @@ export interface RefImagePlacement {
   rotation: Rotation;
 }
 
-const ROTATION_CW: Record<Rotation, Rotation> = { 0: 90, 90: 180, 180: 270, 270: 0 };
-const ROTATION_CCW: Record<Rotation, Rotation> = { 0: 270, 90: 0, 180: 90, 270: 180 };
 
 function generatePlacementId(): string {
   return `ref-${crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()}`;
