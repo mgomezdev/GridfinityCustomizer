@@ -1,3 +1,4 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import App from './App';
@@ -84,6 +85,41 @@ vi.mock('./contexts/AuthContext', () => ({
     logout: vi.fn(),
     getAccessToken: () => (mockIsAuthenticated ? 'test-token' : null),
   }),
+}));
+
+let mockWalkthroughIsActive = false;
+let mockWalkthroughCurrentStep = 0;
+const mockStartTour = vi.fn();
+const mockNextStep = vi.fn();
+const mockDismissTour = vi.fn();
+
+vi.mock('./contexts/WalkthroughContext', () => ({
+  useWalkthrough: () => ({
+    isActive: mockWalkthroughIsActive,
+    currentStep: mockWalkthroughCurrentStep,
+    startTour: mockStartTour,
+    nextStep: mockNextStep,
+    dismissTour: mockDismissTour,
+  }),
+  WALKTHROUGH_STEPS: [
+    { id: 'place-bin', title: 'Drag a bin onto your grid', body: 'Pick any bin from the library on the left and drag it onto the grid to place it.', target: '.library-item-card' },
+    { id: 'save-grid', title: 'Save your layout', body: 'Give your layout a name and save it.', target: '.layout-save-btn' },
+    { id: 'submit-order', title: 'Submit your order', body: 'When your layout is ready, hit Submit.', target: '.layout-submit-btn' },
+  ],
+  WalkthroughProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+vi.mock('./components/WalkthroughOverlay', () => ({
+  WalkthroughOverlay: (props: { isActive: boolean; currentStep: number; steps: Array<{ id: string; title: string; body: string; target: string }> }) => {
+    if (!props.isActive) return null;
+    const step = props.steps[props.currentStep];
+    return (
+      <div data-testid="walkthrough-overlay">
+        <p>Step {props.currentStep + 1} of {props.steps.length}</p>
+        <h3>{step?.title}</h3>
+      </div>
+    );
+  },
 }));
 
 let capturedSaveLayoutDialogProps: Record<string, unknown> = {};
@@ -255,7 +291,10 @@ describe('App Integration Tests', () => {
     capturedSaveLayoutDialogProps = {};
     mockPlacements = [];
     mockIsAuthenticated = false;
+    mockWalkthroughIsActive = false;
+    mockWalkthroughCurrentStep = 0;
     localStorage.removeItem('gridfinity-image-view-mode');
+    localStorage.removeItem('gridfinity-walkthrough-seen');
   });
 
   // ==========================================
@@ -1044,6 +1083,70 @@ describe('App Integration Tests', () => {
 
       // submitLayoutMutation.mutate should have been called with the new layoutId
       expect(mockSubmitMutate).toHaveBeenCalledWith(99, expect.objectContaining({ onSuccess: expect.any(Function) }));
+    });
+  });
+
+  // ==========================================
+  // 10. Walkthrough auto-start
+  // ==========================================
+  describe('Walkthrough auto-start', () => {
+    it('auto-starts walkthrough on first login', async () => {
+      // Start unauthenticated
+      mockIsAuthenticated = false;
+      renderApp();
+
+      // No walkthrough yet
+      expect(mockStartTour).not.toHaveBeenCalled();
+
+      // Simulate login transition: set authenticated and re-render
+      act(() => {
+        mockIsAuthenticated = true;
+      });
+
+      // Re-render to trigger the useEffect
+      const { rerender } = render(<App />);
+      rerender(<App />);
+
+      await waitFor(() => {
+        expect(mockStartTour).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it('does not auto-start walkthrough if already seen', async () => {
+      // Mark as seen before render
+      localStorage.setItem('gridfinity-walkthrough-seen', 'true');
+
+      mockIsAuthenticated = false;
+      renderApp();
+
+      // Simulate login
+      act(() => {
+        mockIsAuthenticated = true;
+      });
+
+      const { rerender } = render(<App />);
+      rerender(<App />);
+
+      // Should NOT have called startTour since WALKTHROUGH_SEEN is set
+      await waitFor(() => {
+        expect(mockStartTour).not.toHaveBeenCalled();
+      });
+    });
+
+    it('renders WalkthroughOverlay when walkthrough is active', () => {
+      mockWalkthroughIsActive = true;
+      mockWalkthroughCurrentStep = 0;
+      renderApp();
+
+      expect(screen.getByTestId('walkthrough-overlay')).toBeInTheDocument();
+      expect(screen.getByText('Step 1 of 3')).toBeInTheDocument();
+    });
+
+    it('does not render WalkthroughOverlay when walkthrough is inactive', () => {
+      mockWalkthroughIsActive = false;
+      renderApp();
+
+      expect(screen.queryByTestId('walkthrough-overlay')).not.toBeInTheDocument();
     });
   });
 });

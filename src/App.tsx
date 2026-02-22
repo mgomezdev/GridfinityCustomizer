@@ -13,6 +13,7 @@ import { useCategoryData } from './hooks/useCategoryData';
 import { useRefImagePlacements } from './hooks/useRefImagePlacements';
 import { useGridTransform } from './hooks/useGridTransform';
 import { useAuth } from './contexts/AuthContext';
+import { useWalkthrough, WALKTHROUGH_STEPS } from './contexts/WalkthroughContext';
 import { useSubmitLayoutMutation, useWithdrawLayoutMutation, useCloneLayoutMutation, useSubmittedCountQuery } from './hooks/useLayouts';
 import { useConfirmDialog } from './hooks/useConfirmDialog';
 import { ConfirmDialog } from './components/ConfirmDialog';
@@ -37,6 +38,8 @@ import { LoadLayoutDialog } from './components/layouts/LoadLayoutDialog';
 import type { LoadedLayoutConfig } from './components/layouts/LoadLayoutDialog';
 import { AdminSubmissionsDialog } from './components/admin/AdminSubmissionsDialog';
 import { SubmissionsBadge } from './components/admin/SubmissionsBadge';
+import { WalkthroughOverlay } from './components/WalkthroughOverlay';
+import { STORAGE_KEYS } from './utils/storageKeys';
 import './App.css';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:3001/api/v1';
@@ -64,6 +67,18 @@ function App() {
 
   const { isAuthenticated, user } = useAuth();
   const isAdmin = user?.role === 'admin';
+
+  const { isActive, currentStep, startTour, nextStep, dismissTour } = useWalkthrough();
+  const prevAuthenticatedRef = useRef(false);
+
+  useEffect(() => {
+    if (isAuthenticated && !prevAuthenticatedRef.current) {
+      if (!localStorage.getItem(STORAGE_KEYS.WALKTHROUGH_SEEN)) {
+        startTour();
+      }
+    }
+    prevAuthenticatedRef.current = isAuthenticated;
+  }, [isAuthenticated, startTour]);
 
   const submitLayoutMutation = useSubmitLayoutMutation();
   const withdrawLayoutMutation = useWithdrawLayoutMutation();
@@ -654,6 +669,14 @@ function App() {
       )}
 
       <ConfirmDialog {...confirmDialogProps} />
+
+      <WalkthroughOverlay
+        isActive={isActive}
+        currentStep={currentStep}
+        steps={WALKTHROUGH_STEPS}
+        onNext={nextStep}
+        onDismiss={dismissTour}
+      />
     </div>
   );
 }
