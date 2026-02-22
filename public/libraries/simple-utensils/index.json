@@ -11,8 +11,8 @@
         "utensil"
       ],
       "stlFile": "Utensils 1x3.stl",
-      "imageUrl": "Utensils1x3.png",
-      "perspectiveImageUrl": "Utensils1x3-perspective.png"
+      "imageUrl": "Utensils 1x3.png",
+      "perspectiveImageUrl": "Utensils 1x3-perspective.png"
     },
     {
       "id": "utensils-1x4",
@@ -24,8 +24,8 @@
         "utensil"
       ],
       "stlFile": "Utensils 1x4.stl",
-      "imageUrl": "Utensils1x4.png",
-      "perspectiveImageUrl": "Utensils1x4-perspective.png"
+      "imageUrl": "Utensils 1x4.png",
+      "perspectiveImageUrl": "Utensils 1x4-perspective.png"
     },
     {
       "id": "utensils-1x5",
@@ -37,8 +37,8 @@
         "utensil"
       ],
       "stlFile": "Utensils 1x5.stl",
-      "imageUrl": "Utensils1x5.png",
-      "perspectiveImageUrl": "Utensils1x5-perspective.png"
+      "imageUrl": "Utensils 1x5.png",
+      "perspectiveImageUrl": "Utensils 1x5-perspective.png"
     },
     {
       "id": "utensils-1x6",
@@ -50,8 +50,8 @@
         "utensil"
       ],
       "stlFile": "Utensils 1x6.stl",
-      "imageUrl": "Utensils1x6.png",
-      "perspectiveImageUrl": "Utensils1x6-perspective.png"
+      "imageUrl": "Utensils 1x6.png",
+      "perspectiveImageUrl": "Utensils 1x6-perspective.png"
     },
     {
       "id": "utensils-2x4",
@@ -62,7 +62,9 @@
       "categories": [
         "utensil"
       ],
-      "imageUrl": "Utensils2x4.png"
+      "stlFile": "Utensils 2x4.stl",
+      "imageUrl": "Utensils 2x4.png",
+      "perspectiveImageUrl": "Utensils 2x4-perspective.png"
     },
     {
       "id": "utensils-2x5",
@@ -73,7 +75,9 @@
       "categories": [
         "utensil"
       ],
-      "imageUrl": "Utensils2x5.png"
+      "stlFile": "Utensils 2x5.stl",
+      "imageUrl": "Utensils 2x5.png",
+      "perspectiveImageUrl": "Utensils 2x5-perspective.png"
     },
     {
       "id": "utensils-2x6",
@@ -84,7 +88,9 @@
       "categories": [
         "utensil"
       ],
-      "imageUrl": "Utensils2x6.png"
+      "stlFile": "Utensils 2x6.stl",
+      "imageUrl": "Utensils 2x6.png",
+      "perspectiveImageUrl": "Utensils 2x6-perspective.png"
     },
     {
       "id": "utensils-offset-2x4",
@@ -95,6 +101,7 @@
       "categories": [
         "utensil"
       ],
+      "stlFile": "Utensils offset2x4.stl",
       "imageUrl": "Utensilsoffset2x4.png"
     }
   ]
