@@ -364,8 +364,9 @@ def render_stl_to_png_perspective(stl_path, output_path, max_dimension=800, came
             if not np.any(inside):
                 continue
 
-            # Interpolate view-space depth at covered pixels
-            z_interp = (w0 * vz[0] + w1 * vz[1] + w2 * vz[2])[inside]
+            # Perspective-correct depth interpolation: interpolate 1/z (linear in screen space)
+            inv_z_interp = (w0 / vz[0] + w1 / vz[1] + w2 / vz[2])[inside]
+            z_interp = 1.0 / inv_z_interp
             ay = gy[inside].astype(np.int32)
             ax = gx[inside].astype(np.int32)
 
