@@ -66,15 +66,13 @@ export function WalkthroughProvider({ children }: WalkthroughProviderProps) {
   }, []);
 
   const nextStep = useCallback(() => {
-    setCurrentStep(prev => {
-      const next = prev + 1;
-      if (next >= WALKTHROUGH_STEPS.length) {
-        dismissTour();
-        return 0;
-      }
-      return next;
-    });
-  }, [dismissTour]);
+    if (currentStep + 1 >= WALKTHROUGH_STEPS.length) {
+      dismissTour();
+      setCurrentStep(0);
+    } else {
+      setCurrentStep(prev => prev + 1);
+    }
+  }, [currentStep, dismissTour]);
 
   const value: WalkthroughContextValue = { isActive, currentStep, startTour, nextStep, dismissTour };
 

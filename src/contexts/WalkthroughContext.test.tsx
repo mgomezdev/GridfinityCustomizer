@@ -37,6 +37,16 @@ describe('WalkthroughContext', () => {
     expect(screen.getByTestId('step').textContent).toBe('0');
   });
 
+  it('startTour resets currentStep to 0 when called mid-tour', () => {
+    renderWithProvider();
+    act(() => screen.getByText('start').click());
+    act(() => screen.getByText('next').click()); // advance to step 1
+    expect(screen.getByTestId('step').textContent).toBe('1');
+    act(() => screen.getByText('start').click()); // restart
+    expect(screen.getByTestId('step').textContent).toBe('0');
+    expect(screen.getByTestId('active').textContent).toBe('true');
+  });
+
   it('nextStep advances currentStep', () => {
     renderWithProvider();
     act(() => screen.getByText('start').click());
