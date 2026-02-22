@@ -60,6 +60,17 @@ async function setupApiMocks(page: Page, images: ApiRefImage[] = [MOCK_IMAGE]) {
     });
   });
 
+  // Auth me — returns the current user after refresh
+  await page.route('**/api/v1/auth/me', async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: { id: 1, username: 'testuser', email: 'test@example.com', role: 'user' },
+      }),
+    });
+  });
+
   // GET ref images
   await page.route('**/api/v1/ref-images', async (route: Route) => {
     if (route.request().method() === 'GET') {
