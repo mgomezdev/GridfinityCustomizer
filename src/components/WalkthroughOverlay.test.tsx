@@ -69,4 +69,27 @@ describe('WalkthroughOverlay', () => {
     fireEvent.click(screen.getByRole('button', { name: /finish/i }));
     expect(onNext).toHaveBeenCalledTimes(1);
   });
+
+  it('has correct accessibility attributes', () => {
+    renderOverlay({ currentStep: 0 });
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toBeDefined();
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+  });
+
+  it('updates content when currentStep changes', () => {
+    const { rerender } = renderOverlay({ currentStep: 0 });
+    expect(screen.getByText('Step One Title')).toBeDefined();
+    rerender(
+      <WalkthroughOverlay
+        isActive={true}
+        currentStep={1}
+        steps={steps}
+        onNext={vi.fn()}
+        onDismiss={vi.fn()}
+      />
+    );
+    expect(screen.queryByText('Step One Title')).toBeNull();
+    expect(screen.getByText('Step Two Title')).toBeDefined();
+  });
 });

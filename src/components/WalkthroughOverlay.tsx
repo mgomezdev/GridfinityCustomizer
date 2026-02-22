@@ -64,8 +64,8 @@ export function WalkthroughOverlay({ isActive, currentStep, steps, onNext, onDis
     cardTop = spotlightRect.top - CARD_HEIGHT - CARD_MARGIN;
   }
   const cardLeft = spotlightRect
-    ? Math.min(Math.max(spotlightRect.left, 16), window.innerWidth - 300 - 16)
-    : window.innerWidth / 2 - 150;
+    ? Math.min(Math.max(spotlightRect.left, 16), window.innerWidth - 280 - 16)
+    : window.innerWidth / 2 - 140;
 
   const overlay = (
     <div className="walkthrough-overlay" aria-modal="true" role="dialog" aria-label={`Tour step ${currentStep + 1} of ${totalSteps}: ${step.title}`}>
