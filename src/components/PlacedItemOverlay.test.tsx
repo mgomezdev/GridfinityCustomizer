@@ -1710,6 +1710,54 @@ describe('PlacedItemOverlay', () => {
     });
   });
 
+  describe('Duplicate Button', () => {
+    it('does not render duplicate button when not selected', () => {
+      const onDuplicate = vi.fn();
+      render(
+        <PlacedItemOverlay
+          item={createMockItem()}
+          gridX={4} gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onDuplicate={onDuplicate}
+        />
+      );
+      expect(screen.queryByRole('button', { name: /duplicate/i })).toBeNull();
+    });
+
+    it('renders duplicate button when selected', () => {
+      const onDuplicate = vi.fn();
+      render(
+        <PlacedItemOverlay
+          item={createMockItem()}
+          gridX={4} gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onDuplicate={onDuplicate}
+        />
+      );
+      expect(screen.getByRole('button', { name: /duplicate/i })).toBeDefined();
+    });
+
+    it('calls onDuplicate when duplicate button is clicked', () => {
+      const onDuplicate = vi.fn();
+      render(
+        <PlacedItemOverlay
+          item={createMockItem()}
+          gridX={4} gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onDuplicate={onDuplicate}
+        />
+      );
+      fireEvent.click(screen.getByRole('button', { name: /duplicate/i }));
+      expect(onDuplicate).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('Inline Customize Button', () => {
     const mockOnCustomizationChange = vi.fn();
 

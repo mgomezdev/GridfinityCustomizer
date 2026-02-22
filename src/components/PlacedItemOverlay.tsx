@@ -18,6 +18,7 @@ interface PlacedItemOverlayProps {
   onRotateCcw?: (instanceId: string) => void;
   onCustomizationChange?: (instanceId: string, customization: BinCustomization) => void;
   onCustomizationReset?: (instanceId: string) => void;
+  onDuplicate?: () => void;
   imageViewMode?: ImageViewMode;
 }
 
@@ -34,7 +35,7 @@ function getCustomizationBadges(customization: BinCustomization | undefined): st
   return badges;
 }
 
-export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, getItemById, onDelete, onRotateCw, onRotateCcw, onCustomizationChange, onCustomizationReset, imageViewMode = 'ortho' }: PlacedItemOverlayProps) {
+export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, getItemById, onDelete, onRotateCw, onRotateCcw, onCustomizationChange, onCustomizationReset, onDuplicate, imageViewMode = 'ortho' }: PlacedItemOverlayProps) {
   const [showPopover, setShowPopover] = useState(false);
 
   const libraryItem = getItemById(item.itemId);
@@ -122,6 +123,12 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
   const handlePopoverReset = useCallback(() => {
     onCustomizationReset?.(item.instanceId);
   }, [onCustomizationReset, item.instanceId]);
+
+  const handleDuplicateClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onDuplicate?.();
+  };
 
   const handleClosePopover = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -227,6 +234,19 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
           title="Remove item"
         >
           &times;
+        </button>
+      )}
+      {isSelected && onDuplicate && (
+        <button
+          className="placed-item-duplicate-btn"
+          onClick={handleDuplicateClick}
+          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          draggable={false}
+          aria-label="Duplicate"
+          title="Duplicate (Ctrl+D)"
+        >
+          &#x29C9;
         </button>
       )}
       {isSelected && onCustomizationChange && (

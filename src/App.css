@@ -1946,6 +1946,39 @@
   transform: scale(0.95);
 }
 
+/* Placed Item Inline Duplicate Button */
+.placed-item-duplicate-btn {
+  position: absolute;
+  bottom: -8px;
+  right: -8px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-secondary);
+  background: var(--bg-primary);
+  color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 3;
+  padding: 0;
+  animation: delete-btn-appear 0.15s ease-out;
+}
+
+.placed-item-duplicate-btn:hover {
+  background: var(--blue-500, #3b82f6);
+  border-color: var(--blue-500, #3b82f6);
+  color: white;
+  transform: scale(1.15);
+}
+
+.placed-item-duplicate-btn:active {
+  transform: scale(0.95);
+}
+
 /* Placed Item Customization Popover */
 .placed-item-customize-popover {
   position: absolute;
@@ -2720,6 +2753,14 @@
     left: -12px;
   }
 
+  .placed-item-duplicate-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+    bottom: -12px;
+    right: -12px;
+  }
+
   .reference-image-overlay__toolbar-btn {
     min-width: 36px;
     min-height: 36px;
@@ -2754,7 +2795,8 @@
 
   .placed-item-delete-btn:hover,
   .placed-item-rotate-btn:hover,
-  .placed-item-customize-btn:hover {
+  .placed-item-customize-btn:hover,
+  .placed-item-duplicate-btn:hover {
     transform: none;
     background: var(--bg-primary);
     border-color: var(--border-secondary);

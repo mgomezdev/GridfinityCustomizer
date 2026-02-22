@@ -559,6 +559,7 @@ function App() {
               onRotateItemCcw={(id) => rotateItem(id, 'ccw')}
               onItemCustomizationChange={updateItemCustomization}
               onItemCustomizationReset={(id) => updateItemCustomization(id, undefined)}
+              onDuplicateItem={duplicateItem}
               referenceImages={referenceImagesForGrid}
               selectedImageId={selectedImageId}
               onImagePositionChange={updateRefImagePosition}

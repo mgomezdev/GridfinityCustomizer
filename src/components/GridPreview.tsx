@@ -27,6 +27,7 @@ interface GridPreviewProps {
   onRotateItemCcw?: (instanceId: string) => void;
   onItemCustomizationChange?: (instanceId: string, customization: BinCustomization) => void;
   onItemCustomizationReset?: (instanceId: string) => void;
+  onDuplicateItem?: () => void;
   referenceImages?: ReferenceImage[];
   selectedImageId?: string | null;
   onImagePositionChange?: (id: string, x: number, y: number) => void;
@@ -56,6 +57,7 @@ export function GridPreview({
   onRotateItemCcw,
   onItemCustomizationChange,
   onItemCustomizationReset,
+  onDuplicateItem,
   referenceImages = EMPTY_REF_IMAGES,
   selectedImageId,
   onImagePositionChange,
@@ -172,6 +174,7 @@ export function GridPreview({
               onRotateCcw={onRotateItemCcw}
               onCustomizationChange={onItemCustomizationChange}
               onCustomizationReset={onItemCustomizationReset}
+              onDuplicate={onDuplicateItem}
               imageViewMode={imageViewMode}
             />
           ))}
