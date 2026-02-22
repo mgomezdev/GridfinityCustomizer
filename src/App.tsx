@@ -197,6 +197,8 @@ function App() {
     }
   }, [layoutMeta.id, submitLayoutMutation, handleSetStatus]);
 
+  const submitAfterSaveRef = useRef(false);
+
   const handleSubmitClick = useCallback(() => {
     if (!layoutMeta.id) {
       submitAfterSaveRef.current = true;
@@ -244,7 +246,6 @@ function App() {
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const isSpaceHeldRef = useRef(false);
-  const submitAfterSaveRef = useRef(false);
 
   const handleFitToScreen = useCallback(() => {
     const viewport = viewportRef.current;

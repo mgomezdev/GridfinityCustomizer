@@ -110,8 +110,9 @@ vi.mock('./components/admin/SubmissionsBadge', () => ({
   SubmissionsBadge: () => null,
 }));
 
+const mockSubmitMutate = vi.fn();
 vi.mock('./hooks/useLayouts', () => ({
-  useSubmitLayoutMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
+  useSubmitLayoutMutation: () => ({ mutate: mockSubmitMutate, mutateAsync: vi.fn(), isPending: false }),
   useWithdrawLayoutMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
   useCloneLayoutMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
   useSubmittedCountQuery: () => ({ data: null, isLoading: false }),
@@ -1021,6 +1022,28 @@ describe('App Integration Tests', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
 
       expect(capturedSaveLayoutDialogProps.isOpen).toBe(true);
+    });
+
+    it('completing save after Submit click fires submitLayoutMutation.mutate with the new layoutId', () => {
+      mockIsAuthenticated = true;
+      renderApp();
+
+      // Click Submit with no saved layout — sets ref and opens save dialog
+      fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+      expect(capturedSaveLayoutDialogProps.isOpen).toBe(true);
+
+      // Simulate the save dialog completing (user saved successfully)
+      const onSaveComplete = capturedSaveLayoutDialogProps.onSaveComplete as (
+        layoutId: number,
+        name: string,
+        status: import('@gridfinity/shared').LayoutStatus
+      ) => void;
+      act(() => {
+        onSaveComplete(99, 'My New Layout', 'draft');
+      });
+
+      // submitLayoutMutation.mutate should have been called with the new layoutId
+      expect(mockSubmitMutate).toHaveBeenCalledWith(99, expect.objectContaining({ onSuccess: expect.any(Function) }));
     });
   });
 });
