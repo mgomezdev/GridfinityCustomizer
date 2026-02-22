@@ -68,20 +68,6 @@ async function seedAuth(page: Page) {
   }, REFRESH_TOKEN_KEY);
 }
 
-/**
- * Goes through the login UI: clicks "Log In" button, fills the form, submits.
- * Waits for the modal to close (indicating successful login).
- */
-async function loginViaUI(page: Page) {
-  await page.locator('button.user-menu-login-btn').click();
-  await expect(page.locator('.auth-modal')).toBeVisible();
-  await page.locator('#login-email').fill('test@example.com');
-  await page.locator('#login-password').fill('password123');
-  await page.locator('button.auth-submit-button').click();
-  // Modal closes on success
-  await expect(page.locator('.auth-modal')).not.toBeVisible();
-}
-
 // --- Tests ---
 
 test.describe('Onboarding Walkthrough', () => {

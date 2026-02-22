@@ -1,4 +1,4 @@
-import { memo, useState, useCallback, useEffect } from 'react';
+import { memo, useState, useCallback } from 'react';
 import type { PlacedItemWithValidity, LibraryItem, ImageViewMode, BinCustomization } from '../types/gridfinity';
 import { isDefaultCustomization } from '../types/gridfinity';
 import { usePointerDragSource } from '../hooks/usePointerDrag';
@@ -147,9 +147,8 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
 
   const handleCloseContextMenu = () => setContextMenuPos(null);
 
-  useEffect(() => {
-    if (!isSelected) setContextMenuPos(null);
-  }, [isSelected]);
+  // Derive: context menu is only visible when the item is selected
+  const effectiveContextMenuPos = isSelected ? contextMenuPos : null;
 
   const badges = getCustomizationBadges(item.customization);
 
@@ -300,10 +299,10 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
           />
         </div>
       )}
-      {contextMenuPos && (
+      {effectiveContextMenuPos && (
         <BinContextMenu
-          x={contextMenuPos.x}
-          y={contextMenuPos.y}
+          x={effectiveContextMenuPos.x}
+          y={effectiveContextMenuPos.y}
           onRotateCw={() => onRotateCw?.(item.instanceId)}
           onRotateCcw={() => onRotateCcw?.(item.instanceId)}
           onDuplicate={() => onDuplicate?.()}

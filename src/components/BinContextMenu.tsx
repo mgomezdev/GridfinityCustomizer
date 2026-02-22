@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import './BinContextMenu.css';
 
@@ -24,15 +24,16 @@ export function BinContextMenu({
   onClose,
 }: BinContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState({ x, y });
 
-  // Adjust position to stay within viewport
+  // Adjust position to stay within viewport by directly mutating the DOM style,
+  // avoiding a setState → re-render cascade.
   useLayoutEffect(() => {
     if (!menuRef.current) return;
     const { width, height } = menuRef.current.getBoundingClientRect();
     const adjustedX = x + width > window.innerWidth ? x - width : x;
     const adjustedY = y + height > window.innerHeight ? y - height : y;
-    setPos({ x: Math.max(0, adjustedX), y: Math.max(0, adjustedY) });
+    menuRef.current.style.left = `${Math.max(0, adjustedX)}px`;
+    menuRef.current.style.top = `${Math.max(0, adjustedY)}px`;
   }, [x, y]);
 
   // Dismiss on outside mousedown
@@ -68,7 +69,7 @@ export function BinContextMenu({
       ref={menuRef}
       className="bin-context-menu"
       role="menu"
-      style={{ left: pos.x, top: pos.y }}
+      style={{ left: x, top: y }}
       onMouseDown={(e) => e.stopPropagation()}
     >
       <button

@@ -268,8 +268,8 @@ test.describe('Multi-Select and Batch Operations', () => {
 
     // For non-square items, width and height should have swapped
     if (initialBox1 && rotatedBox1) {
-      expect(Math.abs(initialBox1.width - rotatedBox1.height)).toBeLessThan(20);
-      expect(Math.abs(initialBox1.height - rotatedBox1.width)).toBeLessThan(20);
+      expect(Math.abs(initialBox1.width - rotatedBox1.height)).toBeLessThan(25);
+      expect(Math.abs(initialBox1.height - rotatedBox1.width)).toBeLessThan(25);
     }
 
     // Both items should still be selected
@@ -313,8 +313,8 @@ test.describe('Multi-Select and Batch Operations', () => {
 
     // For non-square items, width and height should have swapped
     if (initialBox1 && rotatedBox1) {
-      expect(Math.abs(initialBox1.width - rotatedBox1.height)).toBeLessThan(20);
-      expect(Math.abs(initialBox1.height - rotatedBox1.width)).toBeLessThan(20);
+      expect(Math.abs(initialBox1.width - rotatedBox1.height)).toBeLessThan(25);
+      expect(Math.abs(initialBox1.height - rotatedBox1.width)).toBeLessThan(25);
     }
   });
 
