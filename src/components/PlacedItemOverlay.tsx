@@ -1,10 +1,11 @@
-import { memo, useState, useCallback } from 'react';
+import { memo, useState, useCallback, useEffect } from 'react';
 import type { PlacedItemWithValidity, LibraryItem, ImageViewMode, BinCustomization } from '../types/gridfinity';
 import { isDefaultCustomization } from '../types/gridfinity';
 import { usePointerDragSource } from '../hooks/usePointerDrag';
 import { useImageLoadState } from '../hooks/useImageLoadState';
 import { BinCustomizationPanel } from './BinCustomizationPanel';
 import { getRotatedPerspectiveUrl } from '../utils/imageHelpers';
+import { BinContextMenu } from './BinContextMenu';
 
 interface PlacedItemOverlayProps {
   item: PlacedItemWithValidity;
@@ -37,6 +38,7 @@ function getCustomizationBadges(customization: BinCustomization | undefined): st
 
 export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, getItemById, onDelete, onRotateCw, onRotateCcw, onCustomizationChange, onCustomizationReset, onDuplicate, imageViewMode = 'ortho' }: PlacedItemOverlayProps) {
   const [showPopover, setShowPopover] = useState(false);
+  const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
 
   const libraryItem = getItemById(item.itemId);
   const color = item.isValid ? (libraryItem?.color || DEFAULT_VALID_COLOR) : INVALID_COLOR;
@@ -136,6 +138,19 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
     setShowPopover(false);
   };
 
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect(item.instanceId, { shift: false, ctrl: false });
+    setContextMenuPos({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleCloseContextMenu = () => setContextMenuPos(null);
+
+  useEffect(() => {
+    if (!isSelected) setContextMenuPos(null);
+  }, [isSelected]);
+
   const badges = getCustomizationBadges(item.customization);
 
   return (
@@ -155,6 +170,7 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
       aria-label={`${libraryItem?.name ?? 'Item'} at position ${item.x},${item.y}${isSelected ? ', selected' : ''}${!item.isValid ? ', invalid placement' : ''}`}
       onPointerDown={onPointerDown}
       onClick={(e) => e.stopPropagation()}
+      onContextMenu={handleContextMenu}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -289,6 +305,18 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
             idPrefix="inline-"
           />
         </div>
+      )}
+      {contextMenuPos && (
+        <BinContextMenu
+          x={contextMenuPos.x}
+          y={contextMenuPos.y}
+          onRotateCw={() => onRotateCw?.(item.instanceId)}
+          onRotateCcw={() => onRotateCcw?.(item.instanceId)}
+          onDuplicate={() => onDuplicate?.()}
+          onCustomize={() => setShowPopover(true)}
+          onDelete={() => onDelete?.(item.instanceId)}
+          onClose={handleCloseContextMenu}
+        />
       )}
     </div>
   );
