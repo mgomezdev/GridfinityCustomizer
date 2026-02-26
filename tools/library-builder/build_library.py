@@ -950,6 +950,19 @@ def generate_library_json(directory, color_hex=None, output_file='index.json',
         os.makedirs(output_dir, exist_ok=True)
         print(f"Output directory: {os.path.abspath(output_dir)}")
         print()
+    # Load existing index.json to enable skip-if-already-sliced logic
+    existing_by_id = {}
+    output_path_check = os.path.join(output_dir, output_file)
+    if os.path.exists(output_path_check):
+        try:
+            with open(output_path_check, encoding='utf-8') as f:
+                existing_data = json.load(f)
+            for entry in existing_data.get('items', []):
+                if 'id' in entry:
+                    existing_by_id[entry['id']] = entry
+            print(f"Loaded {len(existing_by_id)} existing entries from {output_path_check}")
+        except Exception as e:
+            print(f"WARNING: Could not load existing index.json: {e}")
     # Find all model files
     model_files = find_model_files(directory)
     stl_files = model_files['stl']
@@ -999,6 +1012,18 @@ def generate_library_json(directory, color_hex=None, output_file='index.json',
             metadata['color'],
             png_file_perspective=metadata.get('png_file_perspective')
         )
+        # Slicer integration: reuse existing values or slice now
+        existing = existing_by_id.get(item['id'], {})
+        if 'filamentGrams' in existing and 'printTimeSeconds' in existing:
+            item['filamentGrams'] = existing['filamentGrams']
+            item['printTimeSeconds'] = existing['printTimeSeconds']
+            print(f"  Slicer: reusing existing values for {item['id']}")
+        elif slicer_config:
+            slicer_result = slice_model(stl_path, slicer_config)
+            if slicer_result:
+                item['filamentGrams'] = slicer_result['filamentGrams']
+                item['printTimeSeconds'] = slicer_result['printTimeSeconds']
+                print(f"  Slicer: {item['filamentGrams']}g, {item['printTimeSeconds']}s")
         items.append(item)
         successes += 1
         print(f"  SUCCESS: Added {item['name']}")
