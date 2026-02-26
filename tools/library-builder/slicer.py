@@ -54,6 +54,10 @@ def slice_model(stl_path: str, config_path: str) -> dict | None:
         logger.warning("Slicer config not found: %s", config_path)
         return None
 
+    if not os.path.exists(stl_path):
+        logger.warning("STL file not found: %s", stl_path)
+        return None
+
     if shutil.which(ORCA_BINARY) is None:
         logger.warning("OrcaSlicer binary not on PATH: %s", ORCA_BINARY)
         return None
@@ -78,6 +82,8 @@ def slice_model(stl_path: str, config_path: str) -> dict | None:
 
         with open(temp_gcode, encoding="utf-8", errors="replace") as f:
             for i, line in enumerate(f):
+                # OrcaSlicer writes metadata comments at the top of the gcode file.
+                # 100 lines is sufficient for all known OrcaSlicer versions.
                 if i >= 100:
                     break
                 if filament_grams is None:
