@@ -35,6 +35,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
     "server:dev": "npm run dev --workspace=server",
+    "server:dev:test": "npm run dev:test --workspace=server",
     "server:build": "npm run build --workspace=server",
     "server:seed": "npm run seed --workspace=server"
   },
