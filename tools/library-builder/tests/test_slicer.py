@@ -68,7 +68,7 @@ class TestSliceModel:
         # Create a dummy STL so the stl_path check passes
         stl = tmp_path / "model.stl"
         stl.write_bytes(b"solid test\nendsolid test\n")
-        with patch("shutil.which", return_value=None):
+        with patch("slicer.shutil.which", return_value=None):
             result = slice_model(str(stl), str(config))
         assert result is None
 
@@ -203,5 +203,20 @@ class TestSliceModel:
              patch("subprocess.run", side_effect=fake_run):
             slice_model(str(stl), str(config))
 
-        if written_path:
-            assert not os.path.exists(written_path[0]), "temp gcode was not cleaned up on failure"
+        assert written_path, "subprocess.run was not called"
+        assert not os.path.exists(written_path[0]), "temp gcode was not cleaned up on failure"
+
+    def test_returns_none_on_timeout(self, tmp_path, monkeypatch):
+        import subprocess as _subprocess
+        from slicer import slice_model
+        config = tmp_path / "config.json"
+        config.write_text("{}")
+        stl = tmp_path / "model.stl"
+        stl.write_bytes(b"solid test\nendsolid test\n")
+        monkeypatch.setattr("slicer.TEMP_DIR", str(tmp_path))
+
+        with patch("slicer.shutil.which", return_value="/usr/bin/orca-slicer"), \
+             patch("subprocess.run", side_effect=_subprocess.TimeoutExpired(cmd=[], timeout=120)):
+            result = slice_model(str(stl), str(config))
+
+        assert result is None
