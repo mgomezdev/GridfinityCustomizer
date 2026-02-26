@@ -990,6 +990,7 @@ def generate_library_json(directory, color_hex=None, output_file='index.json',
             print(f"Loaded {len(existing_by_id)} existing entries from {output_path_check}")
         except Exception as e:
             print(f"WARNING: Could not load existing index.json: {e}")
+
     # Find all model files
     model_files = find_model_files(directory)
     stl_files = model_files['stl']

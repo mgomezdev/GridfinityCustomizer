@@ -79,7 +79,7 @@ class TestSliceModel:
         stl = tmp_path / "model.stl"
         stl.write_bytes(b"solid test\nendsolid test\n")
         mock_proc = MagicMock(returncode=1, stderr="slicing error")
-        with patch("shutil.which", return_value="/usr/bin/orca-slicer"), \
+        with patch("slicer.shutil.which", return_value="/usr/bin/orca-slicer"), \
              patch("subprocess.run", return_value=mock_proc):
             result = slice_model(str(stl), str(config))
         assert result is None
@@ -103,7 +103,7 @@ class TestSliceModel:
                 f.write(gcode)
             return MagicMock(returncode=0)
 
-        with patch("shutil.which", return_value="/usr/bin/orca-slicer"), \
+        with patch("slicer.shutil.which", return_value="/usr/bin/orca-slicer"), \
              patch("subprocess.run", side_effect=fake_run):
             result = slice_model(str(stl), str(config))
 
@@ -125,7 +125,7 @@ class TestSliceModel:
                 f.write(gcode)
             return MagicMock(returncode=0)
 
-        with patch("shutil.which", return_value="/usr/bin/orca-slicer"), \
+        with patch("slicer.shutil.which", return_value="/usr/bin/orca-slicer"), \
              patch("subprocess.run", side_effect=fake_run):
             result = slice_model(str(stl), str(config))
 
@@ -147,7 +147,7 @@ class TestSliceModel:
                 f.write(gcode)
             return MagicMock(returncode=0)
 
-        with patch("shutil.which", return_value="/usr/bin/orca-slicer"), \
+        with patch("slicer.shutil.which", return_value="/usr/bin/orca-slicer"), \
              patch("subprocess.run", side_effect=fake_run):
             result = slice_model(str(stl), str(config))
 
@@ -174,7 +174,7 @@ class TestSliceModel:
                 f.write(gcode)
             return MagicMock(returncode=0)
 
-        with patch("shutil.which", return_value="/usr/bin/orca-slicer"), \
+        with patch("slicer.shutil.which", return_value="/usr/bin/orca-slicer"), \
              patch("subprocess.run", side_effect=fake_run):
             result = slice_model(str(stl), str(config))
 
@@ -199,7 +199,7 @@ class TestSliceModel:
                 f.write("")  # empty gcode — parse will fail
             return MagicMock(returncode=0)
 
-        with patch("shutil.which", return_value="/usr/bin/orca-slicer"), \
+        with patch("slicer.shutil.which", return_value="/usr/bin/orca-slicer"), \
              patch("subprocess.run", side_effect=fake_run):
             slice_model(str(stl), str(config))
 

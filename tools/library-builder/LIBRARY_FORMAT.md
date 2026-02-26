@@ -47,7 +47,7 @@ Each item in the `items` array has the following properties:
   "widthUnits": 2,
   "heightUnits": 3,
   "color": "#3B82F6",
-  "categories": [],
+  "categories": ["bin"],
   "imageUrl": "bin 2x3.png",
   "perspectiveImageUrl": "bin 2x3-perspective.png",
   "filamentGrams": 18.72,

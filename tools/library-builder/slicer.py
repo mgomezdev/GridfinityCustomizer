@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 TEMP_DIR = "/tmp/orca-slice"
 ORCA_BINARY = "orca-slicer"
 SLICE_TIMEOUT = 120
+GCODE_HEADER_LINES = 100
 
 
 def cleanup_stale_temp_files() -> None:
@@ -82,9 +83,7 @@ def slice_model(stl_path: str, config_path: str) -> dict | None:
 
         with open(temp_gcode, encoding="utf-8", errors="replace") as f:
             for i, line in enumerate(f):
-                # OrcaSlicer writes metadata comments at the top of the gcode file.
-                # 100 lines is sufficient for all known OrcaSlicer versions.
-                if i >= 100:
+                if i >= GCODE_HEADER_LINES:
                     break
                 if filament_grams is None:
                     m = re.match(r";\s*filament used \[g\]\s*=\s*([\d.]+)", line)
