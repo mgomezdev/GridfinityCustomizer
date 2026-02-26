@@ -34,6 +34,7 @@ import sys
 import tempfile
 from glob import glob
 from stl_to_png import render_stl_to_png, render_stl_to_png_perspective
+from slicer import cleanup_stale_temp_files, slice_model
 
 try:
     import trimesh
@@ -923,7 +924,8 @@ def build_library_item(stl_file, png_file, width, height, color_hex, custom_id=N
 
 def generate_library_json(directory, color_hex=None, output_file='index.json',
                          library_name=None, skip_existing=True, non_interactive=False,
-                         render_both=None, camera_tilt=None, fov=None, rotation=0):
+                         render_both=None, camera_tilt=None, fov=None, rotation=0,
+                         slicer_config=None):
     """
     Main orchestration: scan directory, process STL and 3MF files, generate index.json.
 
@@ -1318,6 +1320,12 @@ Examples:
                        help=f'Field of view in degrees for perspective mode (default: {PERSPECTIVE_FOV})')
     parser.add_argument('--rotate', type=int, default=0, choices=[0, 90, 180, 270],
                        help='Additional Z-axis rotation in degrees applied after auto-alignment (default: 0)')
+    parser.add_argument(
+        '--slicer-config',
+        metavar='PATH',
+        default=None,
+        help='Path to OrcaSlicer .json config file (enables filament/time estimation per model)',
+    )
 
     args = parser.parse_args()
 
@@ -1349,6 +1357,10 @@ Examples:
     elif args.both_modes:
         render_both = True
 
+    if args.slicer_config:
+        print("Slicer config provided — clearing stale temp files...")
+        cleanup_stale_temp_files()
+
     # Generate library
     success = generate_library_json(
         args.directory,
@@ -1360,7 +1372,8 @@ Examples:
         render_both=render_both,
         camera_tilt=args.camera_tilt,
         fov=args.fov,
-        rotation=args.rotate
+        rotation=args.rotate,
+        slicer_config=args.slicer_config,
     )
 
     sys.exit(0 if success else 1)
