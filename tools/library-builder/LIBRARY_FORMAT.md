@@ -35,17 +35,23 @@ Each item in the `items` array has the following properties:
 | `color` | string | Yes | Hex color code for visual representation (e.g., "#3B82F6", "#FDFBD4") |
 | `categories` | array | Yes | Array of category IDs this item belongs to (e.g., ["bin"], ["bin", "labeled"], ["utensil"]) |
 | `imageUrl` | string | No | Path to preview image served from public/ directory. Format: "/images/filename.png" (NOT "public/images/...") |
+| `perspectiveImageUrl` | string | No | Path to perspective preview image (e.g., `"bin 2x3-perspective.png"`) |
+| `filamentGrams` | number | No | Filament used in grams, estimated by OrcaSlicer (e.g., `18.72`) |
+| `printTimeSeconds` | number | No | Estimated print time in seconds, estimated by OrcaSlicer (e.g., `6480`) |
 
 ### Example Item
 ```json
 {
-  "id": "utensil-simple-1x3",
-  "name": "1x3 Utensil Tray (simple)",
-  "widthUnits": 1,
+  "id": "bin-2x3",
+  "name": "2x3 Bin",
+  "widthUnits": 2,
   "heightUnits": 3,
-  "color": "#FDFBD4",
-  "categories": ["utensil"],
-  "imageUrl": "/images/utensil-simple-1x3.png"
+  "color": "#3B82F6",
+  "categories": [],
+  "imageUrl": "bin 2x3.png",
+  "perspectiveImageUrl": "bin 2x3-perspective.png",
+  "filamentGrams": 18.72,
+  "printTimeSeconds": 6480
 }
 ```
 ## Color Scheme
