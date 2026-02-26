@@ -674,7 +674,8 @@ def process_stl_file(stl_path, color_hex, output_dir=None, skip_existing_png=Tru
 
 
 def process_3mf_file(mf3_path, color_hex, output_dir=None, skip_existing_png=True, non_interactive=False,
-                     render_both=None, camera_tilt=None, fov=None, rotation=0):
+                     render_both=None, camera_tilt=None, fov=None, rotation=0,
+                     slicer_config=None, existing_by_id=None):
     """
     Process a 3MF file with multiple objects.
 
@@ -864,6 +865,31 @@ def process_3mf_file(mf3_path, color_hex, output_dir=None, skip_existing_png=Tru
                         finally:
                             cleanup_temp_file(temp_stl_name)
 
+            # Slicer integration: check existing values or slice this object
+            slicer_data = {}
+            obj_id = generate_3mf_object_id(mf3_basename, obj_name, width, height)
+            existing_entry = (existing_by_id or {}).get(obj_id, {})
+
+            if 'filamentGrams' in existing_entry and 'printTimeSeconds' in existing_entry:
+                slicer_data = {
+                    'filamentGrams': existing_entry['filamentGrams'],
+                    'printTimeSeconds': existing_entry['printTimeSeconds'],
+                }
+                print(f"    Slicer: reusing existing values for {obj_id}")
+            elif slicer_config:
+                temp_stl_name = None
+                try:
+                    temp_stl = tempfile.NamedTemporaryFile(suffix='.stl', delete=False)
+                    temp_stl_name = temp_stl.name
+                    temp_stl.close()
+                    geometry.export(temp_stl_name, file_type='stl')
+                    slicer_result = slice_model(temp_stl_name, slicer_config)
+                    if slicer_result:
+                        slicer_data = slicer_result
+                        print(f"    Slicer: {slicer_data['filamentGrams']}g, {slicer_data['printTimeSeconds']}s")
+                finally:
+                    cleanup_temp_file(temp_stl_name)
+
             # Build metadata
             metadata = {
                 'mf3_file': mf3_filename,
@@ -872,7 +898,8 @@ def process_3mf_file(mf3_path, color_hex, output_dir=None, skip_existing_png=Tru
                 'png_file_perspective': perspective_filename,  # Perspective version (optional)
                 'width': width,
                 'height': height,
-                'color': color_hex
+                'color': color_hex,
+                **slicer_data,
             }
             metadata_list.append(metadata)
 
@@ -1037,7 +1064,8 @@ def generate_library_json(directory, color_hex=None, output_file='index.json',
         print(f"[{file_count}/{total_files}] Processing {mf3_filename}...")
 
         metadata_list = process_3mf_file(mf3_path, color_hex, output_dir, skip_existing, non_interactive,
-                                        render_both, camera_tilt, fov, rotation)
+                                        render_both, camera_tilt, fov, rotation,
+                                        slicer_config=slicer_config, existing_by_id=existing_by_id)
 
         if not metadata_list:
             failures += 1
@@ -1071,6 +1099,10 @@ def generate_library_json(directory, color_hex=None, output_file='index.json',
                 custom_name=custom_name,
                 png_file_perspective=metadata.get('png_file_perspective')
             )
+            if 'filamentGrams' in metadata:
+                item['filamentGrams'] = metadata['filamentGrams']
+            if 'printTimeSeconds' in metadata:
+                item['printTimeSeconds'] = metadata['printTimeSeconds']
             items.append(item)
             successes += 1
             print(f"    SUCCESS: Added {item['name']}")
