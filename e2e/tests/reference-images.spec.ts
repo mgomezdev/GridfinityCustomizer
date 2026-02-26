@@ -1,7 +1,7 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
 import { GridPage } from '../pages/GridPage';
 import { LibraryPage } from '../pages/LibraryPage';
-import { pointerDragDrop } from '../utils/drag-drop';
+import { pointerDragDrop, dragToGridCell } from '../utils/drag-drop';
 import type { ApiRefImage } from '../../shared/src/types';
 
 // --- Mock auth helpers ---
@@ -333,10 +333,8 @@ test.describe('Reference Images — Authenticated', () => {
     const firstItem = libraryPage.libraryItems.first();
     await expect(firstItem).toBeVisible();
 
-    // Scroll the grid into view so the drop target is visible
-    await gridPage.gridContainer.scrollIntoViewIfNeeded();
-
-    await pointerDragDrop(page, firstItem, gridPage.gridContainer);
+    const { columns, rows } = await gridPage.getGridDimensions();
+    await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, columns, rows);
     const placedCount = await gridPage.getPlacedItemCount();
     expect(placedCount).toBe(1);
 
