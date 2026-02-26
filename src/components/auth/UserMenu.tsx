@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useWalkthrough } from '../../contexts/WalkthroughContext';
 import { AuthModal } from './AuthModal';
 
 export function UserMenu() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const { startTour } = useWalkthrough();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
@@ -77,6 +79,15 @@ export function UserMenu() {
             <span className="user-menu-username">{user?.username}</span>
             <span className="user-menu-email">{user?.email}</span>
           </div>
+          <hr className="user-menu-divider" />
+          <button
+            className="user-menu-item"
+            onClick={() => { setShowDropdown(false); startTour(); }}
+            type="button"
+            role="menuitem"
+          >
+            Take the tour
+          </button>
           <hr className="user-menu-divider" />
           <button
             className="user-menu-item"

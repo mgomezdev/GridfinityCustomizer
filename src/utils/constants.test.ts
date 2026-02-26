@@ -7,6 +7,7 @@ import {
   ROTATION_CW,
   ROTATION_CCW,
 } from './constants';
+import { STORAGE_KEYS } from '../utils/storageKeys';
 
 describe('Zoom constants', () => {
   it('should export MIN_ZOOM as 0.25', () => {
@@ -68,4 +69,8 @@ describe('ROTATION_CCW', () => {
   it('should map 270 to 180', () => {
     expect(ROTATION_CCW[270]).toBe(180);
   });
+});
+
+it('STORAGE_KEYS includes WALKTHROUGH_SEEN', () => {
+  expect(STORAGE_KEYS.WALKTHROUGH_SEEN).toBe('gridfinity-walkthrough-seen');
 });

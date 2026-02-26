@@ -12,7 +12,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write   # needed to create releases and upload assets
 
     steps:
       - name: Checkout repository
@@ -33,7 +33,7 @@ jobs:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -43,3 +43,24 @@ jobs:
             ${{ env.IMAGE }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Package library starter
+        run: |
+          cd public
+          zip -r ../library-starter.zip libraries/
+          cd ..
+          if [ ! -f library-starter.zip ]; then
+            echo "Failed to create library-starter.zip"
+            exit 1
+          fi
+
+      - name: Create GitHub Release and upload assets
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "v${{ steps.meta.outputs.version }}"
+          generate_release_notes: true
+          files: |
+            docker-compose.sample.yml
+            .env.sample
+            library-starter.zip

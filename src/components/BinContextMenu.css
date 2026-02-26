@@ -1,0 +1,66 @@
+.bin-context-menu {
+  position: fixed;
+  z-index: 99999;
+  background: var(--surface-modal, var(--bg-secondary));
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md, 6px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15), 0 1px 4px rgba(0, 0, 0, 0.1);
+  padding: 4px 0;
+  min-width: 180px;
+  user-select: none;
+}
+
+.bin-context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-primary);
+  text-align: left;
+  line-height: 1.4;
+}
+
+.bin-context-menu-item:hover {
+  background: var(--blue-50, #eff6ff);
+  color: var(--blue-700, #1d4ed8);
+}
+
+.bin-context-menu-item--danger:hover {
+  background: var(--invalid-bg, #fef2f2);
+  color: var(--invalid-primary, #ef4444);
+}
+
+.bin-context-menu-icon {
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.bin-context-menu-label {
+  flex: 1;
+}
+
+.bin-context-menu-hint {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-left: auto;
+  padding-left: 12px;
+  white-space: nowrap;
+}
+
+.bin-context-menu-item:hover .bin-context-menu-hint {
+  color: inherit;
+  opacity: 0.7;
+}
+
+.bin-context-menu-divider {
+  height: 1px;
+  background: var(--border-primary);
+  margin: 3px 0;
+}
