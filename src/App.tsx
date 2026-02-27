@@ -59,6 +59,7 @@ function App() {
   const [imageViewMode, setImageViewMode] = useState<ImageViewMode>(
     () => (localStorage.getItem('gridfinity-image-view-mode') as ImageViewMode) || 'ortho'
   );
+  const [exportPdfError, setExportPdfError] = useState<string | null>(null);
 
   const { dialogs, dialogDispatch, closeRebind } = useDialogState();
   const {
@@ -287,8 +288,6 @@ function App() {
       handleClearLayout();
     }
   };
-
-  const [exportPdfError, setExportPdfError] = useState<string | null>(null);
 
   const handleExportPdf = useCallback(async () => {
     setExportPdfError(null);

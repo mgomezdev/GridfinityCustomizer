@@ -2726,7 +2726,8 @@
   background: var(--grid-primary, #3B82F6);
 }
 
-.layout-save-btn:disabled {
+.layout-save-btn:disabled,
+.layout-export-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
   pointer-events: none;
