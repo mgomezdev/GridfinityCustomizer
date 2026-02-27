@@ -40,6 +40,7 @@ import { AdminSubmissionsDialog } from './components/admin/AdminSubmissionsDialo
 import { SubmissionsBadge } from './components/admin/SubmissionsBadge';
 import { WalkthroughOverlay } from './components/WalkthroughOverlay';
 import { STORAGE_KEYS } from './utils/storageKeys';
+import { exportToPdf } from './utils/exportPdf';
 import './App.css';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:3001/api/v1';
@@ -58,6 +59,7 @@ function App() {
   const [imageViewMode, setImageViewMode] = useState<ImageViewMode>(
     () => (localStorage.getItem('gridfinity-image-view-mode') as ImageViewMode) || 'ortho'
   );
+  const [exportPdfError, setExportPdfError] = useState<string | null>(null);
 
   const { dialogs, dialogDispatch, closeRebind } = useDialogState();
   const {
@@ -286,6 +288,18 @@ function App() {
       handleClearLayout();
     }
   };
+
+  const handleExportPdf = useCallback(async () => {
+    setExportPdfError(null);
+    const gridEl = viewportRef.current?.querySelector('.grid-preview') as HTMLElement | null;
+    if (!gridEl) return;
+    await exportToPdf(
+      gridEl,
+      bomItems,
+      { gridResult, spacerConfig, unitSystem, layoutName: layoutMeta.name },
+      () => setExportPdfError('PDF export failed. Please try again.'),
+    );
+  }, [bomItems, gridResult, spacerConfig, unitSystem, layoutMeta.name]);
 
   const handleLoadLayout = useCallback((config: LoadedLayoutConfig) => {
     if (unitSystem === 'imperial') {
@@ -579,6 +593,18 @@ function App() {
                 <button className="layout-toolbar-btn layout-clone-btn" onClick={handleCloneCurrentLayout} type="button" disabled={cloneLayoutMutation.isPending}>
                   {cloneLayoutMutation.isPending ? 'Cloning...' : 'Clone'}
                 </button>
+              )}
+              <button
+                className="layout-toolbar-btn layout-export-btn"
+                onClick={handleExportPdf}
+                type="button"
+                disabled={placedItems.length === 0}
+                title="Export layout as PDF"
+              >
+                Export PDF
+              </button>
+              {exportPdfError && (
+                <span className="export-pdf-error" role="alert">{exportPdfError}</span>
               )}
               {!isReadOnly && (placedItems.length > 0 || refImagePlacements.length > 0) && (
                 <button className="clear-all-button" onClick={handleClearAll}>Clear All ({placedItems.length + refImagePlacements.length})</button>
