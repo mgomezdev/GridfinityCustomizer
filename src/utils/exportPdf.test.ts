@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { generateFilename, getOrientation } from './exportPdf';
+import { generateFilename, getOrientation, formatBomRows } from './exportPdf';
+import type { BOMItem } from '../types/gridfinity';
 
 describe('generateFilename', () => {
   beforeEach(() => {
@@ -46,5 +47,42 @@ describe('getOrientation', () => {
 
   it('returns portrait for square grid', () => {
     expect(getOrientation(4, 4)).toBe('p');
+  });
+});
+
+describe('formatBomRows', () => {
+  const baseItem: BOMItem = {
+    itemId: 'bin-2x3',
+    name: '2x3 Bin',
+    widthUnits: 2,
+    heightUnits: 3,
+    color: '#3B82F6',
+    categories: ['bin'],
+    quantity: 4,
+  };
+
+  it('formats a row with no customization', () => {
+    expect(formatBomRows([baseItem])).toEqual([['2x3 Bin', '2×3', '4', '']]);
+  });
+
+  it('formats wall pattern customization', () => {
+    const item: BOMItem = {
+      ...baseItem,
+      customization: { wallPattern: 'grid', lipStyle: 'normal', fingerSlide: 'none', wallCutout: 'none' },
+    };
+    expect(formatBomRows([item])).toEqual([['2x3 Bin', '2×3', '4', 'grid']]);
+  });
+
+  it('formats multiple customization fields', () => {
+    const item: BOMItem = {
+      ...baseItem,
+      customization: { wallPattern: 'none', lipStyle: 'reduced', fingerSlide: 'chamfered', wallCutout: 'none' },
+    };
+    expect(formatBomRows([item])).toEqual([['2x3 Bin', '2×3', '4', 'lip: reduced, slide: chamfered']]);
+  });
+
+  it('returns multiple rows for multiple items', () => {
+    const item2: BOMItem = { ...baseItem, name: 'Other', quantity: 2 };
+    expect(formatBomRows([baseItem, item2])).toHaveLength(2);
   });
 });
