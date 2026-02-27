@@ -10,3 +10,7 @@ export function generateFilename(layoutName?: string): string {
   const date = new Date().toISOString().slice(0, 10);
   return `gridfinity-${date}.pdf`;
 }
+
+export function getOrientation(gridX: number, gridY: number): 'l' | 'p' {
+  return gridX > gridY ? 'l' : 'p';
+}

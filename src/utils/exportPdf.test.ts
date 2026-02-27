@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { generateFilename } from './exportPdf';
+import { generateFilename, getOrientation } from './exportPdf';
 
 describe('generateFilename', () => {
   beforeEach(() => {
@@ -32,5 +32,19 @@ describe('generateFilename', () => {
 
   it('falls back to date when name is whitespace only', () => {
     expect(generateFilename('   ')).toBe('gridfinity-2026-02-26.pdf');
+  });
+});
+
+describe('getOrientation', () => {
+  it('returns landscape for wide grid', () => {
+    expect(getOrientation(6, 4)).toBe('l');
+  });
+
+  it('returns portrait for tall grid', () => {
+    expect(getOrientation(3, 5)).toBe('p');
+  });
+
+  it('returns portrait for square grid', () => {
+    expect(getOrientation(4, 4)).toBe('p');
   });
 });
