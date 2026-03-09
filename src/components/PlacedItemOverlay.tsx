@@ -296,6 +296,7 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
             onChange={handlePopoverChange}
             onReset={handlePopoverReset}
             idPrefix="inline-"
+            customizableFields={['wallPattern', 'lipStyle', 'fingerSlide', 'wallCutout', 'height']}
           />
         </div>
       )}

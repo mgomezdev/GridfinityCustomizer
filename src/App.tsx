@@ -484,6 +484,7 @@ function App() {
             customization={selectedItem.customization}
             onChange={(c) => updateItemCustomization(selectedId, c)}
             onReset={() => updateItemCustomization(selectedId, undefined)}
+            customizableFields={['wallPattern', 'lipStyle', 'fingerSlide', 'wallCutout', 'height']}
           />
         );
       })()}

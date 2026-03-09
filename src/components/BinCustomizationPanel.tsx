@@ -4,6 +4,7 @@ import {
 } from '../types/gridfinity';
 import type {
   BinCustomization,
+  CustomizableField,
   FingerSlide,
   LipStyle,
   WallCutout,
@@ -14,116 +15,113 @@ interface BinCustomizationPanelProps {
   customization: BinCustomization | undefined;
   onChange: (customization: BinCustomization) => void;
   onReset: () => void;
+  customizableFields: CustomizableField[];
+  customizationDefaults?: Partial<BinCustomization>;
   idPrefix?: string;
 }
 
 const WALL_PATTERN_OPTIONS: WallPattern[] = [
-  'none',
-  'grid',
-  'hexgrid',
-  'voronoi',
-  'voronoigrid',
-  'voronoihexgrid',
+  'none', 'grid', 'hexgrid', 'voronoi', 'voronoigrid', 'voronoihexgrid',
 ];
-
 const LIP_STYLE_OPTIONS: LipStyle[] = ['normal', 'reduced', 'minimum', 'none'];
-
 const FINGER_SLIDE_OPTIONS: FingerSlide[] = ['none', 'rounded', 'chamfered'];
-
 const WALL_CUTOUT_OPTIONS: WallCutout[] = ['none', 'vertical', 'horizontal', 'both'];
 
 export function BinCustomizationPanel({
   customization,
   onChange,
   onReset,
+  customizableFields,
+  customizationDefaults,
   idPrefix = '',
 }: BinCustomizationPanelProps) {
-  const current: BinCustomization = customization ?? DEFAULT_BIN_CUSTOMIZATION;
-  const isDefault = isDefaultCustomization(customization);
+  if (customizableFields.length === 0) return null;
 
-  const handleWallPatternChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onChange({ ...current, wallPattern: e.target.value as WallPattern });
-  };
+  const effectiveDefaults = { ...DEFAULT_BIN_CUSTOMIZATION, ...customizationDefaults };
+  const current: BinCustomization = customization ?? effectiveDefaults;
+  const isDefault = isDefaultCustomization(customization)
+    && (!customizationDefaults || Object.entries(customizationDefaults).every(
+      ([k, v]) => current[k as keyof BinCustomization] === v
+    ));
 
-  const handleLipStyleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onChange({ ...current, lipStyle: e.target.value as LipStyle });
-  };
-
-  const handleFingerSlideChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onChange({ ...current, fingerSlide: e.target.value as FingerSlide });
-  };
-
-  const handleWallCutoutChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onChange({ ...current, wallCutout: e.target.value as WallCutout });
-  };
+  const has = (f: CustomizableField) => customizableFields.includes(f);
 
   return (
     <div className="bin-customization-panel">
-      <div className="bin-customization-field">
-        <label htmlFor={`${idPrefix}wall-pattern-select`}>Wall Pattern</label>
-        <select
-          id={`${idPrefix}wall-pattern-select`}
-          value={current.wallPattern}
-          onChange={handleWallPatternChange}
-        >
-          {WALL_PATTERN_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      </div>
+      {has('wallPattern') && (
+        <div className="bin-customization-field">
+          <label htmlFor={`${idPrefix}wall-pattern-select`}>Wall Pattern</label>
+          <select
+            id={`${idPrefix}wall-pattern-select`}
+            value={current.wallPattern}
+            onChange={(e) => onChange({ ...current, wallPattern: e.target.value as WallPattern })}
+          >
+            {WALL_PATTERN_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </div>
+      )}
 
-      <div className="bin-customization-field">
-        <label htmlFor={`${idPrefix}lip-style-select`}>Lip Style</label>
-        <select
-          id={`${idPrefix}lip-style-select`}
-          value={current.lipStyle}
-          onChange={handleLipStyleChange}
-        >
-          {LIP_STYLE_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      </div>
+      {has('lipStyle') && (
+        <div className="bin-customization-field">
+          <label htmlFor={`${idPrefix}lip-style-select`}>Lip Style</label>
+          <select
+            id={`${idPrefix}lip-style-select`}
+            value={current.lipStyle}
+            onChange={(e) => onChange({ ...current, lipStyle: e.target.value as LipStyle })}
+          >
+            {LIP_STYLE_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </div>
+      )}
 
-      <div className="bin-customization-field">
-        <label htmlFor={`${idPrefix}finger-slide-select`}>Finger Slide</label>
-        <select
-          id={`${idPrefix}finger-slide-select`}
-          value={current.fingerSlide}
-          onChange={handleFingerSlideChange}
-        >
-          {FINGER_SLIDE_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      </div>
+      {has('fingerSlide') && (
+        <div className="bin-customization-field">
+          <label htmlFor={`${idPrefix}finger-slide-select`}>Finger Slide</label>
+          <select
+            id={`${idPrefix}finger-slide-select`}
+            value={current.fingerSlide}
+            onChange={(e) => onChange({ ...current, fingerSlide: e.target.value as FingerSlide })}
+          >
+            {FINGER_SLIDE_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </div>
+      )}
 
-      <div className="bin-customization-field">
-        <label htmlFor={`${idPrefix}wall-cutout-select`}>Wall Cutout</label>
-        <select
-          id={`${idPrefix}wall-cutout-select`}
-          value={current.wallCutout}
-          onChange={handleWallCutoutChange}
-        >
-          {WALL_CUTOUT_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      </div>
+      {has('wallCutout') && (
+        <div className="bin-customization-field">
+          <label htmlFor={`${idPrefix}wall-cutout-select`}>Wall Cutout</label>
+          <select
+            id={`${idPrefix}wall-cutout-select`}
+            value={current.wallCutout}
+            onChange={(e) => onChange({ ...current, wallCutout: e.target.value as WallCutout })}
+          >
+            {WALL_CUTOUT_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </div>
+      )}
 
-      <button
-        type="button"
-        onClick={onReset}
-        disabled={isDefault}
-      >
+      {has('height') && (
+        <div className="bin-customization-field">
+          <label htmlFor={`${idPrefix}height-input`}>
+            Height ({current.height * 7}mm)
+          </label>
+          <input
+            id={`${idPrefix}height-input`}
+            type="number"
+            min={1}
+            max={20}
+            value={current.height}
+            onChange={(e) => {
+              const v = parseInt(e.target.value, 10);
+              if (!isNaN(v) && v >= 1 && v <= 20) {
+                onChange({ ...current, height: v });
+              }
+            }}
+          />
+        </div>
+      )}
+
+      <button type="button" onClick={onReset} disabled={isDefault}>
         Reset to Defaults
       </button>
     </div>
