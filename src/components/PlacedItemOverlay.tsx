@@ -1,5 +1,5 @@
-import { memo, useState, useCallback } from 'react';
-import type { PlacedItemWithValidity, LibraryItem, ImageViewMode, BinCustomization } from '../types/gridfinity';
+import { memo, useState, useCallback, useEffect } from 'react';
+import type { PlacedItemWithValidity, LibraryItem, ImageViewMode, BinCustomization, LibraryMeta } from '../types/gridfinity';
 import { isDefaultCustomization } from '../types/gridfinity';
 import { usePointerDragSource } from '../hooks/usePointerDrag';
 import { useImageLoadState } from '../hooks/useImageLoadState';
@@ -21,6 +21,7 @@ interface PlacedItemOverlayProps {
   onCustomizationReset?: (instanceId: string) => void;
   onDuplicate?: () => void;
   imageViewMode?: ImageViewMode;
+  getLibraryMeta?: (libraryId: string) => Promise<LibraryMeta>;
 }
 
 const DEFAULT_VALID_COLOR = '#3B82F6';
@@ -33,12 +34,22 @@ function getCustomizationBadges(customization: BinCustomization | undefined): st
   if (customization.lipStyle !== 'normal') badges.push(`lip: ${customization.lipStyle}`);
   if (customization.fingerSlide !== 'none') badges.push(`slide: ${customization.fingerSlide}`);
   if (customization.wallCutout !== 'none') badges.push(`cutout: ${customization.wallCutout}`);
+  if (customization.height !== 8) badges.push(`h: ${customization.height}`);
   return badges;
 }
 
-export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, getItemById, onDelete, onRotateCw, onRotateCcw, onCustomizationChange, onCustomizationReset, onDuplicate, imageViewMode = 'ortho' }: PlacedItemOverlayProps) {
+export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, getItemById, onDelete, onRotateCw, onRotateCcw, onCustomizationChange, onCustomizationReset, onDuplicate, imageViewMode = 'ortho', getLibraryMeta }: PlacedItemOverlayProps) {
   const [showPopover, setShowPopover] = useState(false);
   const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
+  const [libraryMeta, setLibraryMeta] = useState<LibraryMeta>({ customizableFields: [], customizationDefaults: {} });
+
+  useEffect(() => {
+    if (!getLibraryMeta) return;
+    const colonIdx = item.itemId.indexOf(':');
+    if (colonIdx === -1) return;
+    const libraryId = item.itemId.slice(0, colonIdx);
+    getLibraryMeta(libraryId).then(setLibraryMeta).catch(() => {});
+  }, [item.itemId, getLibraryMeta]);
 
   const libraryItem = getItemById(item.itemId);
   const color = item.isValid ? (libraryItem?.color || DEFAULT_VALID_COLOR) : INVALID_COLOR;
@@ -247,7 +258,7 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
               &#x29C9;
             </button>
           )}
-          {onCustomizationChange && (
+          {onCustomizationChange && libraryMeta.customizableFields.length > 0 && (
             <button
               className="placed-item-toolbar-btn"
               onClick={handleCustomizeClick}
@@ -296,7 +307,8 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
             onChange={handlePopoverChange}
             onReset={handlePopoverReset}
             idPrefix="inline-"
-            customizableFields={['wallPattern', 'lipStyle', 'fingerSlide', 'wallCutout', 'height']}
+            customizableFields={libraryMeta.customizableFields}
+            customizationDefaults={libraryMeta.customizationDefaults}
           />
         </div>
       )}

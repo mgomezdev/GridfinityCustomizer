@@ -215,6 +215,7 @@ vi.mock('./hooks/useLibraryData', () => ({
     isLoading: false,
     error: null,
     getItemById: mockGetItemById,
+    getLibraryMeta: vi.fn().mockResolvedValue({ customizableFields: [], customizationDefaults: {} }),
     getItemsByCategory: () => [],
     getItemsByLibrary: () => [],
     refreshLibrary: mockRefreshLibrary,
