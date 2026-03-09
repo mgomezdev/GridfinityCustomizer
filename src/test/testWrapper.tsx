@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DataSourceProvider } from '../contexts/DataSourceContext';
 import type { DataSourceAdapter } from '../api/adapters/types';
-import type { LibraryItem } from '../types/gridfinity';
+import type { LibraryItem, LibraryMeta } from '../types/gridfinity';
 import type { ReactNode } from 'react';
 
 // Default mock adapter for testing
@@ -11,6 +11,9 @@ export const defaultMockAdapter: DataSourceAdapter = {
   },
   async getLibraryItems() {
     return [];
+  },
+  async getLibraryMeta(): Promise<LibraryMeta> {
+    return { customizableFields: [], customizationDefaults: {} };
   },
   resolveImageUrl(libraryId: string, imagePath: string) {
     if (imagePath.startsWith('/libraries/') || imagePath.startsWith('http')) {
@@ -100,6 +103,9 @@ export function createLibraryMockAdapter(
       const items = libraryItems[libraryId];
       if (!items) return [];
       return items;
+    },
+    async getLibraryMeta(): Promise<LibraryMeta> {
+      return { customizableFields: [], customizationDefaults: {} };
     },
     resolveImageUrl(_libraryId: string, imagePath: string) {
       return imagePath;
