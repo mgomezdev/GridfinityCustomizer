@@ -37,9 +37,23 @@ export class ApiAdapter implements DataSourceAdapter {
     }));
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async getLibraryMeta(_libraryId: string): Promise<LibraryMeta> {
-    return { customizableFields: [], customizationDefaults: {} };
+  async getLibraryMeta(libraryId: string): Promise<LibraryMeta> {
+    try {
+      const manifestResponse = await fetch('/libraries/manifest.json');
+      if (!manifestResponse.ok) return { customizableFields: [], customizationDefaults: {} };
+      const manifest = await manifestResponse.json();
+      const lib = manifest.libraries?.find((l: { id: string }) => l.id === libraryId);
+      if (!lib) return { customizableFields: [], customizationDefaults: {} };
+      const indexResponse = await fetch(lib.path);
+      if (!indexResponse.ok) return { customizableFields: [], customizationDefaults: {} };
+      const data = await indexResponse.json();
+      return {
+        customizableFields: data.customizableFields ?? [],
+        customizationDefaults: data.customizationDefaults ?? {},
+      };
+    } catch {
+      return { customizableFields: [], customizationDefaults: {} };
+    }
   }
 
   resolveImageUrl(_libraryId: string, imagePath: string): string {
