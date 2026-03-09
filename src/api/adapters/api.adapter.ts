@@ -1,4 +1,4 @@
-import type { LibraryItem } from '../../types/gridfinity';
+import type { LibraryItem, LibraryMeta } from '../../types/gridfinity';
 import type { DataSourceAdapter, LibraryInfo } from './types';
 
 export class ApiAdapter implements DataSourceAdapter {
@@ -35,6 +35,11 @@ export class ApiAdapter implements DataSourceAdapter {
       imageUrl: item.imagePath as string | undefined,
       perspectiveImageUrl: item.perspectiveImagePath as string | undefined,
     }));
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async getLibraryMeta(_libraryId: string): Promise<LibraryMeta> {
+    return { customizableFields: [], customizationDefaults: {} };
   }
 
   resolveImageUrl(_libraryId: string, imagePath: string): string {

@@ -1,10 +1,11 @@
-import type { LibraryManifest, LibraryIndex, LibraryItem } from '../../types/gridfinity';
+import type { LibraryManifest, LibraryIndex, LibraryItem, LibraryMeta } from '../../types/gridfinity';
 import type { DataSourceAdapter, LibraryInfo } from './types';
 
 const MANIFEST_PATH = '/libraries/manifest.json';
 
 export class StaticAdapter implements DataSourceAdapter {
   private manifestCache: LibraryManifest | null = null;
+  private metaCache = new Map<string, LibraryMeta>();
 
   async getLibraries(): Promise<LibraryInfo[]> {
     const manifest = await this.fetchManifest();
@@ -41,6 +42,26 @@ export class StaticAdapter implements DataSourceAdapter {
     return data.items ?? [];
   }
 
+  async getLibraryMeta(libraryId: string): Promise<LibraryMeta> {
+    if (this.metaCache.has(libraryId)) return this.metaCache.get(libraryId)!;
+    const manifest = await this.fetchManifest();
+    const lib = manifest.libraries.find((l) => l.id === libraryId);
+    if (!lib) return { customizableFields: [], customizationDefaults: {} };
+    try {
+      const response = await fetch(lib.path);
+      if (!response.ok) return { customizableFields: [], customizationDefaults: {} };
+      const data: LibraryIndex = await response.json();
+      const meta: LibraryMeta = {
+        customizableFields: data.customizableFields ?? [],
+        customizationDefaults: data.customizationDefaults ?? {},
+      };
+      this.metaCache.set(libraryId, meta);
+      return meta;
+    } catch {
+      return { customizableFields: [], customizationDefaults: {} };
+    }
+  }
+
   resolveImageUrl(libraryId: string, imagePath: string): string {
     // If the imagePath already starts with /libraries/ or is an absolute URL, return as-is
     if (imagePath.startsWith('/libraries/') || imagePath.startsWith('http')) {
@@ -60,5 +81,6 @@ export class StaticAdapter implements DataSourceAdapter {
 
   clearCache(): void {
     this.manifestCache = null;
+    this.metaCache.clear();
   }
 }
