@@ -1,5 +1,5 @@
 import { useRef, useMemo } from 'react';
-import type { PlacedItemWithValidity, DragData, ComputedSpacer, LibraryItem, ReferenceImage, ImageViewMode, BinCustomization } from '../types/gridfinity';
+import type { PlacedItemWithValidity, DragData, ComputedSpacer, LibraryItem, ReferenceImage, ImageViewMode, BinCustomization, LibraryMeta } from '../types/gridfinity';
 import { PlacedItemOverlay } from './PlacedItemOverlay';
 import { SpacerOverlay } from './SpacerOverlay';
 import { ReferenceImageOverlay } from './ReferenceImageOverlay';
@@ -41,6 +41,7 @@ interface GridPreviewProps {
   imageViewMode?: ImageViewMode;
   refImageMetadata?: Map<string, RefImageMeta>;
   onRefImageRebind?: (id: string) => void;
+  getLibraryMeta?: (libraryId: string) => Promise<LibraryMeta>;
 }
 
 export function GridPreview({
@@ -71,6 +72,7 @@ export function GridPreview({
   imageViewMode = 'ortho',
   refImageMetadata,
   onRefImageRebind,
+  getLibraryMeta,
 }: GridPreviewProps) {
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -176,6 +178,7 @@ export function GridPreview({
               onCustomizationReset={onItemCustomizationReset}
               onDuplicate={onDuplicateItem}
               imageViewMode={imageViewMode}
+              getLibraryMeta={getLibraryMeta}
             />
           ))}
           {referenceImages.map(image => {

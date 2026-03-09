@@ -109,11 +109,14 @@ export type LipStyle = 'normal' | 'reduced' | 'minimum' | 'none';
 export type FingerSlide = 'none' | 'rounded' | 'chamfered';
 export type WallCutout = 'none' | 'vertical' | 'horizontal' | 'both';
 
+export type CustomizableField = 'wallPattern' | 'lipStyle' | 'fingerSlide' | 'wallCutout' | 'height';
+
 export interface BinCustomization {
   wallPattern: WallPattern;
   lipStyle: LipStyle;
   fingerSlide: FingerSlide;
   wallCutout: WallCutout;
+  height: number;  // gridfinity units (1-20), default 8
 }
 
 export const DEFAULT_BIN_CUSTOMIZATION: BinCustomization = {
@@ -121,11 +124,12 @@ export const DEFAULT_BIN_CUSTOMIZATION: BinCustomization = {
   lipStyle: 'normal',
   fingerSlide: 'none',
   wallCutout: 'none',
+  height: 8,
 };
 
 export function serializeCustomization(c: BinCustomization | undefined): string {
   if (!c) return '';
-  return `${c.wallPattern}|${c.lipStyle}|${c.fingerSlide}|${c.wallCutout}`;
+  return `${c.wallPattern}|${c.lipStyle}|${c.fingerSlide}|${c.wallCutout}|${c.height}`;
 }
 
 export function isDefaultCustomization(c: BinCustomization | undefined): boolean {
@@ -133,7 +137,13 @@ export function isDefaultCustomization(c: BinCustomization | undefined): boolean
   return c.wallPattern === 'none'
     && c.lipStyle === 'normal'
     && c.fingerSlide === 'none'
-    && c.wallCutout === 'none';
+    && c.wallCutout === 'none'
+    && c.height === 8;
+}
+
+export interface LibraryMeta {
+  customizableFields: CustomizableField[];
+  customizationDefaults: Partial<BinCustomization>;
 }
 
 export type ImageViewMode = 'ortho' | 'perspective';
@@ -161,4 +171,6 @@ export interface LibraryManifest {
 export interface LibraryIndex {
   version: string;
   items: LibraryItem[];
+  customizableFields?: CustomizableField[];
+  customizationDefaults?: Partial<BinCustomization>;
 }

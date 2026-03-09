@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PlacedItemOverlay } from './PlacedItemOverlay';
 import type { PlacedItemWithValidity, LibraryItem } from '../types/gridfinity';
 import { DEFAULT_BIN_CUSTOMIZATION } from '../types/gridfinity';
@@ -33,15 +33,35 @@ describe('PlacedItemOverlay', () => {
     const items: Record<string, LibraryItem> = {
       'bin-1x1': { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#3B82F6', categories: ['bin'] },
       'bin-2x2': { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#3B82F6', categories: ['bin'] },
+      'testlib:bin-1x1': { id: 'testlib:bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#3B82F6', categories: ['bin'] },
+      'testlib:bin-2x2': { id: 'testlib:bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#3B82F6', categories: ['bin'] },
     };
     return items[id];
   };
+
+  const mockGetLibraryMeta = vi.fn().mockResolvedValue({
+    customizableFields: ['wallPattern', 'lipStyle', 'fingerSlide', 'wallCutout', 'height'],
+    customizationDefaults: {},
+  });
 
   const mockOnSelect = vi.fn();
 
   const createMockItem = (overrides?: Partial<PlacedItemWithValidity>): PlacedItemWithValidity => ({
     instanceId: 'test-item-1',
     itemId: 'bin-1x1',
+    x: 0,
+    y: 0,
+    width: 1,
+    height: 1,
+    rotation: 0,
+    isValid: true,
+    ...overrides,
+  });
+
+  // Helper for tests that require the Customize button (needs a colon in itemId to trigger getLibraryMeta)
+  const createMockItemWithLibrary = (overrides?: Partial<PlacedItemWithValidity>): PlacedItemWithValidity => ({
+    instanceId: 'test-item-1',
+    itemId: 'testlib:bin-1x1',
     x: 0,
     y: 0,
     width: 1,
@@ -1833,8 +1853,8 @@ describe('PlacedItemOverlay', () => {
       mockOnCustomizationChange.mockClear();
     });
 
-    it('should render customize button when selected and handlers provided', () => {
-      const item = createMockItem();
+    it('should render customize button when selected and handlers provided', async () => {
+      const item = createMockItemWithLibrary();
       render(
         <PlacedItemOverlay
           item={item}
@@ -1844,15 +1864,16 @@ describe('PlacedItemOverlay', () => {
           onSelect={mockOnSelect}
           getItemById={mockGetItemById}
           onCustomizationChange={mockOnCustomizationChange}
+          getLibraryMeta={mockGetLibraryMeta}
         />
       );
 
-      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       expect(customizeBtn).toBeInTheDocument();
     });
 
     it('should NOT render customize button when not selected', () => {
-      const item = createMockItem();
+      const item = createMockItemWithLibrary();
       render(
         <PlacedItemOverlay
           item={item}
@@ -1862,6 +1883,7 @@ describe('PlacedItemOverlay', () => {
           onSelect={mockOnSelect}
           getItemById={mockGetItemById}
           onCustomizationChange={mockOnCustomizationChange}
+          getLibraryMeta={mockGetLibraryMeta}
         />
       );
 
@@ -1884,8 +1906,8 @@ describe('PlacedItemOverlay', () => {
       expect(screen.queryByRole('button', { name: 'Customize' })).not.toBeInTheDocument();
     });
 
-    it('should NOT propagate click to parent', () => {
-      const item = createMockItem();
+    it('should NOT propagate click to parent', async () => {
+      const item = createMockItemWithLibrary();
       const parentClickHandler = vi.fn();
       render(
         <div onClick={parentClickHandler}>
@@ -1897,18 +1919,19 @@ describe('PlacedItemOverlay', () => {
             onSelect={mockOnSelect}
             getItemById={mockGetItemById}
             onCustomizationChange={mockOnCustomizationChange}
+            getLibraryMeta={mockGetLibraryMeta}
           />
         </div>
       );
 
-      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
       expect(parentClickHandler).not.toHaveBeenCalled();
     });
 
-    it('should toggle customization popover when clicked', () => {
-      const item = createMockItem();
+    it('should toggle customization popover when clicked', async () => {
+      const item = createMockItemWithLibrary();
       const { container } = render(
         <PlacedItemOverlay
           item={item}
@@ -1918,10 +1941,11 @@ describe('PlacedItemOverlay', () => {
           onSelect={mockOnSelect}
           getItemById={mockGetItemById}
           onCustomizationChange={mockOnCustomizationChange}
+          getLibraryMeta={mockGetLibraryMeta}
         />
       );
 
-      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
       const popover = container.querySelector('.placed-item-customize-popover');
@@ -1938,8 +1962,8 @@ describe('PlacedItemOverlay', () => {
       mockOnCustomizationReset.mockClear();
     });
 
-    it('should render four select fields when popover is open', () => {
-      const item = createMockItem();
+    it('should render four select fields when popover is open', async () => {
+      const item = createMockItemWithLibrary();
       render(
         <PlacedItemOverlay
           item={item}
@@ -1949,10 +1973,11 @@ describe('PlacedItemOverlay', () => {
           onSelect={mockOnSelect}
           getItemById={mockGetItemById}
           onCustomizationChange={mockOnCustomizationChange}
+          getLibraryMeta={mockGetLibraryMeta}
         />
       );
 
-      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
       expect(screen.getByLabelText('Wall Pattern')).toBeInTheDocument();
@@ -1961,8 +1986,8 @@ describe('PlacedItemOverlay', () => {
       expect(screen.getByLabelText('Wall Cutout')).toBeInTheDocument();
     });
 
-    it('should call onCustomizationChange when a select value changes', () => {
-      const item = createMockItem({ instanceId: 'custom-item-123' });
+    it('should call onCustomizationChange when a select value changes', async () => {
+      const item = createMockItemWithLibrary({ instanceId: 'custom-item-123' });
       render(
         <PlacedItemOverlay
           item={item}
@@ -1972,10 +1997,11 @@ describe('PlacedItemOverlay', () => {
           onSelect={mockOnSelect}
           getItemById={mockGetItemById}
           onCustomizationChange={mockOnCustomizationChange}
+          getLibraryMeta={mockGetLibraryMeta}
         />
       );
 
-      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
       const wallPatternSelect = screen.getByLabelText('Wall Pattern') as HTMLSelectElement;
@@ -1987,8 +2013,8 @@ describe('PlacedItemOverlay', () => {
       );
     });
 
-    it('should render reset button in popover', () => {
-      const item = createMockItem();
+    it('should render reset button in popover', async () => {
+      const item = createMockItemWithLibrary();
       render(
         <PlacedItemOverlay
           item={item}
@@ -1999,18 +2025,19 @@ describe('PlacedItemOverlay', () => {
           getItemById={mockGetItemById}
           onCustomizationChange={mockOnCustomizationChange}
           onCustomizationReset={mockOnCustomizationReset}
+          getLibraryMeta={mockGetLibraryMeta}
         />
       );
 
-      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
       const resetBtn = screen.getByRole('button', { name: /reset to defaults/i });
       expect(resetBtn).toBeInTheDocument();
     });
 
-    it('should call onCustomizationReset when reset is clicked', () => {
-      const item = createMockItem({
+    it('should call onCustomizationReset when reset is clicked', async () => {
+      const item = createMockItemWithLibrary({
         instanceId: 'custom-item-456',
         customization: {
           wallPattern: 'grid',
@@ -2029,10 +2056,11 @@ describe('PlacedItemOverlay', () => {
           getItemById={mockGetItemById}
           onCustomizationChange={mockOnCustomizationChange}
           onCustomizationReset={mockOnCustomizationReset}
+          getLibraryMeta={mockGetLibraryMeta}
         />
       );
 
-      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
       const resetBtn = screen.getByRole('button', { name: /reset to defaults/i });
@@ -2041,8 +2069,8 @@ describe('PlacedItemOverlay', () => {
       expect(mockOnCustomizationReset).toHaveBeenCalledWith('custom-item-456');
     });
 
-    it('should close popover when close button is clicked', () => {
-      const item = createMockItem();
+    it('should close popover when close button is clicked', async () => {
+      const item = createMockItemWithLibrary();
       const { container } = render(
         <PlacedItemOverlay
           item={item}
@@ -2052,10 +2080,11 @@ describe('PlacedItemOverlay', () => {
           onSelect={mockOnSelect}
           getItemById={mockGetItemById}
           onCustomizationChange={mockOnCustomizationChange}
+          getLibraryMeta={mockGetLibraryMeta}
         />
       );
 
-      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
       const popover = container.querySelector('.placed-item-customize-popover');
@@ -2068,8 +2097,8 @@ describe('PlacedItemOverlay', () => {
       expect(popoverAfterClose).not.toBeInTheDocument();
     });
 
-    it('should have role="dialog" on the popover', () => {
-      const item = createMockItem();
+    it('should have role="dialog" on the popover', async () => {
+      const item = createMockItemWithLibrary();
       render(
         <PlacedItemOverlay
           item={item}
@@ -2079,10 +2108,11 @@ describe('PlacedItemOverlay', () => {
           onSelect={mockOnSelect}
           getItemById={mockGetItemById}
           onCustomizationChange={mockOnCustomizationChange}
+          getLibraryMeta={mockGetLibraryMeta}
         />
       );
 
-      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
       const popover = screen.getByRole('dialog');
@@ -2090,8 +2120,8 @@ describe('PlacedItemOverlay', () => {
       expect(popover).toHaveClass('placed-item-customize-popover');
     });
 
-    it('should stop keyboard event propagation from the popover', () => {
-      const item = createMockItem();
+    it('should stop keyboard event propagation from the popover', async () => {
+      const item = createMockItemWithLibrary();
       const mockOnDelete = vi.fn();
       const { container } = render(
         <PlacedItemOverlay
@@ -2103,10 +2133,11 @@ describe('PlacedItemOverlay', () => {
           getItemById={mockGetItemById}
           onCustomizationChange={mockOnCustomizationChange}
           onDelete={mockOnDelete}
+          getLibraryMeta={mockGetLibraryMeta}
         />
       );
 
-      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
       const popover = container.querySelector('.placed-item-customize-popover')!;

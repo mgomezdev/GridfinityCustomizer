@@ -1,8 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BinCustomizationPanel } from './BinCustomizationPanel';
-import type { BinCustomization } from '../types/gridfinity';
+import type { BinCustomization, CustomizableField } from '../types/gridfinity';
 import { DEFAULT_BIN_CUSTOMIZATION } from '../types/gridfinity';
+
+const ALL_FIELDS: CustomizableField[] = ['wallPattern', 'lipStyle', 'fingerSlide', 'wallCutout', 'height'];
+const SHADOWBOX_FIELDS: CustomizableField[] = ['lipStyle', 'fingerSlide', 'wallCutout', 'height'];
 
 describe('BinCustomizationPanel', () => {
   const mockOnChange = vi.fn();
@@ -13,6 +16,7 @@ describe('BinCustomizationPanel', () => {
     lipStyle: 'reduced',
     fingerSlide: 'rounded',
     wallCutout: 'vertical',
+    height: 8,
   };
 
   beforeEach(() => {
@@ -27,6 +31,7 @@ describe('BinCustomizationPanel', () => {
           customization={DEFAULT_BIN_CUSTOMIZATION}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -42,6 +47,7 @@ describe('BinCustomizationPanel', () => {
           customization={DEFAULT_BIN_CUSTOMIZATION}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -56,6 +62,7 @@ describe('BinCustomizationPanel', () => {
           customization={nonDefaultCustomization}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -69,6 +76,7 @@ describe('BinCustomizationPanel', () => {
           customization={nonDefaultCustomization}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -82,6 +90,7 @@ describe('BinCustomizationPanel', () => {
           customization={nonDefaultCustomization}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -95,6 +104,7 @@ describe('BinCustomizationPanel', () => {
           customization={nonDefaultCustomization}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -110,6 +120,7 @@ describe('BinCustomizationPanel', () => {
           customization={undefined}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -123,6 +134,7 @@ describe('BinCustomizationPanel', () => {
           customization={undefined}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -136,6 +148,7 @@ describe('BinCustomizationPanel', () => {
           customization={undefined}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -149,6 +162,7 @@ describe('BinCustomizationPanel', () => {
           customization={undefined}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -164,6 +178,7 @@ describe('BinCustomizationPanel', () => {
           customization={DEFAULT_BIN_CUSTOMIZATION}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -182,6 +197,7 @@ describe('BinCustomizationPanel', () => {
           customization={DEFAULT_BIN_CUSTOMIZATION}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -200,6 +216,7 @@ describe('BinCustomizationPanel', () => {
           customization={DEFAULT_BIN_CUSTOMIZATION}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -218,6 +235,7 @@ describe('BinCustomizationPanel', () => {
           customization={DEFAULT_BIN_CUSTOMIZATION}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -236,6 +254,7 @@ describe('BinCustomizationPanel', () => {
           customization={nonDefaultCustomization}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -247,6 +266,7 @@ describe('BinCustomizationPanel', () => {
         lipStyle: 'reduced',
         fingerSlide: 'rounded',
         wallCutout: 'vertical',
+        height: 8,
       });
     });
 
@@ -256,6 +276,7 @@ describe('BinCustomizationPanel', () => {
           customization={nonDefaultCustomization}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -267,6 +288,7 @@ describe('BinCustomizationPanel', () => {
         lipStyle: 'none',
         fingerSlide: 'rounded',
         wallCutout: 'vertical',
+        height: 8,
       });
     });
   });
@@ -278,6 +300,7 @@ describe('BinCustomizationPanel', () => {
           customization={nonDefaultCustomization}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -293,6 +316,7 @@ describe('BinCustomizationPanel', () => {
           customization={nonDefaultCustomization}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -310,6 +334,7 @@ describe('BinCustomizationPanel', () => {
           customization={undefined}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -322,6 +347,7 @@ describe('BinCustomizationPanel', () => {
           customization={DEFAULT_BIN_CUSTOMIZATION}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -334,6 +360,7 @@ describe('BinCustomizationPanel', () => {
           customization={nonDefaultCustomization}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -346,6 +373,7 @@ describe('BinCustomizationPanel', () => {
           customization={{ ...DEFAULT_BIN_CUSTOMIZATION, wallPattern: 'grid' }}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -358,6 +386,7 @@ describe('BinCustomizationPanel', () => {
           customization={{ ...DEFAULT_BIN_CUSTOMIZATION, lipStyle: 'none' }}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -370,6 +399,7 @@ describe('BinCustomizationPanel', () => {
           customization={{ ...DEFAULT_BIN_CUSTOMIZATION, fingerSlide: 'chamfered' }}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -382,6 +412,7 @@ describe('BinCustomizationPanel', () => {
           customization={{ ...DEFAULT_BIN_CUSTOMIZATION, wallCutout: 'horizontal' }}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -394,6 +425,7 @@ describe('BinCustomizationPanel', () => {
           customization={undefined}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -411,6 +443,7 @@ describe('BinCustomizationPanel', () => {
           customization={DEFAULT_BIN_CUSTOMIZATION}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -433,6 +466,7 @@ describe('BinCustomizationPanel', () => {
           customization={DEFAULT_BIN_CUSTOMIZATION}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -450,6 +484,7 @@ describe('BinCustomizationPanel', () => {
           customization={DEFAULT_BIN_CUSTOMIZATION}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -472,6 +507,7 @@ describe('BinCustomizationPanel', () => {
           customization={DEFAULT_BIN_CUSTOMIZATION}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -493,6 +529,7 @@ describe('BinCustomizationPanel', () => {
           customization={DEFAULT_BIN_CUSTOMIZATION}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -515,6 +552,7 @@ describe('BinCustomizationPanel', () => {
           customization={DEFAULT_BIN_CUSTOMIZATION}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -526,6 +564,7 @@ describe('BinCustomizationPanel', () => {
           customization={nonDefaultCustomization}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -538,6 +577,7 @@ describe('BinCustomizationPanel', () => {
           customization={nonDefaultCustomization}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -548,6 +588,7 @@ describe('BinCustomizationPanel', () => {
           customization={DEFAULT_BIN_CUSTOMIZATION}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -560,6 +601,7 @@ describe('BinCustomizationPanel', () => {
           customization={DEFAULT_BIN_CUSTOMIZATION}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
@@ -570,10 +612,98 @@ describe('BinCustomizationPanel', () => {
           customization={nonDefaultCustomization}
           onChange={mockOnChange}
           onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
         />
       );
 
       expect(screen.getByRole('button', { name: /reset/i })).not.toBeDisabled();
+    });
+  });
+
+  describe('customizableFields prop', () => {
+    it('renders only fields listed in customizableFields', () => {
+      render(
+        <BinCustomizationPanel
+          customization={DEFAULT_BIN_CUSTOMIZATION}
+          onChange={mockOnChange}
+          onReset={mockOnReset}
+          customizableFields={SHADOWBOX_FIELDS}
+        />
+      );
+      expect(screen.queryByLabelText(/wall pattern/i)).not.toBeInTheDocument();
+      expect(screen.getByLabelText(/lip style/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/height/i)).toBeInTheDocument();
+    });
+
+    it('renders nothing when customizableFields is empty', () => {
+      const { container } = render(
+        <BinCustomizationPanel
+          customization={DEFAULT_BIN_CUSTOMIZATION}
+          onChange={mockOnChange}
+          onReset={mockOnReset}
+          customizableFields={[]}
+        />
+      );
+      expect(container.firstChild).toBeNull();
+    });
+
+    it('renders all fields when all are listed', () => {
+      render(
+        <BinCustomizationPanel
+          customization={DEFAULT_BIN_CUSTOMIZATION}
+          onChange={mockOnChange}
+          onReset={mockOnReset}
+          customizableFields={ALL_FIELDS}
+        />
+      );
+      expect(screen.getByLabelText(/wall pattern/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/height/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('height field', () => {
+    it('renders height as number input with range 1-20', () => {
+      render(
+        <BinCustomizationPanel
+          customization={DEFAULT_BIN_CUSTOMIZATION}
+          onChange={mockOnChange}
+          onReset={mockOnReset}
+          customizableFields={['height']}
+        />
+      );
+      const input = screen.getByLabelText(/height/i);
+      expect(input).toHaveAttribute('type', 'number');
+      expect(input).toHaveAttribute('min', '1');
+      expect(input).toHaveAttribute('max', '20');
+    });
+
+    it('calls onChange with updated height', () => {
+      render(
+        <BinCustomizationPanel
+          customization={DEFAULT_BIN_CUSTOMIZATION}
+          onChange={mockOnChange}
+          onReset={mockOnReset}
+          customizableFields={['height']}
+        />
+      );
+      fireEvent.change(screen.getByLabelText(/height/i), { target: { value: '6' } });
+      expect(mockOnChange).toHaveBeenCalledWith(expect.objectContaining({ height: 6 }));
+    });
+  });
+
+  describe('customizationDefaults for reset', () => {
+    it('calls onReset when reset button clicked', () => {
+      render(
+        <BinCustomizationPanel
+          customization={{ ...DEFAULT_BIN_CUSTOMIZATION, height: 6 }}
+          onChange={mockOnChange}
+          onReset={mockOnReset}
+          customizableFields={['height']}
+          customizationDefaults={{ height: 4 }}
+        />
+      );
+      fireEvent.click(screen.getByRole('button', { name: /reset/i }));
+      expect(mockOnReset).toHaveBeenCalled();
     });
   });
 });

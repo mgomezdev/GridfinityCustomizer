@@ -39,6 +39,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   labeled: '#8B5CF6',
   utensil: '#10B981',
   modular: '#F59E0B',
+  shadowbox: '#8B5CF6',
 };
 
 export function getCategoryName(id: string): string {
