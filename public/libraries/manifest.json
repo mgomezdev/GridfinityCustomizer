@@ -20,6 +20,11 @@
       "id": "modular-utensil",
       "name": "Modular Utensil",
       "path": "/libraries/modular-utensil/index.json"
+    },
+    {
+      "id": "shadowbox",
+      "name": "Shadowbox Bins",
+      "path": "/libraries/shadowbox/index.json"
     }
   ]
 }
