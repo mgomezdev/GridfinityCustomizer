@@ -1951,6 +1951,29 @@ describe('PlacedItemOverlay', () => {
       const popover = container.querySelector('.placed-item-customize-popover');
       expect(popover).toBeInTheDocument();
     });
+
+    it('should render popover with position fixed style', async () => {
+      const item = createMockItemWithLibrary({ instanceId: 'i1' });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={vi.fn()}
+          getItemById={mockGetItemById}
+          onCustomizationChange={vi.fn()}
+          getLibraryMeta={async () => ({ customizableFields: ['lipStyle'], customizationDefaults: {} })}
+        />
+      );
+
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
+      fireEvent.click(customizeBtn);
+
+      const popover = container.querySelector('.placed-item-customize-popover') as HTMLElement;
+      expect(popover).toBeInTheDocument();
+      expect(popover.style.position).toBe('fixed');
+    });
   });
 
   describe('Customization Popover', () => {
