@@ -1974,6 +1974,33 @@ describe('PlacedItemOverlay', () => {
       expect(popover).toBeInTheDocument();
       expect(popover.style.position).toBe('fixed');
     });
+
+    it('should add direction class to popover', async () => {
+      const item = createMockItemWithLibrary({ instanceId: 'i1' });
+      const { container } = render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={vi.fn()}
+          getItemById={mockGetItemById}
+          onCustomizationChange={vi.fn()}
+          getLibraryMeta={async () => ({ customizableFields: ['lipStyle'], customizationDefaults: {} })}
+        />
+      );
+
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
+      fireEvent.click(customizeBtn);
+
+      const popover = container.querySelector('.placed-item-customize-popover') as HTMLElement;
+      expect(popover).toBeInTheDocument();
+      // jsdom has no real layout so top=0, space above=0, direction will be 'below'
+      expect(
+        popover.classList.contains('placed-item-customize-popover--above') ||
+        popover.classList.contains('placed-item-customize-popover--below')
+      ).toBe(true);
+    });
   });
 
   describe('Customization Popover', () => {
