@@ -354,7 +354,7 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
           onRotateCw={() => onRotateCw?.(item.instanceId)}
           onRotateCcw={() => onRotateCcw?.(item.instanceId)}
           onDuplicate={() => onDuplicate?.()}
-          onCustomize={() => setShowPopover(true)}
+          onCustomize={() => { computePopoverPos(); setShowPopover(true); }}
           onDelete={() => onDelete?.(item.instanceId)}
           onClose={handleCloseContextMenu}
         />

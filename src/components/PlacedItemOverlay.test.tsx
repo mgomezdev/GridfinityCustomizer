@@ -1796,6 +1796,28 @@ describe('PlacedItemOverlay', () => {
       expect(onDelete).toHaveBeenCalledTimes(1);
       expect(screen.queryByRole('menu')).toBeNull();
     });
+
+    it('should open customization popover when Customize is chosen from context menu', async () => {
+      const { container } = render(
+        <PlacedItemOverlay
+          item={createMockItemWithLibrary()}
+          gridX={4} gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onCustomizationChange={vi.fn()}
+          onCustomizationReset={vi.fn()}
+          getLibraryMeta={async () => ({ customizableFields: ['lipStyle'], customizationDefaults: {} })}
+        />
+      );
+      // Wait for libraryMeta to load so the gear button is rendered and ref is attached
+      await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
+      const root = container.querySelector('.placed-item') as HTMLElement;
+      fireEvent.contextMenu(root);
+      fireEvent.click(screen.getByRole('menuitem', { name: /customize/i }));
+      const popover = container.querySelector('.placed-item-customize-popover');
+      expect(popover).toBeInTheDocument();
+    });
   });
 
   describe('Duplicate Button', () => {
