@@ -1815,7 +1815,7 @@ describe('PlacedItemOverlay', () => {
       const root = container.querySelector('.placed-item') as HTMLElement;
       fireEvent.contextMenu(root);
       fireEvent.click(screen.getByRole('menuitem', { name: /customize/i }));
-      const popover = container.querySelector('.placed-item-customize-popover');
+      const popover = document.body.querySelector('.placed-item-customize-popover');
       expect(popover).toBeInTheDocument();
     });
   });
@@ -1954,7 +1954,7 @@ describe('PlacedItemOverlay', () => {
 
     it('should toggle customization popover when clicked', async () => {
       const item = createMockItemWithLibrary();
-      const { container } = render(
+      render(
         <PlacedItemOverlay
           item={item}
           gridX={4}
@@ -1970,13 +1970,13 @@ describe('PlacedItemOverlay', () => {
       const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
-      const popover = container.querySelector('.placed-item-customize-popover');
+      const popover = document.body.querySelector('.placed-item-customize-popover');
       expect(popover).toBeInTheDocument();
     });
 
     it('should render popover with position fixed style', async () => {
       const item = createMockItemWithLibrary({ instanceId: 'i1' });
-      const { container } = render(
+      render(
         <PlacedItemOverlay
           item={item}
           gridX={4}
@@ -1992,14 +1992,39 @@ describe('PlacedItemOverlay', () => {
       const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
-      const popover = container.querySelector('.placed-item-customize-popover') as HTMLElement;
+      const popover = document.body.querySelector('.placed-item-customize-popover') as HTMLElement;
       expect(popover).toBeInTheDocument();
       expect(popover.style.position).toBe('fixed');
     });
 
+    it('should render popover in document.body (portal) to escape CSS transforms', async () => {
+      const { container } = render(
+        <PlacedItemOverlay
+          item={createMockItemWithLibrary({ instanceId: 'i-portal' })}
+          gridX={4} gridY={4}
+          isSelected={true}
+          onSelect={vi.fn()}
+          getItemById={mockGetItemById}
+          onCustomizationChange={vi.fn()}
+          getLibraryMeta={async () => ({ customizableFields: ['lipStyle'], customizationDefaults: {} })}
+        />
+      );
+
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
+      fireEvent.click(customizeBtn);
+
+      // Popover must NOT be inside the component container (would be affected by ancestor transforms)
+      const popoverInContainer = container.querySelector('.placed-item-customize-popover');
+      expect(popoverInContainer).not.toBeInTheDocument();
+
+      // Popover MUST be in document.body (portaled out of transform context)
+      const popoverInBody = document.body.querySelector('.placed-item-customize-popover');
+      expect(popoverInBody).toBeInTheDocument();
+    });
+
     it('should add direction class to popover', async () => {
       const item = createMockItemWithLibrary({ instanceId: 'i1' });
-      const { container } = render(
+      render(
         <PlacedItemOverlay
           item={item}
           gridX={4}
@@ -2015,7 +2040,7 @@ describe('PlacedItemOverlay', () => {
       const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
-      const popover = container.querySelector('.placed-item-customize-popover') as HTMLElement;
+      const popover = document.body.querySelector('.placed-item-customize-popover') as HTMLElement;
       expect(popover).toBeInTheDocument();
       // jsdom has no real layout so top=0, space above=0, direction will be 'below'
       expect(
@@ -2143,7 +2168,7 @@ describe('PlacedItemOverlay', () => {
 
     it('should close popover when close button is clicked', async () => {
       const item = createMockItemWithLibrary();
-      const { container } = render(
+      render(
         <PlacedItemOverlay
           item={item}
           gridX={4}
@@ -2159,13 +2184,13 @@ describe('PlacedItemOverlay', () => {
       const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
-      const popover = container.querySelector('.placed-item-customize-popover');
+      const popover = document.body.querySelector('.placed-item-customize-popover');
       expect(popover).toBeInTheDocument();
 
       const closeBtn = screen.getByRole('button', { name: 'Close customization' });
       fireEvent.click(closeBtn);
 
-      const popoverAfterClose = container.querySelector('.placed-item-customize-popover');
+      const popoverAfterClose = document.body.querySelector('.placed-item-customize-popover');
       expect(popoverAfterClose).not.toBeInTheDocument();
     });
 
@@ -2195,7 +2220,7 @@ describe('PlacedItemOverlay', () => {
     it('should stop keyboard event propagation from the popover', async () => {
       const item = createMockItemWithLibrary();
       const mockOnDelete = vi.fn();
-      const { container } = render(
+      render(
         <PlacedItemOverlay
           item={item}
           gridX={4}
@@ -2212,7 +2237,7 @@ describe('PlacedItemOverlay', () => {
       const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
-      const popover = container.querySelector('.placed-item-customize-popover')!;
+      const popover = document.body.querySelector('.placed-item-customize-popover')!;
       // Fire a Delete keydown inside the popover — it should NOT propagate
       // to the parent .placed-item div which would trigger onDelete
       fireEvent.keyDown(popover, { key: 'Delete' });
@@ -2226,7 +2251,7 @@ describe('PlacedItemOverlay', () => {
         x: 200, y: 400, toJSON: () => {},
       } as DOMRect);
 
-      const { container } = render(
+      render(
         <PlacedItemOverlay
           item={{ ...createMockItemWithLibrary(), instanceId: 'i-above' }}
           gridX={4} gridY={4}
@@ -2241,7 +2266,7 @@ describe('PlacedItemOverlay', () => {
       const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
-      const popover = container.querySelector('.placed-item-customize-popover') as HTMLElement;
+      const popover = document.body.querySelector('.placed-item-customize-popover') as HTMLElement;
       expect(popover).toBeInTheDocument();
       expect(popover).toHaveClass('placed-item-customize-popover--above');
 
@@ -2254,7 +2279,7 @@ describe('PlacedItemOverlay', () => {
         x: 200, y: 50, toJSON: () => {},
       } as DOMRect);
 
-      const { container } = render(
+      render(
         <PlacedItemOverlay
           item={{ ...createMockItemWithLibrary(), instanceId: 'i-below' }}
           gridX={4} gridY={4}
@@ -2269,7 +2294,7 @@ describe('PlacedItemOverlay', () => {
       const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
-      const popover = container.querySelector('.placed-item-customize-popover') as HTMLElement;
+      const popover = document.body.querySelector('.placed-item-customize-popover') as HTMLElement;
       expect(popover).toBeInTheDocument();
       expect(popover).toHaveClass('placed-item-customize-popover--below');
 
@@ -2282,7 +2307,7 @@ describe('PlacedItemOverlay', () => {
         x: 10, y: 50, toJSON: () => {},
       } as DOMRect);
 
-      const { container } = render(
+      render(
         <PlacedItemOverlay
           item={{ ...createMockItemWithLibrary(), instanceId: 'i-left' }}
           gridX={4} gridY={4}
@@ -2297,7 +2322,7 @@ describe('PlacedItemOverlay', () => {
       const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
-      const popover = container.querySelector('.placed-item-customize-popover') as HTMLElement;
+      const popover = document.body.querySelector('.placed-item-customize-popover') as HTMLElement;
       expect(popover).toBeInTheDocument();
       // left should be clamped to at least MARGIN (8px)
       const left = parseFloat(popover.style.left);
@@ -2313,7 +2338,7 @@ describe('PlacedItemOverlay', () => {
         x: 990, y: 50, toJSON: () => {},
       } as DOMRect);
 
-      const { container } = render(
+      render(
         <PlacedItemOverlay
           item={{ ...createMockItemWithLibrary(), instanceId: 'i-right' }}
           gridX={4} gridY={4}
@@ -2328,7 +2353,7 @@ describe('PlacedItemOverlay', () => {
       const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
-      const popover = container.querySelector('.placed-item-customize-popover') as HTMLElement;
+      const popover = document.body.querySelector('.placed-item-customize-popover') as HTMLElement;
       expect(popover).toBeInTheDocument();
       // left should be clamped: max is innerWidth(1024) - popoverWidth(260) - margin(8) = 756
       const left = parseFloat(popover.style.left);
@@ -2344,7 +2369,7 @@ describe('PlacedItemOverlay', () => {
         x: 200, y: mockTop, toJSON: () => {},
       } as DOMRect));
 
-      const { container } = render(
+      render(
         <PlacedItemOverlay
           item={{ ...createMockItemWithLibrary(), instanceId: 'i-resize' }}
           gridX={4} gridY={4}
@@ -2359,7 +2384,7 @@ describe('PlacedItemOverlay', () => {
       const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
-      const popover = container.querySelector('.placed-item-customize-popover') as HTMLElement;
+      const popover = document.body.querySelector('.placed-item-customize-popover') as HTMLElement;
       const topBefore = parseFloat(popover.style.top);
 
       // Simulate button moving lower during resize
@@ -2381,7 +2406,7 @@ describe('PlacedItemOverlay', () => {
         x: 200, y: mockTop, toJSON: () => {},
       } as DOMRect));
 
-      const { container } = render(
+      render(
         <PlacedItemOverlay
           item={{ ...createMockItemWithLibrary(), instanceId: 'i-reopen' }}
           gridX={4} gridY={4}
@@ -2398,13 +2423,13 @@ describe('PlacedItemOverlay', () => {
       // Open
       fireEvent.click(customizeBtn);
       const topFirst = parseFloat(
-        (container.querySelector('.placed-item-customize-popover') as HTMLElement).style.top
+        (document.body.querySelector('.placed-item-customize-popover') as HTMLElement).style.top
       );
 
       // Close via close button
-      const closeBtn = container.querySelector('.placed-item-customize-popover-close') as HTMLElement;
+      const closeBtn = document.body.querySelector('.placed-item-customize-popover-close') as HTMLElement;
       fireEvent.click(closeBtn);
-      expect(container.querySelector('.placed-item-customize-popover')).not.toBeInTheDocument();
+      expect(document.body.querySelector('.placed-item-customize-popover')).not.toBeInTheDocument();
 
       // Move button before re-open
       mockTop = 600;
@@ -2412,7 +2437,7 @@ describe('PlacedItemOverlay', () => {
       // Re-open
       fireEvent.click(customizeBtn);
       const topSecond = parseFloat(
-        (container.querySelector('.placed-item-customize-popover') as HTMLElement).style.top
+        (document.body.querySelector('.placed-item-customize-popover') as HTMLElement).style.top
       );
 
       expect(topSecond).not.toBe(topFirst);

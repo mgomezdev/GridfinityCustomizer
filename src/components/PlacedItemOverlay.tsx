@@ -1,4 +1,5 @@
 import { memo, useState, useCallback, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import type { PlacedItemWithValidity, LibraryItem, ImageViewMode, BinCustomization, LibraryMeta } from '../types/gridfinity';
 import { isDefaultCustomization } from '../types/gridfinity';
 import { usePointerDragSource } from '../hooks/usePointerDrag';
@@ -316,7 +317,7 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
           )}
         </div>
       )}
-      {showPopover && isSelected && onCustomizationChange && popoverPos && (
+      {showPopover && isSelected && onCustomizationChange && popoverPos && createPortal(
         <div
           className={`placed-item-customize-popover placed-item-customize-popover--${popoverPos.direction}`}
           role="dialog"
@@ -345,7 +346,8 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
             customizableFields={libraryMeta.customizableFields}
             customizationDefaults={libraryMeta.customizationDefaults}
           />
-        </div>
+        </div>,
+        document.body
       )}
       {effectiveContextMenuPos && (
         <BinContextMenu
