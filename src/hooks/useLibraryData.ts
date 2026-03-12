@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
-import type { LibraryItem } from '../types/gridfinity';
+import type { LibraryItem, LibraryMeta } from '../types/gridfinity';
 import { useDataSource } from '../contexts/DataSourceContext';
 import { prefixItemId } from '../utils/libraryHelpers';
 
@@ -12,6 +12,7 @@ interface UseLibraryDataResult {
   getItemsByCategory: (category: string) => LibraryItem[];
   getItemsByLibrary: (libraryId: string) => LibraryItem[];
   refreshLibrary: () => Promise<void>;
+  getLibraryMeta: (libraryId: string) => Promise<LibraryMeta>;
 }
 
 /**
@@ -83,6 +84,13 @@ export function useLibraryData(
     await queryClient.invalidateQueries({ queryKey: ['library-items'] });
   }, [queryClient]);
 
+  const getLibraryMeta = useCallback(
+    (libraryId: string): Promise<LibraryMeta> => {
+      return adapter.getLibraryMeta(libraryId);
+    },
+    [adapter]
+  );
+
   return {
     items,
     isLoading,
@@ -91,5 +99,6 @@ export function useLibraryData(
     getItemsByCategory,
     getItemsByLibrary,
     refreshLibrary,
+    getLibraryMeta,
   };
 }

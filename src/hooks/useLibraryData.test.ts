@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useLibraryData } from './useLibraryData';
-import type { LibraryItem } from '../types/gridfinity';
+import type { LibraryItem, LibraryMeta } from '../types/gridfinity';
 import type { DataSourceAdapter } from '../api/adapters/types';
 import { createTestWrapper, createTestWrapperWithAdapter } from '../test/testWrapper';
 
@@ -22,7 +22,7 @@ describe('useLibraryData', () => {
 
   function createAdapter(
     itemsByLibrary: Record<string, LibraryItem[]>,
-    options?: { failFor?: string[] }
+    options?: { failFor?: string[]; metaByLibrary?: Record<string, LibraryMeta> }
   ): DataSourceAdapter {
     return {
       async getLibraries() {
@@ -38,6 +38,9 @@ describe('useLibraryData', () => {
           throw new Error(`Failed to fetch ${libraryId}: Server Error`);
         }
         return itemsByLibrary[libraryId] ?? [];
+      },
+      async getLibraryMeta(libraryId: string): Promise<LibraryMeta> {
+        return options?.metaByLibrary?.[libraryId] ?? { customizableFields: [], customizationDefaults: {} };
       },
       resolveImageUrl(libraryId: string, imagePath: string) {
         if (imagePath.startsWith('/libraries/') || imagePath.startsWith('http')) {
@@ -373,6 +376,9 @@ describe('useLibraryData', () => {
           callCount++;
           return mockDefaultItems;
         },
+        async getLibraryMeta() {
+          return { customizableFields: [], customizationDefaults: {} };
+        },
         resolveImageUrl(_libraryId: string, imagePath: string) {
           return imagePath;
         },
@@ -400,6 +406,29 @@ describe('useLibraryData', () => {
 
       // Should still have items after refresh
       expect(result.current.items).toHaveLength(2);
+    });
+  });
+
+  describe('getLibraryMeta', () => {
+    it('getLibraryMeta returns customizableFields for a known library', async () => {
+      const adapter = createAdapter({ bins_standard: mockDefaultItems });
+      const wrapper = createTestWrapper(adapter);
+
+      const { result } = renderHook(() => useLibraryData(['bins_standard']), { wrapper });
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      const meta = await result.current.getLibraryMeta('bins_standard');
+      expect(meta.customizableFields).toBeDefined();
+      expect(Array.isArray(meta.customizableFields)).toBe(true);
+    });
+
+    it('getLibraryMeta returns empty fields for unknown library', async () => {
+      const adapter = createAdapter({});
+      const wrapper = createTestWrapper(adapter);
+
+      const { result } = renderHook(() => useLibraryData([]), { wrapper });
+      const meta = await result.current.getLibraryMeta('nonexistent');
+      expect(meta.customizableFields).toEqual([]);
+      expect(meta.customizationDefaults).toEqual({});
     });
   });
 

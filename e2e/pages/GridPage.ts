@@ -1,5 +1,5 @@
 import type { Page, Locator } from '@playwright/test';
-import { getAllPlacedItems } from '../utils/drag-drop';
+import { getAllPlacedItems, dragToGridCell } from '../utils/drag-drop';
 
 export class GridPage {
   readonly page: Page;
@@ -79,5 +79,20 @@ export class GridPage {
 
     await widthInput.fill(String(width));
     await depthInput.fill(String(depth));
+  }
+
+  async placeFirstLibraryItem(): Promise<void> {
+    const libraryContainer = this.page.locator('.item-library');
+    await libraryContainer.waitFor({ state: 'visible' });
+    await this.page.locator('.library-loading').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    await this.page.locator('.category-title').first().waitFor({ state: 'visible', timeout: 10000 });
+    // Expand the first category if it is collapsed so library items become visible
+    const firstCategory = this.page.locator('.category-items').first();
+    if (await firstCategory.evaluate(el => el.classList.contains('collapsed'))) {
+      await this.page.locator('.category-title').first().click();
+    }
+    const firstItem = this.page.locator('.library-item-card').first();
+    await firstItem.waitFor({ state: 'visible', timeout: 10000 });
+    await dragToGridCell(this.page, firstItem, this.gridContainer, 0, 0, 4, 4);
   }
 }

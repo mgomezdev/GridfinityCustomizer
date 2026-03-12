@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import type { UnitSystem, ImperialFormat, GridSpacerConfig, ImageViewMode, ReferenceImage, DragData } from './types/gridfinity';
+import type { UnitSystem, ImperialFormat, GridSpacerConfig, ImageViewMode, ReferenceImage, DragData, LibraryMeta } from './types/gridfinity';
 import type { LayoutStatus } from '@gridfinity/shared';
 import { calculateGrid, mmToInches, inchesToMm } from './utils/conversions';
 import { useLayoutMeta } from './hooks/useLayoutMeta';
@@ -40,6 +40,7 @@ import { AdminSubmissionsDialog } from './components/admin/AdminSubmissionsDialo
 import { SubmissionsBadge } from './components/admin/SubmissionsBadge';
 import { WalkthroughOverlay } from './components/WalkthroughOverlay';
 import { STORAGE_KEYS } from './utils/storageKeys';
+import { exportToPdf } from './utils/exportPdf';
 import './App.css';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:3001/api/v1';
@@ -58,6 +59,8 @@ function App() {
   const [imageViewMode, setImageViewMode] = useState<ImageViewMode>(
     () => (localStorage.getItem('gridfinity-image-view-mode') as ImageViewMode) || 'ortho'
   );
+  const [exportPdfError, setExportPdfError] = useState<string | null>(null);
+  const [selectedLibraryMeta, setSelectedLibraryMeta] = useState<LibraryMeta>({ customizableFields: [], customizationDefaults: {} });
 
   const { dialogs, dialogDispatch, closeRebind } = useDialogState();
   const {
@@ -102,6 +105,7 @@ function App() {
     isLoading: isLibraryLoading,
     error: libraryError,
     getItemById,
+    getLibraryMeta,
     refreshLibrary,
   } = useLibraryData(selectedLibraryIds);
 
@@ -163,6 +167,18 @@ function App() {
   } = useGridItems(gridResult.gridX, gridResult.gridY, getItemById);
 
   const bomItems = useBillOfMaterials(placedItems, libraryItems);
+
+  // Load library meta for the single selected item (for sidebar BinCustomizationPanel)
+  useEffect(() => {
+    if (selectedItemIds.size !== 1) return;
+    const selectedId = selectedItemIds.values().next().value as string;
+    const selectedItem = placedItems.find(i => i.instanceId === selectedId);
+    if (!selectedItem) return;
+    const colonIdx = selectedItem.itemId.indexOf(':');
+    if (colonIdx === -1) return;
+    const libraryId = selectedItem.itemId.slice(0, colonIdx);
+    getLibraryMeta(libraryId).then(setSelectedLibraryMeta).catch(() => {});
+  }, [selectedItemIds, placedItems, getLibraryMeta]);
 
   // Convert ref image placements to ReferenceImage format for GridPreview
   const referenceImagesForGrid: ReferenceImage[] = useMemo(() =>
@@ -286,6 +302,18 @@ function App() {
       handleClearLayout();
     }
   };
+
+  const handleExportPdf = useCallback(async () => {
+    setExportPdfError(null);
+    const gridEl = viewportRef.current?.querySelector('.grid-preview') as HTMLElement | null;
+    if (!gridEl) return;
+    await exportToPdf(
+      gridEl,
+      bomItems,
+      { gridResult, spacerConfig, unitSystem, layoutName: layoutMeta.name },
+      () => setExportPdfError('PDF export failed. Please try again.'),
+    );
+  }, [bomItems, gridResult, spacerConfig, unitSystem, layoutMeta.name]);
 
   const handleLoadLayout = useCallback((config: LoadedLayoutConfig) => {
     if (unitSystem === 'imperial') {
@@ -470,6 +498,8 @@ function App() {
             customization={selectedItem.customization}
             onChange={(c) => updateItemCustomization(selectedId, c)}
             onReset={() => updateItemCustomization(selectedId, undefined)}
+            customizableFields={selectedLibraryMeta.customizableFields}
+            customizationDefaults={selectedLibraryMeta.customizationDefaults}
           />
         );
       })()}
@@ -580,6 +610,18 @@ function App() {
                   {cloneLayoutMutation.isPending ? 'Cloning...' : 'Clone'}
                 </button>
               )}
+              <button
+                className="layout-toolbar-btn layout-export-btn"
+                onClick={handleExportPdf}
+                type="button"
+                disabled={placedItems.length === 0}
+                title="Export layout as PDF"
+              >
+                Export PDF
+              </button>
+              {exportPdfError && (
+                <span className="export-pdf-error" role="alert">{exportPdfError}</span>
+              )}
               {!isReadOnly && (placedItems.length > 0 || refImagePlacements.length > 0) && (
                 <button className="clear-all-button" onClick={handleClearAll}>Clear All ({placedItems.length + refImagePlacements.length})</button>
               )}
@@ -614,6 +656,7 @@ function App() {
               onItemCustomizationChange={updateItemCustomization}
               onItemCustomizationReset={(id) => updateItemCustomization(id, undefined)}
               onDuplicateItem={duplicateItem}
+              getLibraryMeta={getLibraryMeta}
               referenceImages={referenceImagesForGrid}
               selectedImageId={selectedImageId}
               onImagePositionChange={updateRefImagePosition}

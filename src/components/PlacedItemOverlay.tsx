@@ -1,5 +1,6 @@
-import { memo, useState, useCallback } from 'react';
-import type { PlacedItemWithValidity, LibraryItem, ImageViewMode, BinCustomization } from '../types/gridfinity';
+import { memo, useState, useCallback, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import type { PlacedItemWithValidity, LibraryItem, ImageViewMode, BinCustomization, LibraryMeta } from '../types/gridfinity';
 import { isDefaultCustomization } from '../types/gridfinity';
 import { usePointerDragSource } from '../hooks/usePointerDrag';
 import { useImageLoadState } from '../hooks/useImageLoadState';
@@ -21,6 +22,7 @@ interface PlacedItemOverlayProps {
   onCustomizationReset?: (instanceId: string) => void;
   onDuplicate?: () => void;
   imageViewMode?: ImageViewMode;
+  getLibraryMeta?: (libraryId: string) => Promise<LibraryMeta>;
 }
 
 const DEFAULT_VALID_COLOR = '#3B82F6';
@@ -33,12 +35,51 @@ function getCustomizationBadges(customization: BinCustomization | undefined): st
   if (customization.lipStyle !== 'normal') badges.push(`lip: ${customization.lipStyle}`);
   if (customization.fingerSlide !== 'none') badges.push(`slide: ${customization.fingerSlide}`);
   if (customization.wallCutout !== 'none') badges.push(`cutout: ${customization.wallCutout}`);
+  if (customization.height !== 8) badges.push(`h: ${customization.height}`);
   return badges;
 }
 
-export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, getItemById, onDelete, onRotateCw, onRotateCcw, onCustomizationChange, onCustomizationReset, onDuplicate, imageViewMode = 'ortho' }: PlacedItemOverlayProps) {
+export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, gridY, isSelected, onSelect, getItemById, onDelete, onRotateCw, onRotateCcw, onCustomizationChange, onCustomizationReset, onDuplicate, imageViewMode = 'ortho', getLibraryMeta }: PlacedItemOverlayProps) {
   const [showPopover, setShowPopover] = useState(false);
+  interface PopoverPos { top: number; left: number; direction: 'above' | 'below' }
+  const [popoverPos, setPopoverPos] = useState<PopoverPos | null>(null);
+  const gearButtonRef = useRef<HTMLButtonElement>(null);
   const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
+  const [libraryMeta, setLibraryMeta] = useState<LibraryMeta>({ customizableFields: [], customizationDefaults: {} });
+
+  useEffect(() => {
+    if (!getLibraryMeta) return;
+    const colonIdx = item.itemId.indexOf(':');
+    if (colonIdx === -1) return;
+    const libraryId = item.itemId.slice(0, colonIdx);
+    getLibraryMeta(libraryId).then(setLibraryMeta).catch(() => {});
+  }, [item.itemId, getLibraryMeta]);
+
+  const computePopoverPos = useCallback(() => {
+    if (!gearButtonRef.current) return;
+    const rect = gearButtonRef.current.getBoundingClientRect();
+    const POPOVER_WIDTH = 260;
+    const POPOVER_HEIGHT = 300;
+    const MARGIN = 8;
+    const GAP = 6;
+
+    const rawLeft = rect.left + rect.width / 2 - POPOVER_WIDTH / 2;
+    const left = Math.max(MARGIN, Math.min(rawLeft, window.innerWidth - POPOVER_WIDTH - MARGIN));
+
+    const spaceAbove = rect.top - MARGIN;
+    if (spaceAbove >= POPOVER_HEIGHT) {
+      setPopoverPos({ top: rect.top - POPOVER_HEIGHT - GAP, left, direction: 'above' });
+    } else {
+      setPopoverPos({ top: rect.bottom + GAP, left, direction: 'below' });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!showPopover) return;
+    const handler = () => computePopoverPos();
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, [showPopover, computePopoverPos]);
 
   const libraryItem = getItemById(item.itemId);
   const color = item.isValid ? (libraryItem?.color || DEFAULT_VALID_COLOR) : INVALID_COLOR;
@@ -115,7 +156,10 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
   const handleCustomizeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    setShowPopover(prev => !prev);
+    setShowPopover(prev => {
+      if (!prev) computePopoverPos();
+      return !prev;
+    });
   };
 
   const handlePopoverChange = useCallback((customization: BinCustomization) => {
@@ -136,6 +180,7 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
     e.stopPropagation();
     e.preventDefault();
     setShowPopover(false);
+    setPopoverPos(null);
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -247,8 +292,9 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
               &#x29C9;
             </button>
           )}
-          {onCustomizationChange && (
+          {onCustomizationChange && libraryMeta.customizableFields.length > 0 && (
             <button
+              ref={gearButtonRef}
               className="placed-item-toolbar-btn"
               onClick={handleCustomizeClick}
               draggable={false}
@@ -271,10 +317,11 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
           )}
         </div>
       )}
-      {showPopover && isSelected && onCustomizationChange && (
+      {showPopover && isSelected && onCustomizationChange && popoverPos && createPortal(
         <div
-          className="placed-item-customize-popover"
+          className={`placed-item-customize-popover placed-item-customize-popover--${popoverPos.direction}`}
           role="dialog"
+          style={{ position: 'fixed', top: popoverPos.top, left: popoverPos.left }}
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
@@ -296,8 +343,11 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
             onChange={handlePopoverChange}
             onReset={handlePopoverReset}
             idPrefix="inline-"
+            customizableFields={libraryMeta.customizableFields}
+            customizationDefaults={libraryMeta.customizationDefaults}
           />
-        </div>
+        </div>,
+        document.body
       )}
       {effectiveContextMenuPos && (
         <BinContextMenu
@@ -306,7 +356,7 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
           onRotateCw={() => onRotateCw?.(item.instanceId)}
           onRotateCcw={() => onRotateCcw?.(item.instanceId)}
           onDuplicate={() => onDuplicate?.()}
-          onCustomize={() => setShowPopover(true)}
+          onCustomize={() => { computePopoverPos(); setShowPopover(true); }}
           onDelete={() => onDelete?.(item.instanceId)}
           onClose={handleCloseContextMenu}
         />

@@ -34,6 +34,7 @@ import sys
 import tempfile
 from glob import glob
 from stl_to_png import render_stl_to_png, render_stl_to_png_perspective
+from slicer import cleanup_stale_temp_files, slice_model
 
 try:
     import trimesh
@@ -673,7 +674,8 @@ def process_stl_file(stl_path, color_hex, output_dir=None, skip_existing_png=Tru
 
 
 def process_3mf_file(mf3_path, color_hex, output_dir=None, skip_existing_png=True, non_interactive=False,
-                     render_both=None, camera_tilt=None, fov=None, rotation=0):
+                     render_both=None, camera_tilt=None, fov=None, rotation=0,
+                     slicer_config=None, existing_by_id=None):
     """
     Process a 3MF file with multiple objects.
 
@@ -863,6 +865,31 @@ def process_3mf_file(mf3_path, color_hex, output_dir=None, skip_existing_png=Tru
                         finally:
                             cleanup_temp_file(temp_stl_name)
 
+            # Slicer integration: check existing values or slice this object
+            slicer_data = {}
+            obj_id = generate_3mf_object_id(mf3_basename, obj_name, width, height)
+            existing_entry = (existing_by_id or {}).get(obj_id, {})
+
+            if 'filamentGrams' in existing_entry and 'printTimeSeconds' in existing_entry:
+                slicer_data = {
+                    'filamentGrams': existing_entry['filamentGrams'],
+                    'printTimeSeconds': existing_entry['printTimeSeconds'],
+                }
+                print(f"    Slicer: reusing existing values for {obj_id}")
+            elif slicer_config:
+                temp_stl_name = None
+                try:
+                    temp_stl = tempfile.NamedTemporaryFile(suffix='.stl', delete=False)
+                    temp_stl_name = temp_stl.name
+                    temp_stl.close()
+                    geometry.export(temp_stl_name, file_type='stl')
+                    slicer_result = slice_model(temp_stl_name, slicer_config)
+                    if slicer_result:
+                        slicer_data = slicer_result
+                        print(f"    Slicer: {slicer_data['filamentGrams']}g, {slicer_data['printTimeSeconds']}s")
+                finally:
+                    cleanup_temp_file(temp_stl_name)
+
             # Build metadata
             metadata = {
                 'mf3_file': mf3_filename,
@@ -871,7 +898,8 @@ def process_3mf_file(mf3_path, color_hex, output_dir=None, skip_existing_png=Tru
                 'png_file_perspective': perspective_filename,  # Perspective version (optional)
                 'width': width,
                 'height': height,
-                'color': color_hex
+                'color': color_hex,
+                **slicer_data,
             }
             metadata_list.append(metadata)
 
@@ -923,7 +951,8 @@ def build_library_item(stl_file, png_file, width, height, color_hex, custom_id=N
 
 def generate_library_json(directory, color_hex=None, output_file='index.json',
                          library_name=None, skip_existing=True, non_interactive=False,
-                         render_both=None, camera_tilt=None, fov=None, rotation=0):
+                         render_both=None, camera_tilt=None, fov=None, rotation=0,
+                         slicer_config=None):
     """
     Main orchestration: scan directory, process STL and 3MF files, generate index.json.
 
@@ -948,6 +977,20 @@ def generate_library_json(directory, color_hex=None, output_file='index.json',
         os.makedirs(output_dir, exist_ok=True)
         print(f"Output directory: {os.path.abspath(output_dir)}")
         print()
+    # Load existing index.json to enable skip-if-already-sliced logic
+    existing_by_id = {}
+    output_path_check = os.path.join(output_dir, output_file)
+    if os.path.exists(output_path_check):
+        try:
+            with open(output_path_check, encoding='utf-8') as f:
+                existing_data = json.load(f)
+            for entry in existing_data.get('items', []):
+                if 'id' in entry:
+                    existing_by_id[entry['id']] = entry
+            print(f"Loaded {len(existing_by_id)} existing entries from {output_path_check}")
+        except Exception as e:
+            print(f"WARNING: Could not load existing index.json: {e}")
+
     # Find all model files
     model_files = find_model_files(directory)
     stl_files = model_files['stl']
@@ -997,6 +1040,18 @@ def generate_library_json(directory, color_hex=None, output_file='index.json',
             metadata['color'],
             png_file_perspective=metadata.get('png_file_perspective')
         )
+        # Slicer integration: reuse existing values or slice now
+        existing = existing_by_id.get(item['id'], {})
+        if 'filamentGrams' in existing and 'printTimeSeconds' in existing:
+            item['filamentGrams'] = existing['filamentGrams']
+            item['printTimeSeconds'] = existing['printTimeSeconds']
+            print(f"  Slicer: reusing existing values for {item['id']}")
+        elif slicer_config:
+            slicer_result = slice_model(stl_path, slicer_config)
+            if slicer_result:
+                item['filamentGrams'] = slicer_result['filamentGrams']
+                item['printTimeSeconds'] = slicer_result['printTimeSeconds']
+                print(f"  Slicer: {item['filamentGrams']}g, {item['printTimeSeconds']}s")
         items.append(item)
         successes += 1
         print(f"  SUCCESS: Added {item['name']}")
@@ -1010,7 +1065,8 @@ def generate_library_json(directory, color_hex=None, output_file='index.json',
         print(f"[{file_count}/{total_files}] Processing {mf3_filename}...")
 
         metadata_list = process_3mf_file(mf3_path, color_hex, output_dir, skip_existing, non_interactive,
-                                        render_both, camera_tilt, fov, rotation)
+                                        render_both, camera_tilt, fov, rotation,
+                                        slicer_config=slicer_config, existing_by_id=existing_by_id)
 
         if not metadata_list:
             failures += 1
@@ -1044,6 +1100,10 @@ def generate_library_json(directory, color_hex=None, output_file='index.json',
                 custom_name=custom_name,
                 png_file_perspective=metadata.get('png_file_perspective')
             )
+            if 'filamentGrams' in metadata:
+                item['filamentGrams'] = metadata['filamentGrams']
+            if 'printTimeSeconds' in metadata:
+                item['printTimeSeconds'] = metadata['printTimeSeconds']
             items.append(item)
             successes += 1
             print(f"    SUCCESS: Added {item['name']}")
@@ -1318,6 +1378,12 @@ Examples:
                        help=f'Field of view in degrees for perspective mode (default: {PERSPECTIVE_FOV})')
     parser.add_argument('--rotate', type=int, default=0, choices=[0, 90, 180, 270],
                        help='Additional Z-axis rotation in degrees applied after auto-alignment (default: 0)')
+    parser.add_argument(
+        '--slicer-config',
+        metavar='PATH',
+        default=None,
+        help='Path to OrcaSlicer .json config file (enables filament/time estimation per model)',
+    )
 
     args = parser.parse_args()
 
@@ -1349,6 +1415,10 @@ Examples:
     elif args.both_modes:
         render_both = True
 
+    if args.slicer_config:
+        print("Slicer config provided — clearing stale temp files...")
+        cleanup_stale_temp_files()
+
     # Generate library
     success = generate_library_json(
         args.directory,
@@ -1360,7 +1430,8 @@ Examples:
         render_both=render_both,
         camera_tilt=args.camera_tilt,
         fov=args.fov,
-        rotation=args.rotate
+        rotation=args.rotate,
+        slicer_config=args.slicer_config,
     )
 
     sys.exit(0 if success else 1)

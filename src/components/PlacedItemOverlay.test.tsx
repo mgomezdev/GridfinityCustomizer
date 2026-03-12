@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PlacedItemOverlay } from './PlacedItemOverlay';
 import type { PlacedItemWithValidity, LibraryItem } from '../types/gridfinity';
 import { DEFAULT_BIN_CUSTOMIZATION } from '../types/gridfinity';
@@ -33,15 +33,35 @@ describe('PlacedItemOverlay', () => {
     const items: Record<string, LibraryItem> = {
       'bin-1x1': { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#3B82F6', categories: ['bin'] },
       'bin-2x2': { id: 'bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#3B82F6', categories: ['bin'] },
+      'testlib:bin-1x1': { id: 'testlib:bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#3B82F6', categories: ['bin'] },
+      'testlib:bin-2x2': { id: 'testlib:bin-2x2', name: '2x2 Bin', widthUnits: 2, heightUnits: 2, color: '#3B82F6', categories: ['bin'] },
     };
     return items[id];
   };
+
+  const mockGetLibraryMeta = vi.fn().mockResolvedValue({
+    customizableFields: ['wallPattern', 'lipStyle', 'fingerSlide', 'wallCutout', 'height'],
+    customizationDefaults: {},
+  });
 
   const mockOnSelect = vi.fn();
 
   const createMockItem = (overrides?: Partial<PlacedItemWithValidity>): PlacedItemWithValidity => ({
     instanceId: 'test-item-1',
     itemId: 'bin-1x1',
+    x: 0,
+    y: 0,
+    width: 1,
+    height: 1,
+    rotation: 0,
+    isValid: true,
+    ...overrides,
+  });
+
+  // Helper for tests that require the Customize button (needs a colon in itemId to trigger getLibraryMeta)
+  const createMockItemWithLibrary = (overrides?: Partial<PlacedItemWithValidity>): PlacedItemWithValidity => ({
+    instanceId: 'test-item-1',
+    itemId: 'testlib:bin-1x1',
     x: 0,
     y: 0,
     width: 1,
@@ -1776,6 +1796,28 @@ describe('PlacedItemOverlay', () => {
       expect(onDelete).toHaveBeenCalledTimes(1);
       expect(screen.queryByRole('menu')).toBeNull();
     });
+
+    it('should open customization popover when Customize is chosen from context menu', async () => {
+      const { container } = render(
+        <PlacedItemOverlay
+          item={createMockItemWithLibrary()}
+          gridX={4} gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onCustomizationChange={vi.fn()}
+          onCustomizationReset={vi.fn()}
+          getLibraryMeta={async () => ({ customizableFields: ['lipStyle'], customizationDefaults: {} })}
+        />
+      );
+      // Wait for libraryMeta to load so the gear button is rendered and ref is attached
+      await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
+      const root = container.querySelector('.placed-item') as HTMLElement;
+      fireEvent.contextMenu(root);
+      fireEvent.click(screen.getByRole('menuitem', { name: /customize/i }));
+      const popover = document.body.querySelector('.placed-item-customize-popover');
+      expect(popover).toBeInTheDocument();
+    });
   });
 
   describe('Duplicate Button', () => {
@@ -1833,8 +1875,8 @@ describe('PlacedItemOverlay', () => {
       mockOnCustomizationChange.mockClear();
     });
 
-    it('should render customize button when selected and handlers provided', () => {
-      const item = createMockItem();
+    it('should render customize button when selected and handlers provided', async () => {
+      const item = createMockItemWithLibrary();
       render(
         <PlacedItemOverlay
           item={item}
@@ -1844,15 +1886,16 @@ describe('PlacedItemOverlay', () => {
           onSelect={mockOnSelect}
           getItemById={mockGetItemById}
           onCustomizationChange={mockOnCustomizationChange}
+          getLibraryMeta={mockGetLibraryMeta}
         />
       );
 
-      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       expect(customizeBtn).toBeInTheDocument();
     });
 
     it('should NOT render customize button when not selected', () => {
-      const item = createMockItem();
+      const item = createMockItemWithLibrary();
       render(
         <PlacedItemOverlay
           item={item}
@@ -1862,6 +1905,7 @@ describe('PlacedItemOverlay', () => {
           onSelect={mockOnSelect}
           getItemById={mockGetItemById}
           onCustomizationChange={mockOnCustomizationChange}
+          getLibraryMeta={mockGetLibraryMeta}
         />
       );
 
@@ -1884,8 +1928,8 @@ describe('PlacedItemOverlay', () => {
       expect(screen.queryByRole('button', { name: 'Customize' })).not.toBeInTheDocument();
     });
 
-    it('should NOT propagate click to parent', () => {
-      const item = createMockItem();
+    it('should NOT propagate click to parent', async () => {
+      const item = createMockItemWithLibrary();
       const parentClickHandler = vi.fn();
       render(
         <div onClick={parentClickHandler}>
@@ -1897,19 +1941,20 @@ describe('PlacedItemOverlay', () => {
             onSelect={mockOnSelect}
             getItemById={mockGetItemById}
             onCustomizationChange={mockOnCustomizationChange}
+            getLibraryMeta={mockGetLibraryMeta}
           />
         </div>
       );
 
-      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
       expect(parentClickHandler).not.toHaveBeenCalled();
     });
 
-    it('should toggle customization popover when clicked', () => {
-      const item = createMockItem();
-      const { container } = render(
+    it('should toggle customization popover when clicked', async () => {
+      const item = createMockItemWithLibrary();
+      render(
         <PlacedItemOverlay
           item={item}
           gridX={4}
@@ -1918,14 +1963,90 @@ describe('PlacedItemOverlay', () => {
           onSelect={mockOnSelect}
           getItemById={mockGetItemById}
           onCustomizationChange={mockOnCustomizationChange}
+          getLibraryMeta={mockGetLibraryMeta}
         />
       );
 
-      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
-      const popover = container.querySelector('.placed-item-customize-popover');
+      const popover = document.body.querySelector('.placed-item-customize-popover');
       expect(popover).toBeInTheDocument();
+    });
+
+    it('should render popover with position fixed style', async () => {
+      const item = createMockItemWithLibrary({ instanceId: 'i1' });
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={vi.fn()}
+          getItemById={mockGetItemById}
+          onCustomizationChange={vi.fn()}
+          getLibraryMeta={async () => ({ customizableFields: ['lipStyle'], customizationDefaults: {} })}
+        />
+      );
+
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
+      fireEvent.click(customizeBtn);
+
+      const popover = document.body.querySelector('.placed-item-customize-popover') as HTMLElement;
+      expect(popover).toBeInTheDocument();
+      expect(popover.style.position).toBe('fixed');
+    });
+
+    it('should render popover in document.body (portal) to escape CSS transforms', async () => {
+      const { container } = render(
+        <PlacedItemOverlay
+          item={createMockItemWithLibrary({ instanceId: 'i-portal' })}
+          gridX={4} gridY={4}
+          isSelected={true}
+          onSelect={vi.fn()}
+          getItemById={mockGetItemById}
+          onCustomizationChange={vi.fn()}
+          getLibraryMeta={async () => ({ customizableFields: ['lipStyle'], customizationDefaults: {} })}
+        />
+      );
+
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
+      fireEvent.click(customizeBtn);
+
+      // Popover must NOT be inside the component container (would be affected by ancestor transforms)
+      const popoverInContainer = container.querySelector('.placed-item-customize-popover');
+      expect(popoverInContainer).not.toBeInTheDocument();
+
+      // Popover MUST be in document.body (portaled out of transform context)
+      const popoverInBody = document.body.querySelector('.placed-item-customize-popover');
+      expect(popoverInBody).toBeInTheDocument();
+    });
+
+    it('should add direction class to popover', async () => {
+      const item = createMockItemWithLibrary({ instanceId: 'i1' });
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={vi.fn()}
+          getItemById={mockGetItemById}
+          onCustomizationChange={vi.fn()}
+          getLibraryMeta={async () => ({ customizableFields: ['lipStyle'], customizationDefaults: {} })}
+        />
+      );
+
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
+      fireEvent.click(customizeBtn);
+
+      const popover = document.body.querySelector('.placed-item-customize-popover') as HTMLElement;
+      expect(popover).toBeInTheDocument();
+      // jsdom has no real layout so top=0, space above=0, direction will be 'below'
+      expect(
+        popover.classList.contains('placed-item-customize-popover--above') ||
+        popover.classList.contains('placed-item-customize-popover--below')
+      ).toBe(true);
     });
   });
 
@@ -1938,8 +2059,8 @@ describe('PlacedItemOverlay', () => {
       mockOnCustomizationReset.mockClear();
     });
 
-    it('should render four select fields when popover is open', () => {
-      const item = createMockItem();
+    it('should render four select fields when popover is open', async () => {
+      const item = createMockItemWithLibrary();
       render(
         <PlacedItemOverlay
           item={item}
@@ -1949,10 +2070,11 @@ describe('PlacedItemOverlay', () => {
           onSelect={mockOnSelect}
           getItemById={mockGetItemById}
           onCustomizationChange={mockOnCustomizationChange}
+          getLibraryMeta={mockGetLibraryMeta}
         />
       );
 
-      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
       expect(screen.getByLabelText('Wall Pattern')).toBeInTheDocument();
@@ -1961,8 +2083,8 @@ describe('PlacedItemOverlay', () => {
       expect(screen.getByLabelText('Wall Cutout')).toBeInTheDocument();
     });
 
-    it('should call onCustomizationChange when a select value changes', () => {
-      const item = createMockItem({ instanceId: 'custom-item-123' });
+    it('should call onCustomizationChange when a select value changes', async () => {
+      const item = createMockItemWithLibrary({ instanceId: 'custom-item-123' });
       render(
         <PlacedItemOverlay
           item={item}
@@ -1972,10 +2094,11 @@ describe('PlacedItemOverlay', () => {
           onSelect={mockOnSelect}
           getItemById={mockGetItemById}
           onCustomizationChange={mockOnCustomizationChange}
+          getLibraryMeta={mockGetLibraryMeta}
         />
       );
 
-      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
       const wallPatternSelect = screen.getByLabelText('Wall Pattern') as HTMLSelectElement;
@@ -1987,8 +2110,8 @@ describe('PlacedItemOverlay', () => {
       );
     });
 
-    it('should render reset button in popover', () => {
-      const item = createMockItem();
+    it('should render reset button in popover', async () => {
+      const item = createMockItemWithLibrary();
       render(
         <PlacedItemOverlay
           item={item}
@@ -1999,18 +2122,19 @@ describe('PlacedItemOverlay', () => {
           getItemById={mockGetItemById}
           onCustomizationChange={mockOnCustomizationChange}
           onCustomizationReset={mockOnCustomizationReset}
+          getLibraryMeta={mockGetLibraryMeta}
         />
       );
 
-      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
       const resetBtn = screen.getByRole('button', { name: /reset to defaults/i });
       expect(resetBtn).toBeInTheDocument();
     });
 
-    it('should call onCustomizationReset when reset is clicked', () => {
-      const item = createMockItem({
+    it('should call onCustomizationReset when reset is clicked', async () => {
+      const item = createMockItemWithLibrary({
         instanceId: 'custom-item-456',
         customization: {
           wallPattern: 'grid',
@@ -2029,10 +2153,11 @@ describe('PlacedItemOverlay', () => {
           getItemById={mockGetItemById}
           onCustomizationChange={mockOnCustomizationChange}
           onCustomizationReset={mockOnCustomizationReset}
+          getLibraryMeta={mockGetLibraryMeta}
         />
       );
 
-      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
       const resetBtn = screen.getByRole('button', { name: /reset to defaults/i });
@@ -2041,35 +2166,8 @@ describe('PlacedItemOverlay', () => {
       expect(mockOnCustomizationReset).toHaveBeenCalledWith('custom-item-456');
     });
 
-    it('should close popover when close button is clicked', () => {
-      const item = createMockItem();
-      const { container } = render(
-        <PlacedItemOverlay
-          item={item}
-          gridX={4}
-          gridY={4}
-          isSelected={true}
-          onSelect={mockOnSelect}
-          getItemById={mockGetItemById}
-          onCustomizationChange={mockOnCustomizationChange}
-        />
-      );
-
-      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
-      fireEvent.click(customizeBtn);
-
-      const popover = container.querySelector('.placed-item-customize-popover');
-      expect(popover).toBeInTheDocument();
-
-      const closeBtn = screen.getByRole('button', { name: 'Close customization' });
-      fireEvent.click(closeBtn);
-
-      const popoverAfterClose = container.querySelector('.placed-item-customize-popover');
-      expect(popoverAfterClose).not.toBeInTheDocument();
-    });
-
-    it('should have role="dialog" on the popover', () => {
-      const item = createMockItem();
+    it('should close popover when close button is clicked', async () => {
+      const item = createMockItemWithLibrary();
       render(
         <PlacedItemOverlay
           item={item}
@@ -2079,10 +2177,39 @@ describe('PlacedItemOverlay', () => {
           onSelect={mockOnSelect}
           getItemById={mockGetItemById}
           onCustomizationChange={mockOnCustomizationChange}
+          getLibraryMeta={mockGetLibraryMeta}
         />
       );
 
-      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
+      fireEvent.click(customizeBtn);
+
+      const popover = document.body.querySelector('.placed-item-customize-popover');
+      expect(popover).toBeInTheDocument();
+
+      const closeBtn = screen.getByRole('button', { name: 'Close customization' });
+      fireEvent.click(closeBtn);
+
+      const popoverAfterClose = document.body.querySelector('.placed-item-customize-popover');
+      expect(popoverAfterClose).not.toBeInTheDocument();
+    });
+
+    it('should have role="dialog" on the popover', async () => {
+      const item = createMockItemWithLibrary();
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={true}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+          onCustomizationChange={mockOnCustomizationChange}
+          getLibraryMeta={mockGetLibraryMeta}
+        />
+      );
+
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
       const popover = screen.getByRole('dialog');
@@ -2090,10 +2217,10 @@ describe('PlacedItemOverlay', () => {
       expect(popover).toHaveClass('placed-item-customize-popover');
     });
 
-    it('should stop keyboard event propagation from the popover', () => {
-      const item = createMockItem();
+    it('should stop keyboard event propagation from the popover', async () => {
+      const item = createMockItemWithLibrary();
       const mockOnDelete = vi.fn();
-      const { container } = render(
+      render(
         <PlacedItemOverlay
           item={item}
           gridX={4}
@@ -2103,18 +2230,219 @@ describe('PlacedItemOverlay', () => {
           getItemById={mockGetItemById}
           onCustomizationChange={mockOnCustomizationChange}
           onDelete={mockOnDelete}
+          getLibraryMeta={mockGetLibraryMeta}
         />
       );
 
-      const customizeBtn = screen.getByRole('button', { name: 'Customize' });
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
       fireEvent.click(customizeBtn);
 
-      const popover = container.querySelector('.placed-item-customize-popover')!;
+      const popover = document.body.querySelector('.placed-item-customize-popover')!;
       // Fire a Delete keydown inside the popover — it should NOT propagate
       // to the parent .placed-item div which would trigger onDelete
       fireEvent.keyDown(popover, { key: 'Delete' });
 
       expect(mockOnDelete).not.toHaveBeenCalled();
+    });
+
+    it('should use --above direction when button has enough space above viewport', async () => {
+      const spy = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
+        top: 400, bottom: 428, left: 200, right: 228, width: 28, height: 28,
+        x: 200, y: 400, toJSON: () => {},
+      } as DOMRect);
+
+      render(
+        <PlacedItemOverlay
+          item={{ ...createMockItemWithLibrary(), instanceId: 'i-above' }}
+          gridX={4} gridY={4}
+          isSelected={true}
+          onSelect={vi.fn()}
+          getItemById={mockGetItemById}
+          onCustomizationChange={vi.fn()}
+          getLibraryMeta={async () => ({ customizableFields: ['lipStyle'], customizationDefaults: {} })}
+        />
+      );
+
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
+      fireEvent.click(customizeBtn);
+
+      const popover = document.body.querySelector('.placed-item-customize-popover') as HTMLElement;
+      expect(popover).toBeInTheDocument();
+      expect(popover).toHaveClass('placed-item-customize-popover--above');
+
+      spy.mockRestore();
+    });
+
+    it('should use --below direction when button is near top of viewport', async () => {
+      const spy = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
+        top: 50, bottom: 78, left: 200, right: 228, width: 28, height: 28,
+        x: 200, y: 50, toJSON: () => {},
+      } as DOMRect);
+
+      render(
+        <PlacedItemOverlay
+          item={{ ...createMockItemWithLibrary(), instanceId: 'i-below' }}
+          gridX={4} gridY={4}
+          isSelected={true}
+          onSelect={vi.fn()}
+          getItemById={mockGetItemById}
+          onCustomizationChange={vi.fn()}
+          getLibraryMeta={async () => ({ customizableFields: ['lipStyle'], customizationDefaults: {} })}
+        />
+      );
+
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
+      fireEvent.click(customizeBtn);
+
+      const popover = document.body.querySelector('.placed-item-customize-popover') as HTMLElement;
+      expect(popover).toBeInTheDocument();
+      expect(popover).toHaveClass('placed-item-customize-popover--below');
+
+      spy.mockRestore();
+    });
+
+    it('should clamp popover left position when button is near left viewport edge', async () => {
+      const spy = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
+        top: 50, bottom: 78, left: 10, right: 38, width: 28, height: 28,
+        x: 10, y: 50, toJSON: () => {},
+      } as DOMRect);
+
+      render(
+        <PlacedItemOverlay
+          item={{ ...createMockItemWithLibrary(), instanceId: 'i-left' }}
+          gridX={4} gridY={4}
+          isSelected={true}
+          onSelect={vi.fn()}
+          getItemById={mockGetItemById}
+          onCustomizationChange={vi.fn()}
+          getLibraryMeta={async () => ({ customizableFields: ['lipStyle'], customizationDefaults: {} })}
+        />
+      );
+
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
+      fireEvent.click(customizeBtn);
+
+      const popover = document.body.querySelector('.placed-item-customize-popover') as HTMLElement;
+      expect(popover).toBeInTheDocument();
+      // left should be clamped to at least MARGIN (8px)
+      const left = parseFloat(popover.style.left);
+      expect(left).toBeGreaterThanOrEqual(8);
+
+      spy.mockRestore();
+    });
+
+    it('should clamp popover left position when button is near right viewport edge', async () => {
+      // jsdom default innerWidth is 1024; place button near right edge
+      const spy = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
+        top: 50, bottom: 78, left: 990, right: 1018, width: 28, height: 28,
+        x: 990, y: 50, toJSON: () => {},
+      } as DOMRect);
+
+      render(
+        <PlacedItemOverlay
+          item={{ ...createMockItemWithLibrary(), instanceId: 'i-right' }}
+          gridX={4} gridY={4}
+          isSelected={true}
+          onSelect={vi.fn()}
+          getItemById={mockGetItemById}
+          onCustomizationChange={vi.fn()}
+          getLibraryMeta={async () => ({ customizableFields: ['lipStyle'], customizationDefaults: {} })}
+        />
+      );
+
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
+      fireEvent.click(customizeBtn);
+
+      const popover = document.body.querySelector('.placed-item-customize-popover') as HTMLElement;
+      expect(popover).toBeInTheDocument();
+      // left should be clamped: max is innerWidth(1024) - popoverWidth(260) - margin(8) = 756
+      const left = parseFloat(popover.style.left);
+      expect(left).toBeLessThanOrEqual(756);
+
+      spy.mockRestore();
+    });
+
+    it('should recompute popover position on window resize', async () => {
+      let mockTop = 400;
+      const spy = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(() => ({
+        top: mockTop, bottom: mockTop + 28, left: 200, right: 228, width: 28, height: 28,
+        x: 200, y: mockTop, toJSON: () => {},
+      } as DOMRect));
+
+      render(
+        <PlacedItemOverlay
+          item={{ ...createMockItemWithLibrary(), instanceId: 'i-resize' }}
+          gridX={4} gridY={4}
+          isSelected={true}
+          onSelect={vi.fn()}
+          getItemById={mockGetItemById}
+          onCustomizationChange={vi.fn()}
+          getLibraryMeta={async () => ({ customizableFields: ['lipStyle'], customizationDefaults: {} })}
+        />
+      );
+
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
+      fireEvent.click(customizeBtn);
+
+      const popover = document.body.querySelector('.placed-item-customize-popover') as HTMLElement;
+      const topBefore = parseFloat(popover.style.top);
+
+      // Simulate button moving lower during resize
+      mockTop = 600;
+      window.dispatchEvent(new Event('resize'));
+
+      await waitFor(() => {
+        const topAfter = parseFloat(popover.style.top);
+        expect(topAfter).not.toBe(topBefore);
+      });
+
+      spy.mockRestore();
+    });
+
+    it('should compute a fresh position when popover is re-opened after close', async () => {
+      let mockTop = 400;
+      const spy = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(() => ({
+        top: mockTop, bottom: mockTop + 28, left: 200, right: 228, width: 28, height: 28,
+        x: 200, y: mockTop, toJSON: () => {},
+      } as DOMRect));
+
+      render(
+        <PlacedItemOverlay
+          item={{ ...createMockItemWithLibrary(), instanceId: 'i-reopen' }}
+          gridX={4} gridY={4}
+          isSelected={true}
+          onSelect={vi.fn()}
+          getItemById={mockGetItemById}
+          onCustomizationChange={vi.fn()}
+          getLibraryMeta={async () => ({ customizableFields: ['lipStyle'], customizationDefaults: {} })}
+        />
+      );
+
+      const customizeBtn = await waitFor(() => screen.getByRole('button', { name: 'Customize' }));
+
+      // Open
+      fireEvent.click(customizeBtn);
+      const topFirst = parseFloat(
+        (document.body.querySelector('.placed-item-customize-popover') as HTMLElement).style.top
+      );
+
+      // Close via close button
+      const closeBtn = document.body.querySelector('.placed-item-customize-popover-close') as HTMLElement;
+      fireEvent.click(closeBtn);
+      expect(document.body.querySelector('.placed-item-customize-popover')).not.toBeInTheDocument();
+
+      // Move button before re-open
+      mockTop = 600;
+
+      // Re-open
+      fireEvent.click(customizeBtn);
+      const topSecond = parseFloat(
+        (document.body.querySelector('.placed-item-customize-popover') as HTMLElement).style.top
+      );
+
+      expect(topSecond).not.toBe(topFirst);
+
+      spy.mockRestore();
     });
   });
 });

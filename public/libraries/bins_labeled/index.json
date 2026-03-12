@@ -1,5 +1,6 @@
 {
   "version": "1.0.0",
+  "customizableFields": ["lipStyle", "wallPattern", "fingerSlide", "wallCutout"],
   "items": [
     {
       "id": "bin-1x1-labeled",
