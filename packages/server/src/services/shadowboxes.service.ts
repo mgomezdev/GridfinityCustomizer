@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import type { Client } from '@libsql/client';
+import { client } from '../db/connection.js';
 
 export interface PendingRowParams {
   userId: number;
@@ -25,7 +25,7 @@ export interface ShadowboxRow {
   svgPath: string | null;
   rotationDeg: number | null;
   toleranceMm: number | null;
-  stackable: boolean | null;
+  stackable: number | null;
   stlPath: string | null;
   gridX: number | null;
   gridY: number | null;
@@ -34,7 +34,6 @@ export interface ShadowboxRow {
 }
 
 export async function createPendingRow(
-  client: Client,
   params: PendingRowParams
 ): Promise<string> {
   const id = randomUUID();
@@ -47,7 +46,6 @@ export async function createPendingRow(
 }
 
 export async function updateToReady(
-  client: Client,
   id: string,
   params: ReadyParams
 ): Promise<void> {
@@ -75,7 +73,7 @@ export async function updateToReady(
   });
 }
 
-export async function updateToError(client: Client, id: string): Promise<void> {
+export async function updateToError(id: string): Promise<void> {
   await client.execute({
     sql: `UPDATE shadowboxes SET status = 'error' WHERE id = ?`,
     args: [id],
@@ -83,7 +81,6 @@ export async function updateToError(client: Client, id: string): Promise<void> {
 }
 
 export async function listByUser(
-  client: Client,
   userId: number
 ): Promise<ShadowboxRow[]> {
   const result = await client.execute({
@@ -100,7 +97,6 @@ export async function listByUser(
 }
 
 export async function getById(
-  client: Client,
   id: string
 ): Promise<ShadowboxRow | null> {
   const result = await client.execute({
@@ -114,14 +110,14 @@ export async function getById(
   return (result.rows[0] as unknown as ShadowboxRow) ?? null;
 }
 
-export async function deleteShadowbox(client: Client, id: string): Promise<void> {
+export async function deleteShadowbox(id: string): Promise<void> {
   await client.execute({
     sql: `DELETE FROM shadowboxes WHERE id = ?`,
     args: [id],
   });
 }
 
-export async function listAllForAdmin(client: Client): Promise<(ShadowboxRow & { userName: string })[]> {
+export async function listAllForAdmin(): Promise<(ShadowboxRow & { userName: string })[]> {
   const result = await client.execute({
     sql: `SELECT s.id, s.user_id as userId, u.username as userName,
                  s.name, s.thickness_mm as thicknessMm,
@@ -137,7 +133,7 @@ export async function listAllForAdmin(client: Client): Promise<(ShadowboxRow & {
   return result.rows as unknown as (ShadowboxRow & { userName: string })[];
 }
 
-export async function getStlPath(client: Client, id: string): Promise<string | null> {
-  const row = await getById(client, id);
+export async function getStlPath(id: string): Promise<string | null> {
+  const row = await getById(id);
   return row?.stlPath ?? null;
 }
