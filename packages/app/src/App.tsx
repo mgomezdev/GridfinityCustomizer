@@ -21,6 +21,7 @@ import { DimensionInput } from './components/DimensionInput';
 import { GridPreview } from './components/GridPreview';
 import { GridSummary } from './components/GridSummary';
 import { ItemLibrary } from './components/ItemLibrary';
+import { ShadowboxLibrarySection } from './components/ShadowboxLibrarySection';
 import { ItemControls } from './components/ItemControls';
 import { BinCustomizationPanel } from './components/BinCustomizationPanel';
 import { SpacerControls } from './components/SpacerControls';
@@ -459,17 +460,20 @@ function App() {
 
   // Sidebar content
   const itemLibraryContent = (
-    <ItemLibrary
-      items={libraryItems}
-      categories={categories}
-      isLoading={isLibraryLoading || isLibrariesLoading}
-      error={libraryError || librariesError}
-      onRefreshLibrary={handleRefreshAll}
-      availableLibraries={availableLibraries}
-      selectedLibraryIds={selectedLibraryIds}
-      onToggleLibrary={toggleLibrary}
-      isLibrariesLoading={isLibrariesLoading}
-    />
+    <>
+      <ItemLibrary
+        items={libraryItems}
+        categories={categories}
+        isLoading={isLibraryLoading || isLibrariesLoading}
+        error={libraryError || librariesError}
+        onRefreshLibrary={handleRefreshAll}
+        availableLibraries={availableLibraries}
+        selectedLibraryIds={selectedLibraryIds}
+        onToggleLibrary={toggleLibrary}
+        isLibrariesLoading={isLibrariesLoading}
+      />
+      {isAuthenticated && <ShadowboxLibrarySection />}
+    </>
   );
 
   const imageTabContent = isAuthenticated ? (

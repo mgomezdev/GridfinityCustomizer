@@ -45,6 +45,10 @@ vi.mock('./components/RefImageLibrary', () => ({
   RefImageLibrary: () => <div data-testid="ref-image-library" />,
 }));
 
+vi.mock('./components/ShadowboxLibrarySection', () => ({
+  ShadowboxLibrarySection: () => <div data-testid="shadowbox-library-section" />,
+}));
+
 vi.mock('./components/RebindImageDialog', () => ({
   RebindImageDialog: () => null,
 }));
