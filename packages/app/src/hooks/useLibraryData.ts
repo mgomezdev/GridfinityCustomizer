@@ -1,8 +1,21 @@
 import { useCallback, useMemo } from 'react';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import type { LibraryItem, LibraryMeta } from '../types/gridfinity';
+import type { ApiShadowbox } from '@gridfinity/shared';
 import { useDataSource } from '../contexts/DataSourceContext';
 import { prefixItemId } from '../utils/libraryHelpers';
+import { useShadowboxesQuery } from './useShadowboxes';
+
+export function shadowboxToLibraryItem(sb: ApiShadowbox): LibraryItem {
+  return {
+    id: `shadowbox:${sb.id}`,
+    name: sb.name,
+    widthUnits: sb.gridX ?? 1,
+    heightUnits: sb.gridY ?? 1,
+    color: '#9C27B0',
+    categories: ['shadowbox'],
+  };
+}
 
 interface UseLibraryDataResult {
   items: LibraryItem[];
@@ -46,10 +59,17 @@ export function useLibraryData(
     })),
   });
 
+  // Load shadowboxes and convert ready ones to LibraryItems
+  const { data: shadowboxes = [] } = useShadowboxesQuery();
+  const shadowboxLibraryItems = useMemo(
+    () => shadowboxes.filter((sb) => sb.status === 'ready').map(shadowboxToLibraryItem),
+    [shadowboxes]
+  );
+
   // Combine results from all queries
   const items = useMemo(() => {
-    return queries.flatMap((q) => q.data ?? []);
-  }, [queries]);
+    return [...queries.flatMap((q) => q.data ?? []), ...shadowboxLibraryItems];
+  }, [queries, shadowboxLibraryItems]);
 
   const isLoading = queries.some((q) => q.isLoading);
 
