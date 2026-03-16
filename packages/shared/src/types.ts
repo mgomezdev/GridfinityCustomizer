@@ -402,8 +402,8 @@ export interface ApiShadowbox {
   id: string;
   name: string;
   thicknessMm: number;
-  gridX: number;
-  gridY: number;
+  gridX: number | null;
+  gridY: number | null;
   status: 'pending' | 'ready' | 'error';
   createdAt: string;
 }

@@ -99,7 +99,7 @@ export const shadowboxes = sqliteTable('shadowboxes', {
   svgPath: text('svg_path'),
   rotationDeg: real('rotation_deg'),
   toleranceMm: real('tolerance_mm'),
-  stackable: integer('stackable'), // 0 or 1
+  stackable: integer('stackable', { mode: 'boolean' }), // boolean
   stlPath: text('stl_path'),
   gridX: integer('grid_x'),
   gridY: integer('grid_y'),
@@ -197,6 +197,7 @@ export const bomSubmissions = sqliteTable('bom_submissions', {
 export const usersRelations = relations(users, ({ many }) => ({
   refreshTokens: many(refreshTokens),
   layouts: many(layouts),
+  shadowboxes: many(shadowboxes),
 }));
 
 export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({
