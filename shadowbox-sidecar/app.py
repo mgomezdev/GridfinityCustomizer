@@ -3,7 +3,6 @@ import os
 import subprocess
 import sys
 import tempfile
-import uuid
 
 from flask import Flask, jsonify, request
 
@@ -46,7 +45,7 @@ def process_image():
         result = processor.process()
     except ValueError as exc:
         return jsonify({'error': str(exc)}), 400
-    except Exception as exc:
+    except Exception:
         app.logger.exception('process-image failed')
         return jsonify({'error': 'internal error'}), 500
 
@@ -64,7 +63,7 @@ def generate():
     if not body:
         return jsonify({'error': 'JSON body required'}), 400
 
-    required = ['svg_path', 'thickness_mm', 'rotation_deg', 'tolerance_mm', 'stackable']
+    required = ['svg_path', 'thickness_mm', 'stackable']
     for field in required:
         if field not in body:
             return jsonify({'error': f'{field} required'}), 400
@@ -117,6 +116,11 @@ def generate():
         'grid_x': grid_x,
         'grid_y': grid_y,
     })
+
+
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({'status': 'ok'})
 
 
 if __name__ == '__main__':
