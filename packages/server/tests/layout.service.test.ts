@@ -16,7 +16,7 @@ vi.mock('../src/db/connection.js', async () => {
 
 import { runMigrations } from '../src/db/migrate.js';
 import { client as testClient } from '../src/db/connection.js';
-import { createLayout, getLayoutById } from '../src/services/layout.service.js';
+import { createLayout, getLayoutById, updateLayout, cloneLayout } from '../src/services/layout.service.js';
 
 beforeEach(async () => {
   await runMigrations(testClient);
@@ -94,6 +94,83 @@ describe('layout.service — shadowBoxId', () => {
     const layout = await getLayoutById(created.id, 1);
     expect(layout.placedItems).toHaveLength(1);
     expect(layout.placedItems[0].shadowBoxId).toBe(sbId);
+  });
+
+  it('placed shadowbox item stores shadowBoxId on updateLayout', async () => {
+    const sbId = randomUUID();
+    await testClient.execute({
+      sql: "INSERT INTO shadowboxes (id, user_id, name, thickness_mm, status) VALUES (?, 1, 'test', 8, 'ready')",
+      args: [sbId],
+    });
+
+    // Create an initial layout without a shadowbox item
+    const created = await createLayout(1, {
+      name: 'Update Test Layout',
+      gridX: 4,
+      gridY: 4,
+      widthMm: 168,
+      depthMm: 168,
+      placedItems: [],
+    });
+
+    // Update the layout to include a shadowbox item
+    const updated = await updateLayout(created.id, 1, {
+      name: 'Update Test Layout',
+      gridX: 4,
+      gridY: 4,
+      widthMm: 168,
+      depthMm: 168,
+      placedItems: [
+        {
+          itemId: `shadowbox:${sbId}`,
+          x: 1,
+          y: 1,
+          width: 2,
+          height: 2,
+          rotation: 0,
+        },
+      ],
+    });
+
+    expect(updated.placedItems).toHaveLength(1);
+    expect(updated.placedItems[0].libraryId).toBe('shadowbox');
+    expect(updated.placedItems[0].itemId).toBe(sbId);
+    expect(updated.placedItems[0].shadowBoxId).toBe(sbId);
+  });
+
+  it('cloned layout preserves shadowBoxId on placed shadowbox items', async () => {
+    const sbId = randomUUID();
+    await testClient.execute({
+      sql: "INSERT INTO shadowboxes (id, user_id, name, thickness_mm, status) VALUES (?, 1, 'test', 8, 'ready')",
+      args: [sbId],
+    });
+
+    // Create a layout with a shadowbox item
+    const original = await createLayout(1, {
+      name: 'Clone Source Layout',
+      gridX: 4,
+      gridY: 4,
+      widthMm: 168,
+      depthMm: 168,
+      placedItems: [
+        {
+          itemId: `shadowbox:${sbId}`,
+          x: 0,
+          y: 0,
+          width: 2,
+          height: 2,
+          rotation: 0,
+        },
+      ],
+    });
+
+    // Clone the layout
+    const cloned = await cloneLayout(original.id, 1);
+
+    expect(cloned.placedItems).toHaveLength(1);
+    expect(cloned.placedItems[0].libraryId).toBe('shadowbox');
+    expect(cloned.placedItems[0].itemId).toBe(sbId);
+    expect(cloned.placedItems[0].shadowBoxId).toBe(sbId);
   });
 
   it('non-shadowbox items have shadowBoxId as null', async () => {
