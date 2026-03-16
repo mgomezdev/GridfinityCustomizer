@@ -25,7 +25,7 @@ jobs:
         run: npm ci
 
       - name: Build shared package
-        run: npm run build --workspace=shared
+        run: npm run build --workspace=packages/shared
 
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
