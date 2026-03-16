@@ -52,3 +52,13 @@ server/data/
 # Environment files
 .env
 server/.env
+
+# Gridfinity generator outputs (regenerable)
+tools/gridfinity-generator/bins_*/
+tools/gridfinity-generator/__pycache__/
+
+# Playwright CLI session data
+.playwright-cli/
+
+# Git worktrees
+.worktrees/
