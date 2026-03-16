@@ -14,6 +14,8 @@ import { useRefImagePlacements } from './hooks/useRefImagePlacements';
 import { useGridTransform } from './hooks/useGridTransform';
 import { useAuth } from './contexts/AuthContext';
 import { useWalkthrough, WALKTHROUGH_STEPS } from './contexts/WalkthroughContext';
+import { ShadowboxUploadPage } from './components/ShadowboxUploadPage';
+import { ShadowboxEditorPage } from './components/ShadowboxEditorPage';
 import { useSubmitLayoutMutation, useWithdrawLayoutMutation, useCloneLayoutMutation, useSubmittedCountQuery } from './hooks/useLayouts';
 import { useConfirmDialog } from './hooks/useConfirmDialog';
 import { ConfirmDialog } from './components/ConfirmDialog';
@@ -509,6 +511,16 @@ function App() {
       })()}
     </>
   );
+
+  const pathname = window.location.pathname;
+
+  if (pathname === '/shadowbox/new') {
+    return isAuthenticated ? <ShadowboxUploadPage /> : null;
+  }
+
+  if (pathname === '/shadowbox/edit') {
+    return isAuthenticated ? <ShadowboxEditorPage /> : null;
+  }
 
   return (
     <div className="app">
