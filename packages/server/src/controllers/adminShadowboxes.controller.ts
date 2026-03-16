@@ -1,6 +1,7 @@
-import fs from 'fs';
+import { createReadStream } from 'fs';
+import { access } from 'fs/promises';
 import type { Request, Response, NextFunction } from 'express';
-import { listAllForAdmin, getStlPath, getById } from '../services/shadowboxes.service.js';
+import { listAllForAdmin, getById } from '../services/shadowboxes.service.js';
 
 export async function listAllHandler(
   _req: Request,
@@ -33,25 +34,26 @@ export async function downloadStlHandler(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const id = req.params.id as string;
+    const { id } = req.params;
 
-    const stlPath = await getStlPath(id);
-    if (!stlPath) {
+    const row = await getById(id);
+    if (!row || !row.stlPath) {
       res.status(404).json({ error: 'shadowbox not found' });
       return;
     }
 
-    const row = await getById(id);
-    const filename = row ? `${row.name}.stl` : `${id}.stl`;
+    const safeName = `${row.name.replace(/[^a-zA-Z0-9._-]/g, '_')}.stl`;
 
-    if (!fs.existsSync(stlPath)) {
+    try {
+      await access(row.stlPath);
+    } catch {
       res.status(404).json({ error: 'STL file not found on disk' });
       return;
     }
 
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`);
     res.setHeader('Content-Type', 'application/octet-stream');
-    fs.createReadStream(stlPath).pipe(res);
+    createReadStream(row.stlPath).pipe(res);
   } catch (err) {
     next(err);
   }

@@ -44,6 +44,11 @@ export async function processImageHandler(
       res.status(400).json({ error: 'thicknessMm required' });
       return;
     }
+    const thickness = parseFloat(thicknessMm);
+    if (isNaN(thickness) || thickness <= 0) {
+      res.status(400).json({ error: 'thicknessMm must be a positive number' });
+      return;
+    }
     if (!name?.trim()) {
       res.status(400).json({ error: 'name required' });
       return;
@@ -70,7 +75,7 @@ export async function processImageHandler(
     const shadowboxId = await createPendingRow({
       userId,
       name: name.trim(),
-      thicknessMm: parseFloat(thicknessMm),
+      thicknessMm: thickness,
     });
 
     res.status(200).json({
