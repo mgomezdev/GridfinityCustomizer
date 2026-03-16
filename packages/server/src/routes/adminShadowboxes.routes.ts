@@ -6,10 +6,7 @@ import { listAllHandler, downloadStlHandler } from '../controllers/adminShadowbo
 const router = Router();
 
 // All admin shadowbox routes require auth + admin role
-router.use(requireAuth);
-router.use(requireAdmin);
-
-router.get('/admin/shadowboxes', listAllHandler);
-router.get('/admin/shadowboxes/:id/stl', downloadStlHandler);
+router.get('/admin/shadowboxes', requireAuth, requireAdmin, listAllHandler);
+router.get('/admin/shadowboxes/:id/stl', requireAuth, requireAdmin, downloadStlHandler);
 
 export default router;

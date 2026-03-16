@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 import pino from 'pino';
+import type { Request, Response, NextFunction } from 'express';
 
 // Mock the connection module to use in-memory SQLite
 vi.mock('../src/db/connection.js', async () => {
@@ -33,11 +34,11 @@ vi.mock('../src/services/shadowboxSidecar.service.js', () => ({
 }));
 
 vi.mock('../src/middleware/auth.js', () => ({
-  requireAuth: (req: any, _res: any, next: any) => {
+  requireAuth: (req: Request, _res: Response, next: NextFunction) => {
     req.user = { userId: 1, role: 'user' };
     next();
   },
-  optionalAuth: (_req: any, _res: any, next: any) => {
+  optionalAuth: (_req: Request, _res: Response, next: NextFunction) => {
     next();
   },
 }));
@@ -61,7 +62,7 @@ beforeEach(async () => {
 describe('POST /api/v1/shadowboxes/process-image', () => {
   it('returns svgPath on success', async () => {
     const app = createApp();
-    (sidecar.processImage as any).mockResolvedValueOnce({
+    vi.mocked(sidecar.processImage).mockResolvedValueOnce({
       svgPath: 'M 0 0 Z',
       widthMm: 10,
       heightMm: 10,
@@ -104,7 +105,7 @@ describe('POST /api/v1/shadowboxes', () => {
     const app = createApp();
 
     // First create a pending row via process-image
-    (sidecar.processImage as any).mockResolvedValueOnce({
+    vi.mocked(sidecar.processImage).mockResolvedValueOnce({
       svgPath: 'M 0 0 Z',
       widthMm: 10,
       heightMm: 10,
@@ -118,7 +119,7 @@ describe('POST /api/v1/shadowboxes', () => {
 
     const { shadowboxId } = processRes.body;
 
-    (sidecar.generateShadowbox as any).mockResolvedValueOnce({
+    vi.mocked(sidecar.generateShadowbox).mockResolvedValueOnce({
       stlBase64: Buffer.from('FAKE-STL').toString('base64'),
       gridX: 2,
       gridY: 3,
@@ -183,7 +184,7 @@ describe('DELETE /api/v1/shadowboxes/:id', () => {
     const app = createApp();
 
     // Create a pending row first
-    (sidecar.processImage as any).mockResolvedValueOnce({
+    vi.mocked(sidecar.processImage).mockResolvedValueOnce({
       svgPath: 'M 0 0 Z',
       widthMm: 10,
       heightMm: 10,
