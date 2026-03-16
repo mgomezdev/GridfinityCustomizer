@@ -1,12 +1,12 @@
 import { config } from '../config.js';
 
 export class SidecarError extends Error {
-  constructor(
-    message: string,
-    public readonly statusCode: number = 500
-  ) {
+  readonly statusCode: number;
+
+  constructor(message: string, statusCode = 500) {
     super(message);
     this.name = 'SidecarError';
+    this.statusCode = statusCode;
   }
 }
 
@@ -28,8 +28,8 @@ async function sidecarFetch(
   const body = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    const msg = (body as any)?.error ?? `Sidecar error ${res.status}`;
-    throw new SidecarError(msg, res.status);
+    const errorMessage = (body as { error?: string })?.error ?? `Sidecar error ${res.status}`;
+    throw new SidecarError(errorMessage, res.status);
   }
 
   return body;
@@ -48,7 +48,7 @@ export async function processImage(
   const raw = (await sidecarFetch('/process-image', {
     method: 'POST',
     body: formData,
-  })) as any;
+  })) as { svg_path: string; width_mm: number; height_mm: number; scale_mm_per_px: number };
 
   return {
     svgPath: raw.svg_path,
@@ -85,7 +85,7 @@ export async function generateShadowbox(
       tolerance_mm: params.toleranceMm,
       stackable: params.stackable,
     }),
-  })) as any;
+  })) as { stl_base64: string; grid_x: number; grid_y: number };
 
   return {
     stlBase64: raw.stl_base64,
