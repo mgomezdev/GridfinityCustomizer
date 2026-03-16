@@ -103,6 +103,7 @@ export interface BOMItem {
   categories: string[];
   quantity: number;
   customization?: BinCustomization;
+  shadowboxId?: string;
 }
 
 export interface ReferenceImage {
@@ -239,6 +240,7 @@ export interface ApiPlacedItem {
   rotation: number;
   sortOrder: number;
   customization?: BinCustomization;
+  shadowBoxId?: string | null;
 }
 
 export interface ApiReferenceImage {
@@ -390,4 +392,23 @@ export interface ApiBomSubmission {
   totalItems: number;
   totalUnique: number;
   createdAt: string;
+}
+
+// ============================================================
+// Shadowbox API types
+// ============================================================
+
+export interface ApiShadowbox {
+  id: string;
+  name: string;
+  thicknessMm: number;
+  gridX: number;
+  gridY: number;
+  status: 'pending' | 'ready' | 'error';
+  createdAt: string;
+}
+
+export interface ApiShadowboxAdmin extends ApiShadowbox {
+  userId: number;
+  userName: string;
 }

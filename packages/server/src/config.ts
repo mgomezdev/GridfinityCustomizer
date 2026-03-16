@@ -9,6 +9,8 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
   JWT_SECRET: z.string().default('dev-jwt-secret-change-in-production'),
   JWT_REFRESH_SECRET: z.string().default('dev-refresh-secret-change-in-production'),
+  SHADOWBOX_SIDECAR_URL: z.string().default('http://localhost:5001'),
+  SHADOWBOX_STL_DIR: z.string().default('./data/shadowboxes'),
 });
 
 export type Config = z.infer<typeof envSchema>;
