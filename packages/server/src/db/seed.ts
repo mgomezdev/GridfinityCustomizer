@@ -13,9 +13,9 @@ const __dirname = dirname(__filename);
 async function seed(): Promise<void> {
   const logger = pino({ level: 'info' });
 
-  // From server/src/db or server/dist/db -> 3 levels up = project root
-  const projectRoot = resolve(__dirname, '..', '..', '..');
-  const dbPath = process.env.DB_PATH ?? resolve(projectRoot, 'server', 'data', 'gridfinity.db');
+  // From packages/server/src/db or packages/server/dist/db -> 4 levels up = repo root
+  const projectRoot = resolve(__dirname, '..', '..', '..', '..');
+  const dbPath = process.env.DB_PATH ?? resolve(projectRoot, 'packages', 'server', 'data', 'gridfinity.db');
   const dataDir = dirname(dbPath);
 
   // Ensure data directory exists

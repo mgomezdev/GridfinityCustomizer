@@ -3,8 +3,8 @@ version: "3.9"
 services:
   frontend:
     build:
-      context: .
-      dockerfile: Dockerfile.frontend
+      context: ..
+      dockerfile: infra/Dockerfile.frontend
     ports:
       - "32888:80"
     depends_on:
@@ -14,8 +14,8 @@ services:
 
   backend:
     build:
-      context: .
-      dockerfile: Dockerfile.backend
+      context: ..
+      dockerfile: infra/Dockerfile.backend
     expose:
       - "3001"
     environment:

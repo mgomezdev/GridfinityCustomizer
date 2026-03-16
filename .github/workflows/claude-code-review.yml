@@ -1,8 +1,8 @@
-name: Claude Code Review
+name: Claude Code Review reopened only
 
 on:
   pull_request:
-    types: [opened, synchronize, ready_for_review, reopened]
+    types: [reopened]
     # Optional: Only run on specific file changes
     # paths:
     #   - "src/**/*.ts"
