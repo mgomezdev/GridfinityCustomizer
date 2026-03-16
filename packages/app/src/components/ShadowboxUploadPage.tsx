@@ -23,6 +23,19 @@ export function ShadowboxUploadPage() {
     setIsSubmitting(true);
     try {
       const result = await processImage(file, thickness, nameInput.value);
+      // Store editor state in sessionStorage for the editor page to read
+      sessionStorage.setItem(
+        `shadowbox-edit-${result.shadowboxId}`,
+        JSON.stringify({
+          shadowboxId: result.shadowboxId,
+          svgPath: result.svgPath,
+          widthMm: result.widthMm,
+          heightMm: result.heightMm,
+          scaleMmPerPx: result.scaleMmPerPx,
+          thicknessMm: thickness,
+          name: nameInput.value,
+        })
+      );
       window.location.href = `/shadowbox/edit?id=${result.shadowboxId}`;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred.');

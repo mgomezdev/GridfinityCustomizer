@@ -13,6 +13,7 @@ beforeEach(() => {
     writable: true,
     value: { href: '' },
   });
+  sessionStorage.clear();
 });
 
 describe('ShadowboxUploadPage', () => {
@@ -64,6 +65,47 @@ describe('ShadowboxUploadPage', () => {
 
     await waitFor(() => {
       expect(mockProcessImage).toHaveBeenCalledWith(file, 12, 'My Tool');
+    });
+  });
+
+  it('stores process-image result in sessionStorage before navigating', async () => {
+    mockProcessImage.mockResolvedValue({
+      shadowboxId: 'abc-123',
+      svgPath: '/data/abc.svg',
+      widthMm: 42,
+      heightMm: 55,
+      scaleMmPerPx: 0.5,
+    });
+
+    render(<ShadowboxUploadPage />);
+
+    const file = new File(['dummy'], 'photo.jpg', { type: 'image/jpeg' });
+    const photoInput = document.getElementById('photo') as HTMLInputElement;
+    fireEvent.change(photoInput, { target: { files: [file] } });
+
+    const nameInput = document.getElementById('name') as HTMLInputElement;
+    fireEvent.change(nameInput, { target: { value: 'My Tool' } });
+
+    const thicknessInput = document.getElementById('thickness') as HTMLInputElement;
+    fireEvent.change(thicknessInput, { target: { value: '12' } });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /process/i }));
+    });
+
+    await waitFor(() => {
+      const stored = sessionStorage.getItem('shadowbox-edit-abc-123');
+      expect(stored).not.toBeNull();
+      const parsed = JSON.parse(stored!);
+      expect(parsed).toEqual({
+        shadowboxId: 'abc-123',
+        svgPath: '/data/abc.svg',
+        widthMm: 42,
+        heightMm: 55,
+        scaleMmPerPx: 0.5,
+        thicknessMm: 12,
+        name: 'My Tool',
+      });
     });
   });
 
