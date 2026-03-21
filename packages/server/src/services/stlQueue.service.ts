@@ -4,7 +4,10 @@ export class StlQueue {
   private running = 0;
   private readonly queue: Array<() => void> = [];
 
-  constructor(private readonly maxWorkers: number) {}
+  private readonly maxWorkers: number;
+  constructor(maxWorkers: number) {
+    this.maxWorkers = maxWorkers;
+  }
 
   enqueue(job: Job): Promise<void> {
     return new Promise((resolve, reject) => {
