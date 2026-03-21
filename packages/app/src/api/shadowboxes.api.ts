@@ -1,12 +1,16 @@
 import type { ApiShadowbox } from '@gridfinity/shared';
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '';
+const API_BASE_URL = '';
 
-async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+async function apiFetch(path: string, accessToken: string, init?: RequestInit): Promise<Response> {
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...init?.headers },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+      ...init?.headers,
+    },
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -27,6 +31,7 @@ export async function processImage(
   file: File,
   thicknessMm: number,
   name: string,
+  accessToken: string,
 ): Promise<ProcessImageResult> {
   const formData = new FormData();
   formData.append('image', file);
@@ -36,6 +41,7 @@ export async function processImage(
   const res = await fetch(`${API_BASE_URL}/api/v1/shadowboxes/process-image`, {
     method: 'POST',
     credentials: 'include',
+    headers: { Authorization: `Bearer ${accessToken}` },
     body: formData,
   });
   if (!res.ok) {
@@ -53,24 +59,24 @@ export interface GenerateParams {
   stackable: boolean;
 }
 
-export async function generateShadowbox(params: GenerateParams): Promise<ApiShadowbox> {
-  const res = await apiFetch('/api/v1/shadowboxes', {
+export async function generateShadowbox(params: GenerateParams, accessToken: string): Promise<ApiShadowbox> {
+  const res = await apiFetch('/api/v1/shadowboxes', accessToken, {
     method: 'POST',
     body: JSON.stringify(params),
   });
   return res.json();
 }
 
-export async function fetchShadowboxes(): Promise<ApiShadowbox[]> {
-  const res = await apiFetch('/api/v1/shadowboxes');
+export async function fetchShadowboxes(accessToken: string): Promise<ApiShadowbox[]> {
+  const res = await apiFetch('/api/v1/shadowboxes', accessToken);
   return res.json();
 }
 
-export async function deleteShadowbox(id: string): Promise<void> {
-  await apiFetch(`/api/v1/shadowboxes/${id}`, { method: 'DELETE' });
+export async function deleteShadowbox(id: string, accessToken: string): Promise<void> {
+  await apiFetch(`/api/v1/shadowboxes/${id}`, accessToken, { method: 'DELETE' });
 }
 
-export async function fetchAdminShadowboxes(): Promise<ApiShadowbox[]> {
-  const res = await apiFetch('/api/v1/admin/shadowboxes');
+export async function fetchAdminShadowboxes(accessToken: string): Promise<ApiShadowbox[]> {
+  const res = await apiFetch('/api/v1/admin/shadowboxes', accessToken);
   return res.json();
 }

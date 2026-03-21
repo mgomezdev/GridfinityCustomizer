@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { generateShadowbox } from '../api/shadowboxes.api';
 import { SHADOWBOXES_QUERY_KEY } from '../hooks/useShadowboxes';
+import { useAuth } from '../contexts/AuthContext';
 
 interface EditorState {
   shadowboxId: string;
@@ -51,6 +52,7 @@ function loadEditorState(): EditorState | null {
 }
 
 export function ShadowboxEditorPage() {
+  const { getAccessToken } = useAuth();
   const queryClient = useQueryClient();
   const editorState = useRef<EditorState | null>(loadEditorState());
   const state = editorState.current;
@@ -113,13 +115,15 @@ export function ShadowboxEditorPage() {
     setIsSubmitting(true);
     setError(null);
     try {
+      const token = getAccessToken();
+      if (!token) throw new Error('Not authenticated');
       await generateShadowbox({
         shadowboxId: state.shadowboxId,
         svgPath: pointsToSvgPath(points),
         rotationDeg: 0,
         toleranceMm: tolerance,
         stackable,
-      });
+      }, token);
       await queryClient.invalidateQueries({ queryKey: SHADOWBOXES_QUERY_KEY });
       window.location.href = '/';
     } catch (err) {

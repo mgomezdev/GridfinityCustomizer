@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { processImage } from '../api/shadowboxes.api';
+import { useAuth } from '../contexts/AuthContext';
 
 export function ShadowboxUploadPage() {
+  const { getAccessToken } = useAuth();
   const [thickness, setThickness] = useState(8);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -20,9 +22,15 @@ export function ShadowboxUploadPage() {
       return;
     }
 
+    const token = getAccessToken();
+    if (!token) {
+      setError('Not authenticated. Please log in.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      const result = await processImage(file, thickness, nameInput.value);
+      const result = await processImage(file, thickness, nameInput.value, token);
       // Store editor state in sessionStorage for the editor page to read
       sessionStorage.setItem(
         `shadowbox-edit-${result.shadowboxId}`,
