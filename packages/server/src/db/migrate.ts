@@ -259,33 +259,10 @@ export async function runMigrations(client: Client): Promise<void> {
     );
   `);
 
-  // Shadowboxes
-  await client.execute(`CREATE TABLE IF NOT EXISTS shadowboxes (
-    id TEXT PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    thickness_mm REAL NOT NULL,
-    svg_path TEXT,
-    rotation_deg REAL,
-    tolerance_mm REAL,
-    stackable INTEGER,
-    stl_path TEXT,
-    grid_x INTEGER,
-    grid_y INTEGER,
-    status TEXT NOT NULL DEFAULT 'pending',
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );`);
-  await client.execute(
-    `CREATE UNIQUE INDEX IF NOT EXISTS idx_shadowboxes_user_name ON shadowboxes(user_id, name);`,
-  );
-  await client.execute(
-    `CREATE INDEX IF NOT EXISTS idx_shadowboxes_user ON shadowboxes(user_id);`,
-  );
+  // Drop legacy shadowboxes table (replaced by user_stl_uploads)
   try {
-    await client.execute(
-      `ALTER TABLE placed_items ADD COLUMN shadow_box_id TEXT REFERENCES shadowboxes(id) ON DELETE SET NULL;`,
-    );
+    await client.execute(`DROP TABLE IF EXISTS shadowboxes;`);
   } catch {
-    // column already exists — safe to ignore
+    // ignore
   }
 }

@@ -33,16 +33,16 @@ describe('DB migrations', () => {
     client.close();
   });
 
-  it('creates shadowboxes table', async () => {
+  it('does not create shadowboxes table (legacy table dropped)', async () => {
     const tables = await client.execute(
       "SELECT name FROM sqlite_master WHERE type='table' AND name='shadowboxes'",
     );
-    expect(tables.rows).toHaveLength(1);
+    expect(tables.rows).toHaveLength(0);
   });
 
-  it('adds shadow_box_id column to placed_items', async () => {
+  it('placed_items does not have shadow_box_id column', async () => {
     const cols = await client.execute('PRAGMA table_info(placed_items)');
     const names = cols.rows.map((r) => (r as Record<string, unknown>).name);
-    expect(names).toContain('shadow_box_id');
+    expect(names).not.toContain('shadow_box_id');
   });
 });

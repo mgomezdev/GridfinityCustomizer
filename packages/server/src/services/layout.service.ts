@@ -72,7 +72,6 @@ function formatPlacedItem(row: typeof placedItems.$inferSelect): ApiPlacedItem {
     rotation: row.rotation,
     sortOrder: row.sortOrder,
     ...(row.customization ? { customization: parseCustomization(row.customization) } : {}),
-    shadowBoxId: row.shadowBoxId ?? null,
   };
 }
 
@@ -819,7 +818,6 @@ export async function cloneLayout(
       rotation: item.rotation,
       sortOrder: item.sortOrder,
       customization: item.customization,
-      shadowBoxId: item.shadowBoxId ?? null,
     }));
     insertedItems = await db
       .insert(placedItems)
