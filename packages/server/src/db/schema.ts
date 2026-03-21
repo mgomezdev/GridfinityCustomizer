@@ -113,7 +113,31 @@ export const userStorage = sqliteTable('user_storage', {
   imageBytes: integer('image_bytes').notNull().default(0),
   maxLayouts: integer('max_layouts').notNull().default(50),
   maxImageBytes: integer('max_image_bytes').notNull().default(52428800),
+  maxUserStls: integer('max_user_stls').notNull().default(50),
 });
+
+export const userStlUploads = sqliteTable('user_stl_uploads', {
+  id: text('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  originalFilename: text('original_filename').notNull(),
+  filePath: text('file_path').notNull(),
+  imageUrl: text('image_url'),
+  perspImageUrls: text('persp_image_urls'), // JSON array string
+  gridX: integer('grid_x'),
+  gridY: integer('grid_y'),
+  status: text('status').notNull().default('pending'), // 'pending'|'processing'|'ready'|'error'
+  errorMessage: text('error_message'),
+  createdAt: text('created_at').notNull().default(''),
+  updatedAt: text('updated_at').notNull().default(''),
+});
+
+export const userStlUploadsRelations = relations(userStlUploads, ({ one }) => ({
+  user: one(users, {
+    fields: [userStlUploads.userId],
+    references: [users.id],
+  }),
+}));
 
 // Reference image library table
 export const refImages = sqliteTable('ref_images', {
@@ -180,6 +204,7 @@ export const bomSubmissions = sqliteTable('bom_submissions', {
 export const usersRelations = relations(users, ({ many }) => ({
   refreshTokens: many(refreshTokens),
   layouts: many(layouts),
+  stlUploads: many(userStlUploads),
 }));
 
 export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({

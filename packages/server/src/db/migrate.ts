@@ -167,6 +167,39 @@ export async function runMigrations(client: Client): Promise<void> {
     );
   `);
 
+  // Add max_user_stls column to user_storage if missing (existing databases)
+  try {
+    await client.execute(`ALTER TABLE user_storage ADD COLUMN max_user_stls INTEGER NOT NULL DEFAULT 50;`);
+  } catch {
+    // Column already exists — ignore
+  }
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS user_stl_uploads (
+      id TEXT NOT NULL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      original_filename TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      image_url TEXT,
+      persp_image_urls TEXT,
+      grid_x INTEGER,
+      grid_y INTEGER,
+      status TEXT NOT NULL DEFAULT 'pending',
+      error_message TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
+
+  await client.execute(`
+    CREATE INDEX IF NOT EXISTS idx_user_stl_uploads_user ON user_stl_uploads(user_id);
+  `);
+
+  await client.execute(`
+    CREATE INDEX IF NOT EXISTS idx_user_stl_uploads_status ON user_stl_uploads(status);
+  `);
+
   // Sharing tables
   await client.execute(`
     CREATE TABLE IF NOT EXISTS shared_projects (
