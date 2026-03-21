@@ -392,3 +392,26 @@ export interface ApiBomSubmission {
   createdAt: string;
 }
 
+// ============================================================
+// User STL upload types
+// ============================================================
+
+export interface ApiUserStl {
+  id: string;
+  name: string;
+  gridX: number | null;
+  gridY: number | null;
+  imageUrl: string | null;
+  perspImageUrls: string[];
+  status: 'pending' | 'processing' | 'ready' | 'error';
+  errorMessage: string | null;
+  createdAt: string;
+}
+
+export interface ApiUserStlAdmin extends ApiUserStl {
+  userId: number;
+  userName: string;
+  originalFilename: string;
+  updatedAt: string;
+}
+
