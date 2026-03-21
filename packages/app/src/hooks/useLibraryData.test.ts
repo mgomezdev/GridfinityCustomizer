@@ -6,6 +6,11 @@ import type { ApiShadowbox } from '@gridfinity/shared';
 import type { DataSourceAdapter } from '../api/adapters/types';
 import { createTestWrapper, createTestWrapperWithAdapter } from '../test/testWrapper';
 
+// Disable auth so the shadowbox query is skipped (enabled: isAuthenticated = false)
+vi.mock('../contexts/AuthContext', () => ({
+  useAuth: () => ({ getAccessToken: () => null, isAuthenticated: false }),
+}));
+
 // Mock shadowboxes API so useShadowboxesQuery returns empty by default in useLibraryData tests
 vi.mock('../api/shadowboxes.api', () => ({
   fetchShadowboxes: vi.fn().mockResolvedValue([]),

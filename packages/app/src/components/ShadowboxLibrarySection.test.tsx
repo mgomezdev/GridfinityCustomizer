@@ -4,6 +4,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createElement } from 'react';
 import { ShadowboxLibrarySection } from './ShadowboxLibrarySection';
 
+vi.mock('../contexts/AuthContext', () => ({
+  useAuth: () => ({ getAccessToken: () => 'mock-token', isAuthenticated: true }),
+}));
+
 vi.mock('../api/shadowboxes.api', () => ({
   fetchShadowboxes: vi.fn().mockResolvedValue([
     { id: 'abc-123', name: 'screwdriver', gridX: 2, gridY: 3, status: 'ready', createdAt: 'now', thicknessMm: 8 },
@@ -31,9 +35,9 @@ describe('ShadowboxLibrarySection', () => {
     expect(await screen.findByText('pending-tool')).toBeInTheDocument();
   });
 
-  it('renders a link to create new shadowbox', async () => {
+  it('renders a button to create new shadowbox', async () => {
     render(createElement(ShadowboxLibrarySection, null), { wrapper });
-    const link = await screen.findByRole('link', { name: /new shadowbox/i });
-    expect(link).toHaveAttribute('href', '/shadowbox/new');
+    const btn = await screen.findByRole('button', { name: /new shadowbox/i });
+    expect(btn).toBeInTheDocument();
   });
 });

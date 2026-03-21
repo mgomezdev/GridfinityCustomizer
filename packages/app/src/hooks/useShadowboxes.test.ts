@@ -4,6 +4,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createElement } from 'react';
 import { useShadowboxesQuery } from './useShadowboxes';
 
+vi.mock('../contexts/AuthContext', () => ({
+  useAuth: () => ({ getAccessToken: () => 'mock-token', isAuthenticated: true }),
+}));
+
 vi.mock('../api/shadowboxes.api', () => ({
   fetchShadowboxes: vi.fn().mockResolvedValue([
     { id: 'abc', name: 'screwdriver', gridX: 2, gridY: 3, status: 'ready', createdAt: 'now', thicknessMm: 8 },

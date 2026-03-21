@@ -12,8 +12,9 @@ dist
 dist-ssr
 *.local
 
-# Local configuration
+# Local configuration (may contain secrets)
 settings.json
+.mcp.json
 
 # User-uploaded images
 packages/app/public/images/

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { processImage } from '../api/shadowboxes.api';
 import { useAuth } from '../contexts/AuthContext';
+import { navigate } from '../utils/navigate';
 
 export function ShadowboxUploadPage() {
   const { getAccessToken } = useAuth();
@@ -44,7 +45,7 @@ export function ShadowboxUploadPage() {
           name: nameInput.value,
         })
       );
-      window.location.href = `/shadowbox/edit?id=${result.shadowboxId}`;
+      navigate(`/shadowbox/edit?id=${result.shadowboxId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred.');
     } finally {
