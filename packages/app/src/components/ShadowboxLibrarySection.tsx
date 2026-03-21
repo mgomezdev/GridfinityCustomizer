@@ -1,5 +1,6 @@
 import type { ApiShadowbox } from '@gridfinity/shared';
 import { useShadowboxesQuery, useDeleteShadowboxMutation } from '../hooks/useShadowboxes';
+import { navigate } from '../utils/navigate';
 
 interface ShadowboxItemProps {
   item: ApiShadowbox;
@@ -48,7 +49,7 @@ export function ShadowboxLibrarySection() {
       {shadowboxes.map((item) => (
         <ShadowboxItem key={item.id} item={item} onDelete={deleteShadowbox} />
       ))}
-      <a href="/shadowbox/new" className="shadowbox-new-link">+ New shadowbox</a>
+      <button className="shadowbox-new-link" onClick={() => navigate('/shadowbox/new')}>+ New shadowbox</button>
     </div>
   );
 }

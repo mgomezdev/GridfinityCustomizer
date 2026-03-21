@@ -44,6 +44,7 @@ import { SubmissionsBadge } from './components/admin/SubmissionsBadge';
 import { WalkthroughOverlay } from './components/WalkthroughOverlay';
 import { STORAGE_KEYS } from './utils/storageKeys';
 import { exportToPdf } from './utils/exportPdf';
+import { navigate } from './utils/navigate';
 import './App.css';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:3001/api/v1';
@@ -71,7 +72,7 @@ function App() {
     handleSaveComplete, handleSetStatus, handleCloneComplete, handleClearLayout,
   } = useLayoutMeta();
 
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isLoading: isAuthLoading, user } = useAuth();
   const isAdmin = user?.role === 'admin';
 
   const { isActive, currentStep, startTour, nextStep, dismissTour } = useWalkthrough();
@@ -512,14 +513,17 @@ function App() {
     </>
   );
 
-  const pathname = window.location.pathname;
+  const [pathname, setPathname] = useState(window.location.pathname);
+  useEffect(() => {
+    const onNav = () => setPathname(window.location.pathname);
+    window.addEventListener('popstate', onNav);
+    return () => window.removeEventListener('popstate', onNav);
+  }, []);
 
-  if (pathname === '/shadowbox/new') {
-    return isAuthenticated ? <ShadowboxUploadPage /> : null;
-  }
-
-  if (pathname === '/shadowbox/edit') {
-    return isAuthenticated ? <ShadowboxEditorPage /> : null;
+  if (pathname === '/shadowbox/new' || pathname.startsWith('/shadowbox/edit')) {
+    if (isAuthLoading) return null;
+    if (!isAuthenticated) { navigate('/'); return null; }
+    return pathname === '/shadowbox/new' ? <ShadowboxUploadPage /> : <ShadowboxEditorPage />;
   }
 
   return (

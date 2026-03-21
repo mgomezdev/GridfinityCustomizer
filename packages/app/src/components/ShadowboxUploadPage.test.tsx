@@ -2,6 +2,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { ShadowboxUploadPage } from './ShadowboxUploadPage';
 
+vi.mock('../contexts/AuthContext', () => ({
+  useAuth: () => ({ getAccessToken: () => 'mock-token', isAuthenticated: true }),
+}));
+
+const mockNavigate = vi.fn();
+vi.mock('../utils/navigate', () => ({
+  navigate: (...args: unknown[]) => mockNavigate(...args),
+}));
+
 const mockProcessImage = vi.fn();
 vi.mock('../api/shadowboxes.api', () => ({
   processImage: (...args: unknown[]) => mockProcessImage(...args),
@@ -9,10 +18,6 @@ vi.mock('../api/shadowboxes.api', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
-  Object.defineProperty(window, 'location', {
-    writable: true,
-    value: { href: '' },
-  });
   sessionStorage.clear();
 });
 
@@ -38,7 +43,7 @@ describe('ShadowboxUploadPage', () => {
     expect(screen.getByRole('button', { name: /process/i })).toBeInTheDocument();
   });
 
-  it('calls processImage with file, thickness, and name on submit', async () => {
+  it('calls processImage with file, thickness, name, and token on submit', async () => {
     mockProcessImage.mockResolvedValue({
       shadowboxId: 'abc-123',
       svgPath: '/data/abc.svg',
@@ -64,7 +69,7 @@ describe('ShadowboxUploadPage', () => {
     });
 
     await waitFor(() => {
-      expect(mockProcessImage).toHaveBeenCalledWith(file, 12, 'My Tool');
+      expect(mockProcessImage).toHaveBeenCalledWith(file, 12, 'My Tool', 'mock-token');
     });
   });
 
@@ -132,7 +137,7 @@ describe('ShadowboxUploadPage', () => {
     });
 
     await waitFor(() => {
-      expect(window.location.href).toBe('/shadowbox/edit?id=abc-123');
+      expect(mockNavigate).toHaveBeenCalledWith('/shadowbox/edit?id=abc-123');
     });
   });
 

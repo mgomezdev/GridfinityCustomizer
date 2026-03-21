@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { generateShadowbox } from '../api/shadowboxes.api';
 import { SHADOWBOXES_QUERY_KEY } from '../hooks/useShadowboxes';
 import { useAuth } from '../contexts/AuthContext';
+import { navigate } from '../utils/navigate';
 
 interface EditorState {
   shadowboxId: string;
@@ -125,7 +126,7 @@ export function ShadowboxEditorPage() {
         stackable,
       }, token);
       await queryClient.invalidateQueries({ queryKey: SHADOWBOXES_QUERY_KEY });
-      window.location.href = '/';
+      navigate('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred.');
     } finally {
