@@ -1,9 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import { useLibraryData } from './useLibraryData';
+import { useLibraryData, shadowboxToLibraryItem } from './useLibraryData';
 import type { LibraryItem, LibraryMeta } from '../types/gridfinity';
+import type { ApiShadowbox } from '@gridfinity/shared';
 import type { DataSourceAdapter } from '../api/adapters/types';
 import { createTestWrapper, createTestWrapperWithAdapter } from '../test/testWrapper';
+
+// Mock shadowboxes API so useShadowboxesQuery returns empty by default in useLibraryData tests
+vi.mock('../api/shadowboxes.api', () => ({
+  fetchShadowboxes: vi.fn().mockResolvedValue([]),
+}));
 
 describe('useLibraryData', () => {
   const mockDefaultItems: LibraryItem[] = [
@@ -461,5 +467,40 @@ describe('useLibraryData', () => {
 
       expect(result.current.items[0].id).toBe('community:custom-1x1');
     });
+  });
+});
+
+describe('shadowboxToLibraryItem', () => {
+  it('converts shadowbox to LibraryItem with correct gridX/gridY', () => {
+    const shadowbox: ApiShadowbox = {
+      id: 'abc-123',
+      name: 'screwdriver',
+      gridX: 2,
+      gridY: 3,
+      status: 'ready',
+      createdAt: 'now',
+      thicknessMm: 8,
+    };
+    const item = shadowboxToLibraryItem(shadowbox);
+    expect(item.id).toBe('shadowbox:abc-123');
+    expect(item.name).toBe('screwdriver');
+    expect(item.widthUnits).toBe(2);
+    expect(item.heightUnits).toBe(3);
+    expect(item.color).toBe('#9C27B0');
+  });
+
+  it('falls back to 1x1 when gridX/gridY are null', () => {
+    const shadowbox: ApiShadowbox = {
+      id: 'null-grid',
+      name: 'no grid',
+      gridX: null,
+      gridY: null,
+      status: 'ready',
+      createdAt: 'now',
+      thicknessMm: 8,
+    };
+    const item = shadowboxToLibraryItem(shadowbox);
+    expect(item.widthUnits).toBe(1);
+    expect(item.heightUnits).toBe(1);
   });
 });

@@ -14,6 +14,8 @@ import { useRefImagePlacements } from './hooks/useRefImagePlacements';
 import { useGridTransform } from './hooks/useGridTransform';
 import { useAuth } from './contexts/AuthContext';
 import { useWalkthrough, WALKTHROUGH_STEPS } from './contexts/WalkthroughContext';
+import { ShadowboxUploadPage } from './components/ShadowboxUploadPage';
+import { ShadowboxEditorPage } from './components/ShadowboxEditorPage';
 import { useSubmitLayoutMutation, useWithdrawLayoutMutation, useCloneLayoutMutation, useSubmittedCountQuery } from './hooks/useLayouts';
 import { useConfirmDialog } from './hooks/useConfirmDialog';
 import { ConfirmDialog } from './components/ConfirmDialog';
@@ -21,6 +23,7 @@ import { DimensionInput } from './components/DimensionInput';
 import { GridPreview } from './components/GridPreview';
 import { GridSummary } from './components/GridSummary';
 import { ItemLibrary } from './components/ItemLibrary';
+import { ShadowboxLibrarySection } from './components/ShadowboxLibrarySection';
 import { ItemControls } from './components/ItemControls';
 import { BinCustomizationPanel } from './components/BinCustomizationPanel';
 import { SpacerControls } from './components/SpacerControls';
@@ -459,17 +462,20 @@ function App() {
 
   // Sidebar content
   const itemLibraryContent = (
-    <ItemLibrary
-      items={libraryItems}
-      categories={categories}
-      isLoading={isLibraryLoading || isLibrariesLoading}
-      error={libraryError || librariesError}
-      onRefreshLibrary={handleRefreshAll}
-      availableLibraries={availableLibraries}
-      selectedLibraryIds={selectedLibraryIds}
-      onToggleLibrary={toggleLibrary}
-      isLibrariesLoading={isLibrariesLoading}
-    />
+    <>
+      <ItemLibrary
+        items={libraryItems}
+        categories={categories}
+        isLoading={isLibraryLoading || isLibrariesLoading}
+        error={libraryError || librariesError}
+        onRefreshLibrary={handleRefreshAll}
+        availableLibraries={availableLibraries}
+        selectedLibraryIds={selectedLibraryIds}
+        onToggleLibrary={toggleLibrary}
+        isLibrariesLoading={isLibrariesLoading}
+      />
+      {isAuthenticated && <ShadowboxLibrarySection />}
+    </>
   );
 
   const imageTabContent = isAuthenticated ? (
@@ -505,6 +511,16 @@ function App() {
       })()}
     </>
   );
+
+  const pathname = window.location.pathname;
+
+  if (pathname === '/shadowbox/new') {
+    return isAuthenticated ? <ShadowboxUploadPage /> : null;
+  }
+
+  if (pathname === '/shadowbox/edit') {
+    return isAuthenticated ? <ShadowboxEditorPage /> : null;
+  }
 
   return (
     <div className="app">

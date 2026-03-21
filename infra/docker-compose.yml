@@ -27,6 +27,8 @@ services:
       - DB_PATH=/data/gridfinity.db
       - IMAGE_DIR=/data/images
       - LOG_LEVEL=info
+      - SHADOWBOX_SIDECAR_URL=http://shadowbox-sidecar:5001
+      - SHADOWBOX_STL_DIR=/data/shadowboxes
     volumes:
       - gridfinity-data:/data
     healthcheck:
@@ -36,6 +38,19 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
+
+  shadowbox-sidecar:
+    build: ../shadowbox-sidecar
+    restart: unless-stopped
+    environment:
+      - OPENSCAD_PATH=/usr/local/bin/openscad
+      - GRIDFINITY_LIB_PATH=/opt/gridfinity-rebuilt-openscad
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 volumes:
   gridfinity-data:

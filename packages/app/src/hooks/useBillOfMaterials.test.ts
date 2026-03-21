@@ -314,6 +314,36 @@ describe('useBillOfMaterials', () => {
     expect(result.current[0].quantity).toBe(2);
   });
 
+  it('BOM item for shadowbox includes shadowboxId', () => {
+    const shadowboxLibraryItem: LibraryItem = {
+      id: 'shadowbox:abc-123',
+      name: 'My Shadowbox',
+      widthUnits: 2,
+      heightUnits: 3,
+      color: '#888888',
+      categories: ['shadowbox'],
+    };
+
+    const placedItem: PlacedItem = {
+      instanceId: 'instance-sb-1',
+      itemId: 'shadowbox:abc-123',
+      x: 0,
+      y: 0,
+      width: 2,
+      height: 3,
+      rotation: 0,
+      shadowBoxId: 'abc-123',
+    };
+
+    const { result } = renderHook(() =>
+      useBillOfMaterials([placedItem], [...mockLibraryItems, shadowboxLibraryItem])
+    );
+
+    expect(result.current).toHaveLength(1);
+    expect(result.current[0].itemId).toBe('shadowbox:abc-123');
+    expect(result.current[0].shadowboxId).toBe('abc-123');
+  });
+
   describe('Customization grouping', () => {
     const gridCustomization: BinCustomization = {
       wallPattern: 'grid',

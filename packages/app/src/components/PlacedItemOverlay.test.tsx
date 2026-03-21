@@ -2445,4 +2445,67 @@ describe('PlacedItemOverlay', () => {
       spy.mockRestore();
     });
   });
+
+  describe('Orphaned Shadowbox Warning', () => {
+    it('shows orphaned warning when itemId starts with shadowbox: and shadowBoxId is null', () => {
+      const item = createMockItem({
+        itemId: 'shadowbox:abc-123',
+        shadowBoxId: null,
+      });
+
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      expect(screen.getByText('⚠ Deleted')).toBeInTheDocument();
+      expect(screen.getByTitle('Shadowbox was deleted')).toBeInTheDocument();
+    });
+
+    it('does not show orphaned warning when shadowBoxId is a non-null string', () => {
+      const item = createMockItem({
+        itemId: 'shadowbox:abc-123',
+        shadowBoxId: 'abc-123',
+      });
+
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      expect(screen.queryByText('⚠ Deleted')).not.toBeInTheDocument();
+    });
+
+    it('does not show orphaned warning for regular (non-shadowbox) items', () => {
+      const item = createMockItem({
+        itemId: 'bin-1x1',
+        shadowBoxId: null,
+      });
+
+      render(
+        <PlacedItemOverlay
+          item={item}
+          gridX={4}
+          gridY={4}
+          isSelected={false}
+          onSelect={mockOnSelect}
+          getItemById={mockGetItemById}
+        />
+      );
+
+      expect(screen.queryByText('⚠ Deleted')).not.toBeInTheDocument();
+    });
+  });
 });

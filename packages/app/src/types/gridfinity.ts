@@ -64,6 +64,7 @@ export interface PlacedItem {
   height: number;
   rotation: Rotation;
   customization?: BinCustomization;
+  shadowBoxId?: string | null;
 }
 
 export interface PlacedItemWithValidity extends PlacedItem {
@@ -88,6 +89,7 @@ export interface BOMItem {
   categories: string[];
   quantity: number;
   customization?: BinCustomization;
+  shadowboxId?: string;
 }
 
 export interface ReferenceImage {
