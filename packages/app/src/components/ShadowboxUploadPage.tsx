@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { processImage } from '../api/shadowboxes.api';
 import { useAuth } from '../contexts/AuthContext';
 import { navigate } from '../utils/navigate';
+import { setPhotoFile } from '../utils/shadowboxPhotoStore';
 
 export function ShadowboxUploadPage() {
   const { getAccessToken } = useAuth();
@@ -32,6 +33,7 @@ export function ShadowboxUploadPage() {
     setIsSubmitting(true);
     try {
       const result = await processImage(file, thickness, nameInput.value, token);
+      setPhotoFile(file);
       // Store editor state in sessionStorage for the editor page to read
       sessionStorage.setItem(
         `shadowbox-edit-${result.shadowboxId}`,

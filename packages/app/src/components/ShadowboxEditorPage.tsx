@@ -1,9 +1,10 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { generateShadowbox } from '../api/shadowboxes.api';
 import { SHADOWBOXES_QUERY_KEY } from '../hooks/useShadowboxes';
 import { useAuth } from '../contexts/AuthContext';
 import { navigate } from '../utils/navigate';
+import { getPhotoUrl } from '../utils/shadowboxPhotoStore';
 
 interface EditorState {
   shadowboxId: string;
@@ -65,17 +66,43 @@ export function ShadowboxEditorPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Photo overlay
+  const photoUrl = getPhotoUrl();
+  const [showPhoto, setShowPhoto] = useState(photoUrl !== null);
+  const [photoOpacity, setPhotoOpacity] = useState(0.4);
+  const [imageDims, setImageDims] = useState<{ w: number; h: number } | null>(null);
+
+  useEffect(() => {
+    if (!photoUrl) return;
+    const img = new Image();
+    img.onload = () => setImageDims({ w: img.naturalWidth, h: img.naturalHeight });
+    img.src = photoUrl;
+  }, [photoUrl]);
+
   // SVG drag state
   const draggingIndex = useRef<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
-  // Compute viewBox from points or fall back to a default
+  // Compute viewBox — expand to include photo if visible
+  const scale = state?.scaleMmPerPx ?? 1;
   const allX = points.map(p => p.x);
   const allY = points.map(p => p.y);
-  const minX = allX.length > 0 ? Math.min(...allX) : -50;
-  const minY = allY.length > 0 ? Math.min(...allY) : -50;
-  const maxX = allX.length > 0 ? Math.max(...allX) : 50;
-  const maxY = allY.length > 0 ? Math.max(...allY) : 50;
+  const traceMinX = allX.length > 0 ? Math.min(...allX) : -50;
+  const traceMinY = allY.length > 0 ? Math.min(...allY) : -50;
+  const traceMaxX = allX.length > 0 ? Math.max(...allX) : 50;
+  const traceMaxY = allY.length > 0 ? Math.max(...allY) : 50;
+
+  const photoW = imageDims ? imageDims.w * scale : 0;
+  const photoH = imageDims ? imageDims.h * scale : 0;
+  const photoMinX = -photoW / 2;
+  const photoMinY = -photoH / 2;
+  const photoMaxX = photoW / 2;
+  const photoMaxY = photoH / 2;
+
+  const minX = showPhoto && imageDims ? Math.min(traceMinX, photoMinX) : traceMinX;
+  const minY = showPhoto && imageDims ? Math.min(traceMinY, photoMinY) : traceMinY;
+  const maxX = showPhoto && imageDims ? Math.max(traceMaxX, photoMaxX) : traceMaxX;
+  const maxY = showPhoto && imageDims ? Math.max(traceMaxY, photoMaxY) : traceMaxY;
   const padding = 10;
   const viewBox = `${minX - padding} ${minY - padding} ${maxX - minX + padding * 2} ${maxY - minY + padding * 2}`;
 
@@ -158,6 +185,17 @@ export function ShadowboxEditorPage() {
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
+        {showPhoto && photoUrl && imageDims && (
+          <image
+            href={photoUrl}
+            x={photoMinX}
+            y={photoMinY}
+            width={photoW}
+            height={photoH}
+            opacity={photoOpacity}
+            preserveAspectRatio="xMidYMid meet"
+          />
+        )}
         {pathD && (
           <path
             d={pathD}
@@ -182,6 +220,34 @@ export function ShadowboxEditorPage() {
       </svg>
 
       <div className="editor-controls">
+        {photoUrl && (
+          <>
+            <div className="form-field form-field--inline">
+              <label htmlFor="show-photo">Show photo</label>
+              <input
+                type="checkbox"
+                id="show-photo"
+                checked={showPhoto}
+                onChange={(e) => setShowPhoto(e.target.checked)}
+              />
+            </div>
+            {showPhoto && (
+              <div className="form-field">
+                <label htmlFor="photo-opacity">Photo opacity ({Math.round(photoOpacity * 100)}%)</label>
+                <input
+                  type="range"
+                  id="photo-opacity"
+                  min="0.1"
+                  max="1.0"
+                  step="0.05"
+                  value={photoOpacity}
+                  onChange={(e) => setPhotoOpacity(Number(e.target.value))}
+                />
+              </div>
+            )}
+          </>
+        )}
+
         <div className="form-field">
           <label htmlFor="tolerance">Tolerance ({tolerance} mm)</label>
           <input
