@@ -45,18 +45,6 @@ vi.mock('./components/RefImageLibrary', () => ({
   RefImageLibrary: () => <div data-testid="ref-image-library" />,
 }));
 
-vi.mock('./components/ShadowboxLibrarySection', () => ({
-  ShadowboxLibrarySection: () => <div data-testid="shadowbox-library-section" />,
-}));
-
-vi.mock('./components/ShadowboxUploadPage', () => ({
-  ShadowboxUploadPage: () => <div data-testid="shadowbox-upload-page" />,
-}));
-
-vi.mock('./components/ShadowboxEditorPage', () => ({
-  ShadowboxEditorPage: () => <div data-testid="shadowbox-editor-page" />,
-}));
-
 vi.mock('./components/RebindImageDialog', () => ({
   RebindImageDialog: () => null,
 }));
@@ -1160,61 +1148,4 @@ describe('App Integration Tests', () => {
     });
   });
 
-  // ==========================================
-  // 11. Shadowbox routes
-  // ==========================================
-  describe('Shadowbox routes', () => {
-    const originalPathname = window.location.pathname;
-
-    afterEach(() => {
-      // Restore original pathname after each test
-      Object.defineProperty(window, 'location', {
-        value: { ...window.location, pathname: originalPathname },
-        writable: true,
-        configurable: true,
-      });
-    });
-
-    function setPathname(pathname: string) {
-      Object.defineProperty(window, 'location', {
-        value: { ...window.location, pathname },
-        writable: true,
-        configurable: true,
-      });
-    }
-
-    it('renders ShadowboxUploadPage at /shadowbox/new when authenticated', () => {
-      mockIsAuthenticated = true;
-      setPathname('/shadowbox/new');
-      renderApp();
-      expect(screen.getByTestId('shadowbox-upload-page')).toBeInTheDocument();
-    });
-
-    it('renders nothing at /shadowbox/new when not authenticated', () => {
-      mockIsAuthenticated = false;
-      setPathname('/shadowbox/new');
-      const { container } = renderApp();
-      expect(container.firstChild).toBeNull();
-    });
-
-    it('renders ShadowboxEditorPage at /shadowbox/edit when authenticated', () => {
-      mockIsAuthenticated = true;
-      setPathname('/shadowbox/edit');
-      renderApp();
-      expect(screen.getByTestId('shadowbox-editor-page')).toBeInTheDocument();
-    });
-
-    it('renders nothing at /shadowbox/edit when not authenticated', () => {
-      mockIsAuthenticated = false;
-      setPathname('/shadowbox/edit');
-      const { container } = renderApp();
-      expect(container.firstChild).toBeNull();
-    });
-
-    it('renders the main grid app at / (default path)', () => {
-      setPathname('/');
-      renderApp();
-      expect(screen.getByText('Gridfinity Bin Customizer')).toBeInTheDocument();
-    });
-  });
 });

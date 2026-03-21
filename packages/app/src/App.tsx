@@ -14,8 +14,6 @@ import { useRefImagePlacements } from './hooks/useRefImagePlacements';
 import { useGridTransform } from './hooks/useGridTransform';
 import { useAuth } from './contexts/AuthContext';
 import { useWalkthrough, WALKTHROUGH_STEPS } from './contexts/WalkthroughContext';
-import { ShadowboxUploadPage } from './components/ShadowboxUploadPage';
-import { ShadowboxEditorPage } from './components/ShadowboxEditorPage';
 import { useSubmitLayoutMutation, useWithdrawLayoutMutation, useCloneLayoutMutation, useSubmittedCountQuery } from './hooks/useLayouts';
 import { useConfirmDialog } from './hooks/useConfirmDialog';
 import { ConfirmDialog } from './components/ConfirmDialog';
@@ -23,7 +21,6 @@ import { DimensionInput } from './components/DimensionInput';
 import { GridPreview } from './components/GridPreview';
 import { GridSummary } from './components/GridSummary';
 import { ItemLibrary } from './components/ItemLibrary';
-import { ShadowboxLibrarySection } from './components/ShadowboxLibrarySection';
 import { ItemControls } from './components/ItemControls';
 import { BinCustomizationPanel } from './components/BinCustomizationPanel';
 import { SpacerControls } from './components/SpacerControls';
@@ -44,7 +41,6 @@ import { SubmissionsBadge } from './components/admin/SubmissionsBadge';
 import { WalkthroughOverlay } from './components/WalkthroughOverlay';
 import { STORAGE_KEYS } from './utils/storageKeys';
 import { exportToPdf } from './utils/exportPdf';
-import { navigate } from './utils/navigate';
 import './App.css';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:3001/api/v1';
@@ -72,7 +68,7 @@ function App() {
     handleSaveComplete, handleSetStatus, handleCloneComplete, handleClearLayout,
   } = useLayoutMeta();
 
-  const { isAuthenticated, isLoading: isAuthLoading, user } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const isAdmin = user?.role === 'admin';
 
   const { isActive, currentStep, startTour, nextStep, dismissTour } = useWalkthrough();
@@ -463,20 +459,17 @@ function App() {
 
   // Sidebar content
   const itemLibraryContent = (
-    <>
-      <ItemLibrary
-        items={libraryItems}
-        categories={categories}
-        isLoading={isLibraryLoading || isLibrariesLoading}
-        error={libraryError || librariesError}
-        onRefreshLibrary={handleRefreshAll}
-        availableLibraries={availableLibraries}
-        selectedLibraryIds={selectedLibraryIds}
-        onToggleLibrary={toggleLibrary}
-        isLibrariesLoading={isLibrariesLoading}
-      />
-      {isAuthenticated && <ShadowboxLibrarySection />}
-    </>
+    <ItemLibrary
+      items={libraryItems}
+      categories={categories}
+      isLoading={isLibraryLoading || isLibrariesLoading}
+      error={libraryError || librariesError}
+      onRefreshLibrary={handleRefreshAll}
+      availableLibraries={availableLibraries}
+      selectedLibraryIds={selectedLibraryIds}
+      onToggleLibrary={toggleLibrary}
+      isLibrariesLoading={isLibrariesLoading}
+    />
   );
 
   const imageTabContent = isAuthenticated ? (
@@ -512,19 +505,6 @@ function App() {
       })()}
     </>
   );
-
-  const [pathname, setPathname] = useState(window.location.pathname);
-  useEffect(() => {
-    const onNav = () => setPathname(window.location.pathname);
-    window.addEventListener('popstate', onNav);
-    return () => window.removeEventListener('popstate', onNav);
-  }, []);
-
-  if (pathname === '/shadowbox/new' || pathname.startsWith('/shadowbox/edit')) {
-    if (isAuthLoading) return null;
-    if (!isAuthenticated) { navigate('/'); return null; }
-    return pathname === '/shadowbox/new' ? <ShadowboxUploadPage /> : <ShadowboxEditorPage />;
-  }
 
   return (
     <div className="app">
