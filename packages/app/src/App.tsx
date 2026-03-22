@@ -38,6 +38,7 @@ import { LoadLayoutDialog } from './components/layouts/LoadLayoutDialog';
 import type { LoadedLayoutConfig } from './components/layouts/LoadLayoutDialog';
 import { AdminSubmissionsDialog } from './components/admin/AdminSubmissionsDialog';
 import { SubmissionsBadge } from './components/admin/SubmissionsBadge';
+import { UserStlLibrarySection } from './components/UserStlLibrarySection';
 import { WalkthroughOverlay } from './components/WalkthroughOverlay';
 import { STORAGE_KEYS } from './utils/storageKeys';
 import { exportToPdf } from './utils/exportPdf';
@@ -459,17 +460,20 @@ function App() {
 
   // Sidebar content
   const itemLibraryContent = (
-    <ItemLibrary
-      items={libraryItems}
-      categories={categories}
-      isLoading={isLibraryLoading || isLibrariesLoading}
-      error={libraryError || librariesError}
-      onRefreshLibrary={handleRefreshAll}
-      availableLibraries={availableLibraries}
-      selectedLibraryIds={selectedLibraryIds}
-      onToggleLibrary={toggleLibrary}
-      isLibrariesLoading={isLibrariesLoading}
-    />
+    <>
+      <ItemLibrary
+        items={libraryItems}
+        categories={categories}
+        isLoading={isLibraryLoading || isLibrariesLoading}
+        error={libraryError || librariesError}
+        onRefreshLibrary={handleRefreshAll}
+        availableLibraries={availableLibraries}
+        selectedLibraryIds={selectedLibraryIds}
+        onToggleLibrary={toggleLibrary}
+        isLibrariesLoading={isLibrariesLoading}
+      />
+      {isAuthenticated && <UserStlLibrarySection />}
+    </>
   );
 
   const imageTabContent = isAuthenticated ? (

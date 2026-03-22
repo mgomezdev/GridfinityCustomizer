@@ -147,6 +147,10 @@ vi.mock('./components/admin/SubmissionsBadge', () => ({
   SubmissionsBadge: () => null,
 }));
 
+vi.mock('./components/UserStlLibrarySection', () => ({
+  UserStlLibrarySection: () => <div data-testid="user-stl-library-section" />,
+}));
+
 const mockSubmitMutate = vi.fn();
 vi.mock('./hooks/useLayouts', () => ({
   useSubmitLayoutMutation: () => ({ mutate: mockSubmitMutate, mutateAsync: vi.fn(), isPending: false }),

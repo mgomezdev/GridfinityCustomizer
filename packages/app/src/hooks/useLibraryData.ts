@@ -1,8 +1,26 @@
 import { useCallback, useMemo } from 'react';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import type { LibraryItem, LibraryMeta } from '../types/gridfinity';
+import type { ApiUserStl } from '@gridfinity/shared';
 import { useDataSource } from '../contexts/DataSourceContext';
 import { prefixItemId } from '../utils/libraryHelpers';
+import { useUserStlsQuery } from './useUserStls';
+import { getUserStlImageUrl } from '../api/userStls.api';
+
+function userStlToLibraryItem(item: ApiUserStl): LibraryItem {
+  return {
+    id: `user-stl:${item.id}`,
+    name: item.name,
+    widthUnits: item.gridX ?? 1,
+    heightUnits: item.gridY ?? 1,
+    color: '#F97316',
+    categories: ['user-upload'],
+    imageUrl: item.imageUrl ? getUserStlImageUrl(item.id, item.imageUrl) : undefined,
+    perspectiveImageUrl: item.perspImageUrls[0]
+      ? getUserStlImageUrl(item.id, item.perspImageUrls[0])
+      : undefined,
+  };
+}
 
 interface UseLibraryDataResult {
   items: LibraryItem[];
@@ -46,10 +64,16 @@ export function useLibraryData(
     })),
   });
 
+  const { data: userStls = [] } = useUserStlsQuery();
+  const userStlItems = useMemo(
+    () => userStls.filter((s) => s.status === 'ready').map(userStlToLibraryItem),
+    [userStls]
+  );
+
   // Combine results from all queries
   const items = useMemo(() => {
-    return queries.flatMap((q) => q.data ?? []);
-  }, [queries]);
+    return [...queries.flatMap((q) => q.data ?? []), ...userStlItems];
+  }, [queries, userStlItems]);
 
   const isLoading = queries.some((q) => q.isLoading);
 

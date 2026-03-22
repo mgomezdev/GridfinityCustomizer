@@ -1,9 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useLibraryData } from './useLibraryData';
 import type { LibraryItem, LibraryMeta } from '../types/gridfinity';
 import type { DataSourceAdapter } from '../api/adapters/types';
 import { createTestWrapper, createTestWrapperWithAdapter } from '../test/testWrapper';
+
+vi.mock('./useUserStls.js', () => ({
+  useUserStlsQuery: () => ({ data: [], isLoading: false }),
+}));
 
 describe('useLibraryData', () => {
   const mockDefaultItems: LibraryItem[] = [
