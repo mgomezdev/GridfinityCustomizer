@@ -127,7 +127,9 @@
   --bom-width: 200px;
   --preview-max-width: 700px;
   --container-max-width: 1400px;
-  --header-height: 60px;
+  --header-height: 52px;
+  --status-bar-height: 44px;
+  --sidebar-section-header-height: 40px;
 
   /* Base font settings */
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
