@@ -508,7 +508,7 @@
 
 .status-count {
   white-space: nowrap;
-  color: #a0aab4;
+  color: var(--text-tertiary);
 }
 
 .status-submit-btn {
@@ -794,12 +794,6 @@
   color: var(--bg-primary);
 }
 
-/* Zoom Viewport */
-.preview-viewport {
-  width: 100%;
-  position: relative;
-  border-radius: var(--radius-lg);
-}
 
 .preview-viewport.zoomed {
   overflow: hidden;
