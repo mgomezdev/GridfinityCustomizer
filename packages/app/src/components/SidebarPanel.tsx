@@ -2,26 +2,22 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 
 interface SidebarPanelProps {
-  sidebarTab: 'items' | 'images';
-  onTabChange: (tab: 'items' | 'images') => void;
-  itemLibraryContent: ReactNode;
-  imageTabContent: ReactNode;
-  selectionControls: ReactNode;
   dimensionsContent: ReactNode;
   spacerContent: ReactNode;
+  onClearCanvas: () => void;
+  onReset: () => void;
+  isReadOnly: boolean;
 }
 
 export function SidebarPanel({
-  sidebarTab,
-  onTabChange,
-  itemLibraryContent,
-  imageTabContent,
-  selectionControls,
   dimensionsContent,
   spacerContent,
+  onClearCanvas,
+  onReset,
+  isReadOnly,
 }: SidebarPanelProps) {
   const [dimsOpen, setDimsOpen] = useState(true);
-  const [spacersOpen, setSpacersOpen] = useState(false);
+  const [gridSettingsOpen, setGridSettingsOpen] = useState(false);
 
   return (
     <section className="sidebar">
@@ -32,6 +28,7 @@ export function SidebarPanel({
           type="button"
           aria-expanded={dimsOpen}
         >
+          <span className="sidebar-section-icon">⊞</span>
           <span className="sidebar-section-title">DIMENSIONS</span>
           <span className="sidebar-section-chevron">{dimsOpen ? '▲' : '▼'}</span>
         </button>
@@ -44,41 +41,33 @@ export function SidebarPanel({
 
       <div className="sidebar-section">
         <button
-          className={`sidebar-section-header${spacersOpen ? ' open' : ''}`}
-          onClick={() => setSpacersOpen(o => !o)}
+          className={`sidebar-section-header${gridSettingsOpen ? ' open' : ''}`}
+          onClick={() => setGridSettingsOpen(o => !o)}
           type="button"
-          aria-expanded={spacersOpen}
+          aria-expanded={gridSettingsOpen}
         >
-          <span className="sidebar-section-title">SPACER SETTINGS</span>
-          <span className="sidebar-section-chevron">{spacersOpen ? '▲' : '▼'}</span>
+          <span className="sidebar-section-icon">⊟</span>
+          <span className="sidebar-section-title">GRID SETTINGS</span>
+          <span className="sidebar-section-chevron">{gridSettingsOpen ? '▲' : '▼'}</span>
         </button>
-        {spacersOpen && (
+        {gridSettingsOpen && (
           <div className="sidebar-section-content">
             {spacerContent}
           </div>
         )}
       </div>
 
-      <div className="sidebar-tabs">
-        <button
-          className={`sidebar-tab${sidebarTab === 'items' ? ' active' : ''}`}
-          onClick={() => onTabChange('items')}
-          type="button"
-        >
-          Items
+      {!isReadOnly && (
+        <button className="sidebar-action-row" onClick={onClearCanvas} type="button">
+          <span className="sidebar-section-icon sidebar-action-icon">✕</span>
+          <span className="sidebar-section-title">CLEAR CANVAS</span>
         </button>
-        <button
-          className={`sidebar-tab${sidebarTab === 'images' ? ' active' : ''}`}
-          onClick={() => onTabChange('images')}
-          type="button"
-        >
-          Images
-        </button>
-      </div>
+      )}
 
-      {sidebarTab === 'items' ? itemLibraryContent : imageTabContent}
-
-      {selectionControls}
+      <button className="sidebar-action-row" onClick={onReset} type="button">
+        <span className="sidebar-section-icon sidebar-action-icon">↺</span>
+        <span className="sidebar-section-title">RESET</span>
+      </button>
     </section>
   );
 }

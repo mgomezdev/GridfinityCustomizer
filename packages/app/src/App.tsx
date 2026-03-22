@@ -56,7 +56,8 @@ function App() {
     vertical: 'none',
   });
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
-  const [sidebarTab, setSidebarTab] = useState<'items' | 'images'>('items');
+  const [libraryTab, setLibraryTab] = useState<'items' | 'images'>('items');
+  const [libraryCategory, setLibraryCategory] = useState<string | null>(null);
   const [imageViewMode, setImageViewMode] = useState<ImageViewMode>(
     () => (localStorage.getItem('gridfinity-image-view-mode') as ImageViewMode) || 'ortho'
   );
@@ -304,6 +305,13 @@ function App() {
     }
   };
 
+  const handleReset = useCallback(() => {
+    setWidth(168);
+    setDepth(168);
+    setUnitSystem('metric');
+    setSpacerConfig({ horizontal: 'none', vertical: 'none' });
+  }, []);
+
   const handleExportPdf = useCallback(async () => {
     setExportPdfError(null);
     const gridEl = viewportRef.current?.querySelector('.grid-preview') as HTMLElement | null;
@@ -458,58 +466,6 @@ function App() {
     };
   }, []);
 
-  // Sidebar content
-  const itemLibraryContent = (
-    <>
-      <ItemLibrary
-        items={libraryItems}
-        categories={categories}
-        isLoading={isLibraryLoading || isLibrariesLoading}
-        error={libraryError || librariesError}
-        onRefreshLibrary={handleRefreshAll}
-        availableLibraries={availableLibraries}
-        selectedLibraryIds={selectedLibraryIds}
-        onToggleLibrary={toggleLibrary}
-        isLibrariesLoading={isLibrariesLoading}
-      />
-      {isAuthenticated && <UserStlLibrarySection />}
-    </>
-  );
-
-  const imageTabContent = isAuthenticated ? (
-    <RefImageLibrary />
-  ) : (
-    <div className="ref-image-auth-prompt">
-      <p>Sign in to upload and manage reference images.</p>
-    </div>
-  );
-
-  const selectionControls = (
-    <>
-      {selectedItemIds.size > 0 && (
-        <ItemControls
-          onRotateCw={handleRotateSelectedCw}
-          onRotateCcw={handleRotateSelectedCcw}
-          onDelete={handleDeleteSelected}
-        />
-      )}
-      {selectedItemIds.size === 1 && (() => {
-        const selectedId = selectedItemIds.values().next().value as string;
-        const selectedItem = placedItems.find(i => i.instanceId === selectedId);
-        if (!selectedItem) return null;
-        return (
-          <BinCustomizationPanel
-            customization={selectedItem.customization}
-            onChange={(c) => updateItemCustomization(selectedId, c)}
-            onReset={() => updateItemCustomization(selectedId, undefined)}
-            customizableFields={selectedLibraryMeta.customizableFields}
-            customizationDefaults={selectedLibraryMeta.customizationDefaults}
-          />
-        );
-      })()}
-    </>
-  );
-
   const dimensionsContent = (
     <>
       <div className="unit-toggle-compact">
@@ -589,13 +545,11 @@ function App() {
 
       <main className="app-main">
         <SidebarPanel
-          sidebarTab={sidebarTab}
-          onTabChange={setSidebarTab}
-          itemLibraryContent={itemLibraryContent}
-          imageTabContent={imageTabContent}
-          selectionControls={selectionControls}
           dimensionsContent={dimensionsContent}
           spacerContent={spacerContent}
+          onClearCanvas={handleClearAll}
+          onReset={handleReset}
+          isReadOnly={isReadOnly}
         />
 
         <section className="preview">
@@ -702,8 +656,83 @@ function App() {
           </GridViewport>
         </section>
 
-        <section className="bom-sidebar">
-          <BillOfMaterials items={bomItems} />
+        <section className="library-panel">
+          <div className="library-panel-header">
+            <span className="library-panel-title">Component Library</span>
+          </div>
+          <div className="library-panel-tabs">
+            <button
+              className={`library-cat-tab${libraryTab === 'items' && !libraryCategory ? ' active' : ''}`}
+              onClick={() => { setLibraryTab('items'); setLibraryCategory(null); }}
+              type="button"
+            >All</button>
+            {categories.map(cat => (
+              <button
+                key={cat.id}
+                className={`library-cat-tab${libraryTab === 'items' && libraryCategory === cat.id ? ' active' : ''}`}
+                onClick={() => { setLibraryTab('items'); setLibraryCategory(cat.id); }}
+                type="button"
+              >{cat.name}</button>
+            ))}
+            {isAuthenticated && (
+              <button
+                className={`library-cat-tab${libraryTab === 'images' ? ' active' : ''}`}
+                onClick={() => setLibraryTab('images')}
+                type="button"
+              >Images</button>
+            )}
+          </div>
+          <div className="library-panel-content">
+            {libraryTab === 'items' ? (
+              <>
+                <ItemLibrary
+                  items={libraryItems}
+                  categories={categories}
+                  isLoading={isLibraryLoading || isLibrariesLoading}
+                  error={libraryError || librariesError}
+                  onRefreshLibrary={handleRefreshAll}
+                  availableLibraries={availableLibraries}
+                  selectedLibraryIds={selectedLibraryIds}
+                  onToggleLibrary={toggleLibrary}
+                  isLibrariesLoading={isLibrariesLoading}
+                  activeCategory={libraryCategory}
+                />
+                {isAuthenticated && <UserStlLibrarySection />}
+              </>
+            ) : isAuthenticated ? (
+              <RefImageLibrary />
+            ) : (
+              <div className="ref-image-auth-prompt">
+                <p>Sign in to upload and manage reference images.</p>
+              </div>
+            )}
+          </div>
+          <div className="library-panel-bom">
+            <BillOfMaterials items={bomItems} />
+          </div>
+          {selectedItemIds.size > 0 && (
+            <div className="library-panel-selection">
+              <ItemControls
+                onRotateCw={handleRotateSelectedCw}
+                onRotateCcw={handleRotateSelectedCcw}
+                onDelete={handleDeleteSelected}
+              />
+              {selectedItemIds.size === 1 && (() => {
+                const selectedId = selectedItemIds.values().next().value as string;
+                const selectedItem = placedItems.find(i => i.instanceId === selectedId);
+                if (!selectedItem) return null;
+                return (
+                  <BinCustomizationPanel
+                    customization={selectedItem.customization}
+                    onChange={(c) => updateItemCustomization(selectedId, c)}
+                    onReset={() => updateItemCustomization(selectedId, undefined)}
+                    customizableFields={selectedLibraryMeta.customizableFields}
+                    customizationDefaults={selectedLibraryMeta.customizationDefaults}
+                  />
+                );
+              })()}
+            </div>
+          )}
         </section>
       </main>
 

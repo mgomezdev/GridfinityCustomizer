@@ -18,6 +18,7 @@ interface ItemLibraryProps {
   selectedLibraryIds: string[];
   onToggleLibrary: (libraryId: string) => void;
   isLibrariesLoading: boolean;
+  activeCategory?: string | null;
 }
 
 export function ItemLibrary({
@@ -30,6 +31,7 @@ export function ItemLibrary({
   selectedLibraryIds,
   onToggleLibrary,
   isLibrariesLoading,
+  activeCategory,
 }: ItemLibraryProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedWidths, setSelectedWidths] = useState<Set<number>>(new Set());
@@ -38,18 +40,13 @@ export function ItemLibrary({
   const [showLibrarySelector, setShowLibrarySelector] = useState(false);
   const { confirm, dialogProps: confirmDialogProps } = useConfirmDialog();
 
-  // Filter items by search query and dimensions
+  // Filter items by search query, dimensions, and active category tab
   const filteredItems = items.filter(item => {
-    // Text search filter
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
-
-    // Width filter (if any widths selected, item must match one of them)
     const matchesWidth = selectedWidths.size === 0 || selectedWidths.has(item.widthUnits);
-
-    // Height filter (if any heights selected, item must match one of them)
     const matchesHeight = selectedHeights.size === 0 || selectedHeights.has(item.heightUnits);
-
-    return matchesSearch && matchesWidth && matchesHeight;
+    const matchesCategory = !activeCategory || item.categories.includes(activeCategory);
+    return matchesSearch && matchesWidth && matchesHeight && matchesCategory;
   });
 
   // Group items by category using single-pass Map lookup
