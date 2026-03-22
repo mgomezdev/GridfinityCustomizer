@@ -10,6 +10,7 @@ export function processUpload(
   uploadId: string,
   filePath: string,
   imageOutputDir: string,
+  _userId: number,
 ): Promise<void> {
   return stlQueue.enqueue(async () => {
     // Spawn and register all event handlers synchronously before any await,
