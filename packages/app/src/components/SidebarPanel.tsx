@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 
-type ActiveSection = 'dimensions' | 'grid-settings' | null;
+type ActiveSection = 'dimensions' | 'grid-settings';
 
 interface SidebarPanelProps {
   dimensionsContent: ReactNode;
@@ -20,58 +20,45 @@ export function SidebarPanel({
 }: SidebarPanelProps) {
   const [activeSection, setActiveSection] = useState<ActiveSection>('dimensions');
 
-  const toggle = (section: ActiveSection) =>
-    setActiveSection(prev => (prev === section ? null : section));
-
   return (
     <section className="sidebar">
-      <div className="sidebar-section">
+      {/* Vertical tab nav — all rows always visible */}
+      <nav className="sidebar-nav">
         <button
-          className={`sidebar-section-header${activeSection === 'dimensions' ? ' open' : ''}`}
-          onClick={() => toggle('dimensions')}
+          className={`sidebar-nav-row${activeSection === 'dimensions' ? ' active' : ''}`}
+          onClick={() => setActiveSection('dimensions')}
           type="button"
-          aria-expanded={activeSection === 'dimensions'}
         >
-          <span className="sidebar-section-icon">⊞</span>
-          <span className="sidebar-section-title">DIMENSIONS</span>
-          <span className="sidebar-section-chevron">{activeSection === 'dimensions' ? '▲' : '▼'}</span>
+          <span className="sidebar-nav-icon">⊞</span>
+          <span className="sidebar-nav-label">DIMENSIONS</span>
         </button>
-        {activeSection === 'dimensions' && (
-          <div className="sidebar-section-content">
-            {dimensionsContent}
-          </div>
-        )}
-      </div>
 
-      <div className="sidebar-section">
         <button
-          className={`sidebar-section-header${activeSection === 'grid-settings' ? ' open' : ''}`}
-          onClick={() => toggle('grid-settings')}
+          className={`sidebar-nav-row${activeSection === 'grid-settings' ? ' active' : ''}`}
+          onClick={() => setActiveSection('grid-settings')}
           type="button"
-          aria-expanded={activeSection === 'grid-settings'}
         >
-          <span className="sidebar-section-icon">⊟</span>
-          <span className="sidebar-section-title">GRID SETTINGS</span>
-          <span className="sidebar-section-chevron">{activeSection === 'grid-settings' ? '▲' : '▼'}</span>
+          <span className="sidebar-nav-icon">⊟</span>
+          <span className="sidebar-nav-label">GRID SETTINGS</span>
         </button>
-        {activeSection === 'grid-settings' && (
-          <div className="sidebar-section-content">
-            {spacerContent}
-          </div>
+
+        {!isReadOnly && (
+          <button className="sidebar-nav-row sidebar-nav-action" onClick={onClearCanvas} type="button">
+            <span className="sidebar-nav-icon">✕</span>
+            <span className="sidebar-nav-label">CLEAR CANVAS</span>
+          </button>
         )}
-      </div>
 
-      {!isReadOnly && (
-        <button className="sidebar-action-row" onClick={onClearCanvas} type="button">
-          <span className="sidebar-section-icon sidebar-action-icon">✕</span>
-          <span className="sidebar-section-title">CLEAR CANVAS</span>
+        <button className="sidebar-nav-row sidebar-nav-action" onClick={onReset} type="button">
+          <span className="sidebar-nav-icon">↺</span>
+          <span className="sidebar-nav-label">RESET</span>
         </button>
-      )}
+      </nav>
 
-      <button className="sidebar-action-row" onClick={onReset} type="button">
-        <span className="sidebar-section-icon sidebar-action-icon">↺</span>
-        <span className="sidebar-section-title">RESET</span>
-      </button>
+      {/* Content area below the nav */}
+      <div className="sidebar-content-area">
+        {activeSection === 'dimensions' ? dimensionsContent : spacerContent}
+      </div>
     </section>
   );
 }
