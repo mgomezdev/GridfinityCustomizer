@@ -10,18 +10,23 @@ RUN npm run build --workspace=packages/server
 
 FROM node:20-alpine
 WORKDIR /app
-RUN apk add --no-cache tini
+RUN apk add --no-cache tini python3 py3-pip
+# Install Python dependencies for STL processing (system-wide on Alpine)
+COPY packages/server/scripts/py/requirements.txt /tmp/py-requirements.txt
+RUN pip3 install --no-cache-dir -r /tmp/py-requirements.txt
 # Copy root package.json for workspace resolution
 COPY --from=build /app/package.json package.json
 COPY --from=build /app/node_modules node_modules
 COPY --from=build /app/packages/shared packages/shared
 COPY --from=build /app/packages/server/dist packages/server/dist
 COPY --from=build /app/packages/server/package.json packages/server/package.json
+# Copy Python scripts to ./scripts/py (matches PYTHON_SCRIPT_DIR default)
+COPY packages/server/scripts/ scripts/
 # Seed data: library manifests and images from public/
 COPY packages/app/public/libraries/ packages/app/public/libraries/
 COPY infra/docker-entrypoint.backend.sh /docker-entrypoint.sh
 RUN sed -i 's/\r$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
-RUN mkdir -p /data/images
+RUN mkdir -p /data/images /data/user-stls /data/user-stl-images
 EXPOSE 3001
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["/docker-entrypoint.sh"]
