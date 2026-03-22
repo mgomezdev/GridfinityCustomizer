@@ -167,6 +167,39 @@ export async function runMigrations(client: Client): Promise<void> {
     );
   `);
 
+  // Add max_user_stls column to user_storage if missing (existing databases)
+  try {
+    await client.execute(`ALTER TABLE user_storage ADD COLUMN max_user_stls INTEGER NOT NULL DEFAULT 50;`);
+  } catch {
+    // Column already exists — ignore
+  }
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS user_stl_uploads (
+      id TEXT NOT NULL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      original_filename TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      image_url TEXT,
+      persp_image_urls TEXT,
+      grid_x INTEGER,
+      grid_y INTEGER,
+      status TEXT NOT NULL DEFAULT 'pending',
+      error_message TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
+
+  await client.execute(`
+    CREATE INDEX IF NOT EXISTS idx_user_stl_uploads_user ON user_stl_uploads(user_id);
+  `);
+
+  await client.execute(`
+    CREATE INDEX IF NOT EXISTS idx_user_stl_uploads_status ON user_stl_uploads(status);
+  `);
+
   // Sharing tables
   await client.execute(`
     CREATE TABLE IF NOT EXISTS shared_projects (
@@ -259,33 +292,10 @@ export async function runMigrations(client: Client): Promise<void> {
     );
   `);
 
-  // Shadowboxes
-  await client.execute(`CREATE TABLE IF NOT EXISTS shadowboxes (
-    id TEXT PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    thickness_mm REAL NOT NULL,
-    svg_path TEXT,
-    rotation_deg REAL,
-    tolerance_mm REAL,
-    stackable INTEGER,
-    stl_path TEXT,
-    grid_x INTEGER,
-    grid_y INTEGER,
-    status TEXT NOT NULL DEFAULT 'pending',
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );`);
-  await client.execute(
-    `CREATE UNIQUE INDEX IF NOT EXISTS idx_shadowboxes_user_name ON shadowboxes(user_id, name);`,
-  );
-  await client.execute(
-    `CREATE INDEX IF NOT EXISTS idx_shadowboxes_user ON shadowboxes(user_id);`,
-  );
+  // Drop legacy shadowboxes table (replaced by user_stl_uploads)
   try {
-    await client.execute(
-      `ALTER TABLE placed_items ADD COLUMN shadow_box_id TEXT REFERENCES shadowboxes(id) ON DELETE SET NULL;`,
-    );
+    await client.execute(`DROP TABLE IF EXISTS shadowboxes;`);
   } catch {
-    // column already exists — safe to ignore
+    // ignore
   }
 }

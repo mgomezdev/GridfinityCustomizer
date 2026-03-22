@@ -1,5 +1,5 @@
 import { sqliteTable, text, integer, real, primaryKey, index } from 'drizzle-orm/sqlite-core';
-import { relations, sql } from 'drizzle-orm';
+import { relations } from 'drizzle-orm';
 
 export const libraries = sqliteTable('libraries', {
   id: text('id').primaryKey(),
@@ -91,22 +91,6 @@ export const layouts = sqliteTable('layouts', {
   index('idx_layouts_status').on(table.status),
 ]);
 
-export const shadowboxes = sqliteTable('shadowboxes', {
-  id: text('id').primaryKey(),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  name: text('name').notNull(),
-  thicknessMm: real('thickness_mm').notNull(),
-  svgPath: text('svg_path'),
-  rotationDeg: real('rotation_deg'),
-  toleranceMm: real('tolerance_mm'),
-  stackable: integer('stackable', { mode: 'boolean' }), // boolean
-  stlPath: text('stl_path'),
-  gridX: integer('grid_x'),
-  gridY: integer('grid_y'),
-  status: text('status').notNull().default('pending'),
-  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
-});
-
 export const placedItems = sqliteTable('placed_items', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   layoutId: integer('layout_id').notNull().references(() => layouts.id, { onDelete: 'cascade' }),
@@ -119,7 +103,6 @@ export const placedItems = sqliteTable('placed_items', {
   rotation: integer('rotation').notNull().default(0),
   sortOrder: integer('sort_order').notNull().default(0),
   customization: text('customization'),
-  shadowBoxId: text('shadow_box_id').references(() => shadowboxes.id, { onDelete: 'set null' }),
 }, (table) => [
   index('idx_placed_items_layout').on(table.layoutId),
 ]);
@@ -130,7 +113,31 @@ export const userStorage = sqliteTable('user_storage', {
   imageBytes: integer('image_bytes').notNull().default(0),
   maxLayouts: integer('max_layouts').notNull().default(50),
   maxImageBytes: integer('max_image_bytes').notNull().default(52428800),
+  maxUserStls: integer('max_user_stls').notNull().default(50),
 });
+
+export const userStlUploads = sqliteTable('user_stl_uploads', {
+  id: text('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  originalFilename: text('original_filename').notNull(),
+  filePath: text('file_path').notNull(),
+  imageUrl: text('image_url'),
+  perspImageUrls: text('persp_image_urls'), // JSON array string
+  gridX: integer('grid_x'),
+  gridY: integer('grid_y'),
+  status: text('status').notNull().default('pending'), // 'pending'|'processing'|'ready'|'error'
+  errorMessage: text('error_message'),
+  createdAt: text('created_at').notNull().default(''),
+  updatedAt: text('updated_at').notNull().default(''),
+});
+
+export const userStlUploadsRelations = relations(userStlUploads, ({ one }) => ({
+  user: one(users, {
+    fields: [userStlUploads.userId],
+    references: [users.id],
+  }),
+}));
 
 // Reference image library table
 export const refImages = sqliteTable('ref_images', {
@@ -197,7 +204,7 @@ export const bomSubmissions = sqliteTable('bom_submissions', {
 export const usersRelations = relations(users, ({ many }) => ({
   refreshTokens: many(refreshTokens),
   layouts: many(layouts),
-  shadowboxes: many(shadowboxes),
+  stlUploads: many(userStlUploads),
 }));
 
 export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({
@@ -265,22 +272,10 @@ export const referenceImagesRelations = relations(referenceImages, ({ one }) => 
   }),
 }));
 
-export const shadowboxesRelations = relations(shadowboxes, ({ one, many }) => ({
-  user: one(users, {
-    fields: [shadowboxes.userId],
-    references: [users.id],
-  }),
-  placedItems: many(placedItems),
-}));
-
 export const placedItemsRelations = relations(placedItems, ({ one }) => ({
   layout: one(layouts, {
     fields: [placedItems.layoutId],
     references: [layouts.id],
-  }),
-  shadowbox: one(shadowboxes, {
-    fields: [placedItems.shadowBoxId],
-    references: [shadowboxes.id],
   }),
 }));
 

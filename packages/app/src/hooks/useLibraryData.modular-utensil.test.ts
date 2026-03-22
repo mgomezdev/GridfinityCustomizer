@@ -5,9 +5,8 @@ import type { LibraryItem } from '../types/gridfinity';
 import type { DataSourceAdapter } from '../api/adapters/types';
 import { createTestWrapper } from '../test/testWrapper';
 
-// Disable auth so the shadowbox query is skipped (enabled: isAuthenticated = false)
-vi.mock('../contexts/AuthContext', () => ({
-  useAuth: () => ({ getAccessToken: () => null, isAuthenticated: false }),
+vi.mock('./useUserStls.js', () => ({
+  useUserStlsQuery: () => ({ data: [], isLoading: false }),
 }));
 
 describe('useLibraryData - Modular Utensil Library', () => {

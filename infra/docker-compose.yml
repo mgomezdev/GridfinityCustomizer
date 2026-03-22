@@ -19,16 +19,16 @@ services:
     expose:
       - "3001"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=test
       - PORT=3001
       - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret-change-in-production}
       - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-dev-refresh-secret-change-in-production}
       - CORS_ORIGIN=http://localhost:32888
       - DB_PATH=/data/gridfinity.db
       - IMAGE_DIR=/data/images
-      - LOG_LEVEL=info
-      - SHADOWBOX_SIDECAR_URL=http://shadowbox-sidecar:5001
-      - SHADOWBOX_STL_DIR=/data/shadowboxes
+      - USER_STL_DIR=/data/user-stls
+      - USER_STL_IMAGE_DIR=/data/user-stl-images
+      - LOG_LEVEL=warn
     volumes:
       - gridfinity-data:/data
     healthcheck:
@@ -39,18 +39,6 @@ services:
       start_period: 10s
     restart: unless-stopped
 
-  shadowbox-sidecar:
-    build: ../shadowbox-sidecar
-    restart: unless-stopped
-    environment:
-      - OPENSCAD_PATH=/usr/local/bin/openscad
-      - GRIDFINITY_LIB_PATH=/opt/gridfinity-rebuilt-openscad
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/health')"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
 
 volumes:
   gridfinity-data:

@@ -1,19 +1,24 @@
 import { useCallback, useMemo } from 'react';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import type { LibraryItem, LibraryMeta } from '../types/gridfinity';
-import type { ApiShadowbox } from '@gridfinity/shared';
+import type { ApiUserStl } from '@gridfinity/shared';
 import { useDataSource } from '../contexts/DataSourceContext';
 import { prefixItemId } from '../utils/libraryHelpers';
-import { useShadowboxesQuery } from './useShadowboxes';
+import { useUserStlsQuery } from './useUserStls';
+import { getUserStlImageUrl } from '../api/userStls.api';
 
-export function shadowboxToLibraryItem(sb: ApiShadowbox): LibraryItem {
+function userStlToLibraryItem(item: ApiUserStl): LibraryItem {
   return {
-    id: `shadowbox:${sb.id}`,
-    name: sb.name,
-    widthUnits: sb.gridX ?? 1,
-    heightUnits: sb.gridY ?? 1,
-    color: '#9C27B0',
-    categories: ['shadowbox'],
+    id: `user-stl:${item.id}`,
+    name: item.name,
+    widthUnits: item.gridX ?? 1,
+    heightUnits: item.gridY ?? 1,
+    color: '#F97316',
+    categories: ['user-upload'],
+    imageUrl: item.imageUrl ? getUserStlImageUrl(item.id, item.imageUrl) : undefined,
+    perspectiveImageUrl: item.perspImageUrls[0]
+      ? getUserStlImageUrl(item.id, item.perspImageUrls[0])
+      : undefined,
   };
 }
 
@@ -59,17 +64,16 @@ export function useLibraryData(
     })),
   });
 
-  // Load shadowboxes and convert ready ones to LibraryItems
-  const { data: shadowboxes = [] } = useShadowboxesQuery();
-  const shadowboxLibraryItems = useMemo(
-    () => shadowboxes.filter((sb) => sb.status === 'ready').map(shadowboxToLibraryItem),
-    [shadowboxes]
+  const { data: userStls = [] } = useUserStlsQuery();
+  const userStlItems = useMemo(
+    () => userStls.filter((s) => s.status === 'ready').map(userStlToLibraryItem),
+    [userStls]
   );
 
   // Combine results from all queries
   const items = useMemo(() => {
-    return [...queries.flatMap((q) => q.data ?? []), ...shadowboxLibraryItems];
-  }, [queries, shadowboxLibraryItems]);
+    return [...queries.flatMap((q) => q.data ?? []), ...userStlItems];
+  }, [queries, userStlItems]);
 
   const isLoading = queries.some((q) => q.isLoading);
 

@@ -16,8 +16,8 @@ import sharedRoutes from './routes/shared.routes.js';
 import bomRoutes from './routes/bom.routes.js';
 import refImagesRoutes from './routes/refImages.routes.js';
 import adminRoutes from './routes/admin.routes.js';
-import shadowboxesRoutes from './routes/shadowboxes.routes.js';
-import adminShadowboxesRoutes from './routes/adminShadowboxes.routes.js';
+import userStlsRouter from './routes/userStls.routes.js';
+import adminUserStlsRouter from './routes/adminUserStls.routes.js';
 
 export function createApp(): express.Express {
   const app = express();
@@ -64,8 +64,8 @@ export function createApp(): express.Express {
   app.use('/api/v1/bom', bomRoutes);
   app.use('/api/v1/ref-images', refImagesRoutes);
   app.use('/api/v1', adminRoutes);
-  app.use('/api/v1/shadowboxes', shadowboxesRoutes);
-  app.use('/api/v1', adminShadowboxesRoutes);
+  app.use('/api/v1/user-stls', userStlsRouter);
+  app.use('/api/v1', adminUserStlsRouter);
 
   // Global error handler (must be last)
   app.use(errorHandler);

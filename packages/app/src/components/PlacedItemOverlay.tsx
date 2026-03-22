@@ -81,9 +81,6 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
     return () => window.removeEventListener('resize', handler);
   }, [showPopover, computePopoverPos]);
 
-  const isOrphanedShadowbox =
-    item.itemId.startsWith('shadowbox:') && item.shadowBoxId === null;
-
   const libraryItem = getItemById(item.itemId);
   const color = item.isValid ? (libraryItem?.color || DEFAULT_VALID_COLOR) : INVALID_COLOR;
 
@@ -249,11 +246,6 @@ export const PlacedItemOverlay = memo(function PlacedItemOverlay({ item, gridX, 
         </div>
       )}
       <span className="placed-item-label">{libraryItem?.name}</span>
-      {isOrphanedShadowbox && (
-        <div className="orphaned-shadowbox-warning" title="Shadowbox was deleted">
-          ⚠ Deleted
-        </div>
-      )}
       {badges.length > 0 && (
         <div className="placed-item-badges">
           {badges.map(badge => (

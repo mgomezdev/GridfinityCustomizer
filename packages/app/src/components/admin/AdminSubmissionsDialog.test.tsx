@@ -16,6 +16,19 @@ vi.mock('../../hooks/useLayouts', () => ({
   })),
 }));
 
+const mockPromote = vi.fn().mockResolvedValue(undefined);
+const mockDeleteStl = vi.fn().mockResolvedValue(undefined);
+const mockReprocess = vi.fn().mockResolvedValue(undefined);
+
+vi.mock('../../hooks/useUserStls', () => ({
+  useAdminUserStlsQuery: vi.fn(() => ({ data: [], isLoading: false, isError: false, error: null })),
+  usePromoteUserStlMutation: vi.fn(() => ({ mutateAsync: mockPromote, isPending: false })),
+  useDeleteUserStlMutation: vi.fn(() => ({ mutateAsync: mockDeleteStl, isPending: false })),
+  useReprocessUserStlMutation: vi.fn(() => ({ mutateAsync: mockReprocess, isPending: false })),
+  useUpdateUserStlMutation: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
+  useReplaceUserStlFileMutation: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
+}));
+
 vi.mock('../../contexts/AuthContext', () => ({
   useAuth: vi.fn(() => ({
     user: { id: 1, email: 'admin@test.com', username: 'admin', role: 'admin', createdAt: '2026-01-01' },
@@ -30,6 +43,8 @@ vi.mock('../../api/layouts.api', () => ({
 }));
 
 import { useAdminLayoutsQuery } from '../../hooks/useLayouts';
+import { useAdminUserStlsQuery } from '../../hooks/useUserStls';
+import type { ApiUserStlAdmin } from '@gridfinity/shared';
 
 const mockedUseAdminLayoutsQuery = vi.mocked(useAdminLayoutsQuery);
 
@@ -175,5 +190,101 @@ describe('AdminSubmissionsDialog grouping', () => {
     // Grouping should still be Owner
     const selectAfter = screen.getByLabelText('Group by') as HTMLSelectElement;
     expect(selectAfter.value).toBe('owner');
+  });
+});
+
+const mockedUseAdminUserStlsQuery = vi.mocked(useAdminUserStlsQuery);
+
+function makeUserStl(overrides: Partial<ApiUserStlAdmin> = {}): ApiUserStlAdmin {
+  return {
+    id: 'stl-1',
+    userId: 1,
+    userName: 'testuser',
+    name: 'My Bin',
+    originalFilename: 'mybin.stl',
+    gridX: 2,
+    gridY: 1,
+    imageUrl: null,
+    perspImageUrls: [],
+    status: 'ready',
+    errorMessage: null,
+    createdAt: '2026-03-01T12:00:00Z',
+    updatedAt: '2026-03-01T12:00:00Z',
+    ...overrides,
+  };
+}
+
+describe('AdminSubmissionsDialog User Models tab', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockedUseAdminLayoutsQuery.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as ReturnType<typeof useAdminLayoutsQuery>);
+  });
+
+  it('has a User Models section tab', () => {
+    renderDialog();
+    expect(screen.getByRole('button', { name: 'User Models' })).toBeInTheDocument();
+  });
+
+  it('shows user STL rows when User Models tab is clicked', () => {
+    mockedUseAdminUserStlsQuery.mockReturnValue({
+      data: [makeUserStl()],
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as ReturnType<typeof useAdminUserStlsQuery>);
+
+    renderDialog();
+    fireEvent.click(screen.getByRole('button', { name: 'User Models' }));
+    expect(screen.getByText('testuser')).toBeInTheDocument();
+    expect(screen.getByText('mybin.stl')).toBeInTheDocument();
+    expect(screen.getByText('My Bin')).toBeInTheDocument();
+  });
+
+  it('shows Promote button only for ready items', () => {
+    mockedUseAdminUserStlsQuery.mockReturnValue({
+      data: [
+        makeUserStl({ id: 'stl-1', status: 'ready', name: 'Ready Bin' }),
+        makeUserStl({ id: 'stl-2', status: 'error', name: 'Error Bin', errorMessage: 'oops' }),
+      ],
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as ReturnType<typeof useAdminUserStlsQuery>);
+
+    renderDialog();
+    fireEvent.click(screen.getByRole('button', { name: 'User Models' }));
+    const promoteButtons = screen.getAllByRole('button', { name: /promote/i });
+    expect(promoteButtons).toHaveLength(1);
+  });
+
+  it('shows error message inline for error items', () => {
+    mockedUseAdminUserStlsQuery.mockReturnValue({
+      data: [makeUserStl({ id: 'stl-1', status: 'error', errorMessage: 'Parse failed' })],
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as ReturnType<typeof useAdminUserStlsQuery>);
+
+    renderDialog();
+    fireEvent.click(screen.getByRole('button', { name: 'User Models' }));
+    expect(screen.getByText('Parse failed')).toBeInTheDocument();
+  });
+
+  it('shows empty state when no user models', () => {
+    mockedUseAdminUserStlsQuery.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as ReturnType<typeof useAdminUserStlsQuery>);
+
+    renderDialog();
+    fireEvent.click(screen.getByRole('button', { name: 'User Models' }));
+    expect(screen.getByText(/no user models/i)).toBeInTheDocument();
   });
 });

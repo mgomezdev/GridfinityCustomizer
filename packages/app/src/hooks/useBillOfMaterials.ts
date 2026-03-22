@@ -31,9 +31,6 @@ export function useBillOfMaterials(placedItems: PlacedItem[], libraryItems: Libr
       const itemId = groupKey.split('::')[0];
       const libraryItem = libraryItems.find(item => item.id === itemId);
       if (libraryItem) {
-        const shadowboxId = libraryItem.id.startsWith('shadowbox:')
-          ? libraryItem.id.slice('shadowbox:'.length)
-          : undefined;
         bomItems.push({
           itemId: libraryItem.id,
           name: libraryItem.name,
@@ -43,7 +40,6 @@ export function useBillOfMaterials(placedItems: PlacedItem[], libraryItems: Libr
           categories: libraryItem.categories,
           quantity: count,
           customization,
-          ...(shadowboxId !== undefined ? { shadowboxId } : {}),
         });
       }
     });
