@@ -1,7 +1,13 @@
 import { useState } from 'react';
-import type { ApiLayout, LayoutStatus } from '@gridfinity/shared';
+import type { ApiLayout, LayoutStatus, ApiUserStlAdmin } from '@gridfinity/shared';
 import type { LoadedLayoutConfig } from '../layouts/LoadLayoutDialog';
 import { useAdminLayoutsQuery, useDeliverLayoutMutation, useCloneLayoutMutation } from '../../hooks/useLayouts';
+import {
+  useAdminUserStlsQuery,
+  usePromoteUserStlMutation,
+  useDeleteUserStlMutation,
+  useReprocessUserStlMutation,
+} from '../../hooks/useUserStls';
 import { useAuth } from '../../contexts/AuthContext';
 import { fetchLayout } from '../../api/layouts.api';
 import type { PlacedItem, Rotation, SpacerMode } from '@gridfinity/shared';
@@ -10,6 +16,7 @@ import { groupLayouts } from './groupLayouts';
 import type { GroupMode } from './groupLayouts';
 import { useConfirmDialog } from '../../hooks/useConfirmDialog';
 import { ConfirmDialog } from '../ConfirmDialog';
+import { UserStlEditModal } from '../UserStlEditModal';
 
 interface AdminSubmissionsDialogProps {
   isOpen: boolean;
@@ -19,6 +26,7 @@ interface AdminSubmissionsDialogProps {
 }
 
 type FilterTab = 'submitted' | 'delivered' | 'all';
+type MainSection = 'layouts' | 'user-models';
 
 function StatusBadge({ status }: { status: LayoutStatus }) {
   const className = `layout-status-badge layout-status-${status}`;
@@ -32,10 +40,12 @@ export function AdminSubmissionsDialog({
   onLoad,
   hasItems,
 }: AdminSubmissionsDialogProps) {
+  const [mainSection, setMainSection] = useState<MainSection>('layouts');
   const [filter, setFilter] = useState<FilterTab>('submitted');
   const [groupBy, setGroupBy] = useState<GroupMode>('none');
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editStl, setEditStl] = useState<ApiUserStlAdmin | null>(null);
   const { confirm, dialogProps: confirmDialogProps } = useConfirmDialog();
 
   const { getAccessToken } = useAuth();
@@ -43,6 +53,10 @@ export function AdminSubmissionsDialog({
   const layoutsQuery = useAdminLayoutsQuery(statusFilter);
   const deliverMutation = useDeliverLayoutMutation();
   const cloneMutation = useCloneLayoutMutation();
+  const adminUserStlsQuery = useAdminUserStlsQuery();
+  const promoteMutation = usePromoteUserStlMutation();
+  const deleteStlMutation = useDeleteUserStlMutation();
+  const reprocessMutation = useReprocessUserStlMutation();
 
   if (!isOpen) return null;
 
@@ -177,6 +191,24 @@ export function AdminSubmissionsDialog({
           </button>
         </div>
 
+        <div className="admin-section-tabs">
+          <button
+            className={`admin-filter-tab ${mainSection === 'layouts' ? 'active' : ''}`}
+            onClick={() => setMainSection('layouts')}
+            type="button"
+          >
+            Layouts
+          </button>
+          <button
+            className={`admin-filter-tab ${mainSection === 'user-models' ? 'active' : ''}`}
+            onClick={() => setMainSection('user-models')}
+            type="button"
+          >
+            User Models
+          </button>
+        </div>
+
+        {mainSection === 'layouts' && (
         <div className="admin-filter-tabs">
           {tabs.map(tab => (
             <button
@@ -189,7 +221,9 @@ export function AdminSubmissionsDialog({
             </button>
           ))}
         </div>
+        )}
 
+        {mainSection === 'layouts' && (
         <div className="admin-group-controls">
           <label htmlFor="admin-group-select">Group by</label>
           <select
@@ -203,8 +237,22 @@ export function AdminSubmissionsDialog({
             <option value="lastEdited">Last Edited</option>
           </select>
         </div>
+        )}
 
         <div className="layout-dialog-body">
+        {mainSection === 'user-models' && (
+          <UserModelsPanel
+            query={adminUserStlsQuery}
+            promoteMutation={promoteMutation}
+            deleteStlMutation={deleteStlMutation}
+            reprocessMutation={reprocessMutation}
+            editStl={editStl}
+            onEdit={setEditStl}
+            onCloseEdit={() => setEditStl(null)}
+            formatDate={formatDate}
+          />
+        )}
+        {mainSection === 'layouts' && (<>
           {isLoadingDetail && (
             <div className="layout-loading-overlay">Loading layout...</div>
           )}
@@ -289,9 +337,114 @@ export function AdminSubmissionsDialog({
               ))}
             </div>
           )}
+        </>)}
         </div>
         <ConfirmDialog {...confirmDialogProps} />
       </div>
     </div>
+  );
+}
+
+interface UserModelsPanelProps {
+  query: ReturnType<typeof useAdminUserStlsQuery>;
+  promoteMutation: ReturnType<typeof usePromoteUserStlMutation>;
+  deleteStlMutation: ReturnType<typeof useDeleteUserStlMutation>;
+  reprocessMutation: ReturnType<typeof useReprocessUserStlMutation>;
+  editStl: ApiUserStlAdmin | null;
+  onEdit: (item: ApiUserStlAdmin) => void;
+  onCloseEdit: () => void;
+  formatDate: (dateStr: string) => string;
+}
+
+function UserModelsPanel({
+  query,
+  promoteMutation,
+  deleteStlMutation,
+  reprocessMutation,
+  editStl,
+  onEdit,
+  onCloseEdit,
+  formatDate,
+}: UserModelsPanelProps) {
+  const userStls = query.data ?? [];
+
+  if (query.isLoading) return <div className="layout-list-loading">Loading user models...</div>;
+  if (query.isError) return <div className="layout-error-message">{query.error?.message ?? 'Failed to load user models'}</div>;
+  if (userStls.length === 0) return <div className="layout-list-empty"><p>No user models uploaded yet.</p></div>;
+
+  return (
+    <>
+      <div className="layout-list">
+        {userStls.map((item) => (
+          <div key={item.id} className="layout-list-item">
+            <div className="layout-list-item-info">
+              <div className="layout-list-item-name-row">
+                <span className="layout-list-item-name">{item.name}</span>
+                <span className={`layout-status-badge layout-status-${item.status}`}>
+                  {item.status}
+                </span>
+              </div>
+              <div className="layout-list-item-meta">
+                <span>{item.userName}</span>
+                <span>{item.originalFilename}</span>
+                {item.gridX != null && item.gridY != null && (
+                  <span>{item.gridX} × {item.gridY}</span>
+                )}
+                <span>{formatDate(item.updatedAt)}</span>
+              </div>
+              {item.status === 'error' && item.errorMessage && (
+                <div className="layout-error-message" title={item.errorMessage}>
+                  {item.errorMessage.length > 80 ? item.errorMessage.slice(0, 80) + '…' : item.errorMessage}
+                </div>
+              )}
+            </div>
+            <div className="layout-list-item-actions">
+              <button
+                className="layout-action-btn"
+                onClick={() => void reprocessMutation.mutateAsync(item.id)}
+                type="button"
+                disabled={reprocessMutation.isPending}
+              >
+                Reprocess
+              </button>
+              <button
+                className="layout-action-btn"
+                onClick={() => onEdit(item)}
+                type="button"
+              >
+                Edit
+              </button>
+              <a
+                className="layout-action-btn"
+                href={`/api/v1/user-stls/${item.id}/file`}
+                download={item.originalFilename}
+              >
+                Download
+              </a>
+              <button
+                className="layout-action-btn layout-deliver-action"
+                onClick={() => void deleteStlMutation.mutateAsync(item.id)}
+                type="button"
+                disabled={deleteStlMutation.isPending}
+              >
+                Delete
+              </button>
+              {item.status === 'ready' && (
+                <button
+                  className="layout-action-btn layout-submit-action"
+                  onClick={() => void promoteMutation.mutateAsync(item.id)}
+                  type="button"
+                  disabled={promoteMutation.isPending}
+                  aria-label={`Promote ${item.name}`}
+                >
+                  Promote
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      {editStl && <UserStlEditModal item={editStl} onClose={onCloseEdit} />}
+    </>
   );
 }
