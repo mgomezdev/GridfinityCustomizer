@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 
+type ActiveSection = 'dimensions' | 'grid-settings' | null;
+
 interface SidebarPanelProps {
   dimensionsContent: ReactNode;
   spacerContent: ReactNode;
@@ -16,23 +18,25 @@ export function SidebarPanel({
   onReset,
   isReadOnly,
 }: SidebarPanelProps) {
-  const [dimsOpen, setDimsOpen] = useState(true);
-  const [gridSettingsOpen, setGridSettingsOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<ActiveSection>('dimensions');
+
+  const toggle = (section: ActiveSection) =>
+    setActiveSection(prev => (prev === section ? null : section));
 
   return (
     <section className="sidebar">
       <div className="sidebar-section">
         <button
-          className={`sidebar-section-header${dimsOpen ? ' open' : ''}`}
-          onClick={() => setDimsOpen(o => !o)}
+          className={`sidebar-section-header${activeSection === 'dimensions' ? ' open' : ''}`}
+          onClick={() => toggle('dimensions')}
           type="button"
-          aria-expanded={dimsOpen}
+          aria-expanded={activeSection === 'dimensions'}
         >
           <span className="sidebar-section-icon">⊞</span>
           <span className="sidebar-section-title">DIMENSIONS</span>
-          <span className="sidebar-section-chevron">{dimsOpen ? '▲' : '▼'}</span>
+          <span className="sidebar-section-chevron">{activeSection === 'dimensions' ? '▲' : '▼'}</span>
         </button>
-        {dimsOpen && (
+        {activeSection === 'dimensions' && (
           <div className="sidebar-section-content">
             {dimensionsContent}
           </div>
@@ -41,16 +45,16 @@ export function SidebarPanel({
 
       <div className="sidebar-section">
         <button
-          className={`sidebar-section-header${gridSettingsOpen ? ' open' : ''}`}
-          onClick={() => setGridSettingsOpen(o => !o)}
+          className={`sidebar-section-header${activeSection === 'grid-settings' ? ' open' : ''}`}
+          onClick={() => toggle('grid-settings')}
           type="button"
-          aria-expanded={gridSettingsOpen}
+          aria-expanded={activeSection === 'grid-settings'}
         >
           <span className="sidebar-section-icon">⊟</span>
           <span className="sidebar-section-title">GRID SETTINGS</span>
-          <span className="sidebar-section-chevron">{gridSettingsOpen ? '▲' : '▼'}</span>
+          <span className="sidebar-section-chevron">{activeSection === 'grid-settings' ? '▲' : '▼'}</span>
         </button>
-        {gridSettingsOpen && (
+        {activeSection === 'grid-settings' && (
           <div className="sidebar-section-content">
             {spacerContent}
           </div>

@@ -700,8 +700,11 @@
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
   width: var(--sidebar-width);
+  overflow-y: auto;
+  min-height: 0;
+  border-right: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
 }
 
 .library-panel {
