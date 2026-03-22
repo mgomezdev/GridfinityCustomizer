@@ -658,7 +658,11 @@ function App() {
 
         <section className="library-panel">
           <div className="library-panel-header">
-            <span className="library-panel-title">Component Library</span>
+            <div className="library-panel-header-icon">⊞</div>
+            <div className="library-panel-header-text">
+              <span className="library-panel-title">Component Library</span>
+              <span className="library-panel-subtitle">Drag to workspace</span>
+            </div>
           </div>
           <div className="library-panel-tabs">
             <button
