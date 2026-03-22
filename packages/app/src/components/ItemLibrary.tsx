@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { LibraryItem, Category, Library } from '../types/gridfinity';
 import { LibraryItemCard } from './LibraryItemCard';
-import { LibrarySelector } from './LibrarySelector';
 import { STORAGE_KEYS } from '../utils/storageKeys';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -37,7 +36,6 @@ export function ItemLibrary({
   const [selectedWidths, setSelectedWidths] = useState<Set<number>>(new Set());
   const [selectedHeights, setSelectedHeights] = useState<Set<number>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
-  const [showLibrarySelector, setShowLibrarySelector] = useState(false);
   const { confirm, dialogProps: confirmDialogProps } = useConfirmDialog();
 
   // Filter items by search query, dimensions, and active category tab
@@ -171,26 +169,6 @@ export function ItemLibrary({
       <h3 className="item-library-title">Item Library</h3>
       <p className="item-library-hint">Drag items onto the grid</p>
 
-      <button
-        className="toggle-library-selector-button"
-        onClick={() => setShowLibrarySelector(!showLibrarySelector)}
-        aria-expanded={showLibrarySelector}
-      >
-        {showLibrarySelector ? '▼' : '▶'} Library Selection
-        {selectedLibraryIds.length > 1 && (
-          <span className="library-active-indicator">●</span>
-        )}
-      </button>
-
-      {showLibrarySelector && (
-        <LibrarySelector
-          availableLibraries={availableLibraries}
-          selectedLibraryIds={selectedLibraryIds}
-          onToggleLibrary={onToggleLibrary}
-          isLoading={isLibrariesLoading}
-        />
-      )}
-
       {error && (
         <div className="library-error">
           <p>Failed to load library</p>
@@ -212,18 +190,6 @@ export function ItemLibrary({
 
       {!error && !isLoading && selectedLibraryIds.length > 0 && (
         <>
-          <button
-            className="refresh-library-button"
-            onClick={async () => {
-              if (await confirm({ title: 'Refresh Library', message: 'Refresh all libraries from files?' })) {
-                onRefreshLibrary();
-              }
-            }}
-            title="Re-fetch all selected libraries from files"
-          >
-            Refresh Library
-          </button>
-
           <div className="library-search">
             <input
               type="text"

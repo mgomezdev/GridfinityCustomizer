@@ -39,6 +39,7 @@ import type { LoadedLayoutConfig } from './components/layouts/LoadLayoutDialog';
 import { AdminSubmissionsDialog } from './components/admin/AdminSubmissionsDialog';
 import { SubmissionsBadge } from './components/admin/SubmissionsBadge';
 import { UserStlLibrarySection } from './components/UserStlLibrarySection';
+import { LibrarySelectionModal } from './components/LibrarySelectionModal';
 import { WalkthroughOverlay } from './components/WalkthroughOverlay';
 import { STORAGE_KEYS } from './utils/storageKeys';
 import { exportToPdf } from './utils/exportPdf';
@@ -63,6 +64,7 @@ function App() {
   const [libraryTab, setLibraryTab] = useState<'items' | 'images'>('items');
   const [libraryCategory, setLibraryCategory] = useState<string | null>(null);
   const [libraryWidth, setLibraryWidth] = useState(LIBRARY_DEFAULT_WIDTH);
+  const [showLibraryModal, setShowLibraryModal] = useState(false);
   const libraryDragRef = useRef<{ startX: number; startWidth: number } | null>(null);
 
   const handleLibraryResizeStart = useCallback((e: React.MouseEvent) => {
@@ -688,6 +690,19 @@ function App() {
               <span className="library-panel-subtitle">Drag to workspace</span>
             </div>
           </div>
+          <div className="library-panel-lib-row">
+            <button
+              className="library-select-btn"
+              onClick={() => setShowLibraryModal(true)}
+              type="button"
+            >
+              Libraries
+              {selectedLibraryIds.length > 0 && (
+                <span className="library-select-badge">{selectedLibraryIds.length}</span>
+              )}
+            </button>
+          </div>
+
           <div className="library-panel-tabs">
             <button
               className={`library-cat-tab${libraryTab === 'items' && !libraryCategory ? ' active' : ''}`}
@@ -800,6 +815,16 @@ function App() {
           );
         })()}
       </div>
+
+      <LibrarySelectionModal
+        isOpen={showLibraryModal}
+        onClose={() => setShowLibraryModal(false)}
+        availableLibraries={availableLibraries}
+        selectedLibraryIds={selectedLibraryIds}
+        onToggleLibrary={toggleLibrary}
+        isLoading={isLibrariesLoading}
+        onRefresh={handleRefreshAll}
+      />
 
       <KeyboardShortcutsHelp isOpen={dialogs.keyboard} onClose={() => dialogDispatch({ type: 'CLOSE', dialog: 'keyboard' })} />
 
