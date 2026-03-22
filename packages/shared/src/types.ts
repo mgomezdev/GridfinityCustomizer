@@ -68,6 +68,7 @@ export interface BinCustomization {
   lipStyle: LipStyle;
   fingerSlide: FingerSlide;
   wallCutout: WallCutout;
+  height: number;
 }
 
 export interface PlacedItem {

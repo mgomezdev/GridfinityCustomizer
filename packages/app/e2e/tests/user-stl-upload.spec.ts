@@ -114,7 +114,7 @@ test.describe('User STL upload', () => {
   });
 
   test('uploading an STL closes modal and shows processing item', async ({ page }) => {
-    const testStlPath = path.resolve(__dirname, '../../../tools/gridfinity-generator/bin_2x3x4_solid.stl');
+    const testStlPath = path.resolve(__dirname, '../../../../tools/gridfinity-generator/bin_2x3x4_solid.stl');
 
     await page.goto('/');
     const stlPage = new UserStlPage(page);
@@ -151,7 +151,7 @@ test.describe('User STL upload', () => {
       }
     });
 
-    const testStlPath = path.resolve(__dirname, '../../../tools/gridfinity-generator/bin_2x3x4_solid.stl');
+    const testStlPath = path.resolve(__dirname, '../../../../tools/gridfinity-generator/bin_2x3x4_solid.stl');
 
     await page.goto('/');
     const stlPage = new UserStlPage(page);
