@@ -510,20 +510,71 @@ function App() {
     </>
   );
 
+  const dimensionsContent = (
+    <>
+      <div className="unit-toggle-compact">
+        <button className={unitSystem === 'metric' ? 'active' : ''} onClick={() => handleUnitChange('metric')}>mm</button>
+        <button className={unitSystem === 'imperial' ? 'active' : ''} onClick={() => handleUnitChange('imperial')}>in</button>
+      </div>
+      {unitSystem === 'imperial' && (
+        <div className="format-toggle-compact">
+          <button className={imperialFormat === 'decimal' ? 'active' : ''} onClick={() => setImperialFormat('decimal')}>.00</button>
+          <button className={imperialFormat === 'fractional' ? 'active' : ''} onClick={() => setImperialFormat('fractional')}>½</button>
+        </div>
+      )}
+      <div className="dimension-inputs-row">
+        <DimensionInput label="Width" value={width} onChange={setWidth} unit={unitSystem} imperialFormat={imperialFormat} />
+        <span className="dimension-separator">x</span>
+        <DimensionInput label="Depth" value={depth} onChange={setDepth} unit={unitSystem} imperialFormat={imperialFormat} />
+      </div>
+      <GridSummary
+        gridX={gridResult.gridX} gridY={gridResult.gridY}
+        gapWidth={gridResult.gapWidth} gapDepth={gridResult.gapDepth}
+        unit={unitSystem} imperialFormat={imperialFormat}
+      />
+    </>
+  );
+
+  const spacerContent = (
+    <SpacerControls config={spacerConfig} onConfigChange={setSpacerConfig} />
+  );
+
   return (
     <div className="app">
-      <header className="app-header">
-        <div className="header-title-group">
-          <h1>Gridfinity Bin Customizer</h1>
-          {layoutMeta.id && (
-            <p className="layout-info-subtitle">
-              {layoutMeta.owner && <span className="layout-owner">{layoutMeta.owner} — </span>}
-              <span className="layout-name">{layoutMeta.name}</span>
-              {layoutMeta.status && <span className={`layout-status-badge layout-status-${layoutMeta.status}`}>{layoutMeta.status}</span>}
-            </p>
+      <nav className="app-nav">
+        {/* Visually hidden h1 preserves smoke test: page.locator('h1').toContainText('Gridfinity') */}
+        <h1 className="sr-only">Gridfinity Bin Customizer</h1>
+        <div className="app-logo">
+          <div className="app-logo-icon">G</div>
+          <div>
+            <div className="app-logo-name">GridfinityPlanner</div>
+            <div className="app-logo-sub">Precision Architect</div>
+          </div>
+        </div>
+        <div className="nav-tabs">
+          <button className="nav-tab nav-tab-active" type="button">Workspace</button>
+          {isAuthenticated && (
+            <button
+              className="nav-tab"
+              type="button"
+              onClick={() => dialogDispatch({ type: 'OPEN', dialog: 'load' })}
+            >
+              Saved Configs
+            </button>
           )}
         </div>
-        <div className="header-actions">
+        <div className="nav-end">
+          {layoutMeta.id && (
+            <div className="nav-layout-info">
+              {layoutMeta.owner && <span className="nav-layout-owner">{layoutMeta.owner} — </span>}
+              <span className="nav-layout-name">{layoutMeta.name}</span>
+              {layoutMeta.status && (
+                <span className={`layout-status-badge layout-status-${layoutMeta.status}`}>
+                  {layoutMeta.status}
+                </span>
+              )}
+            </div>
+          )}
           <UserMenu />
           <button
             className="keyboard-help-button"
@@ -534,35 +585,7 @@ function App() {
             ?
           </button>
         </div>
-      </header>
-
-      <section className="grid-controls">
-        <div className="unit-toggle-compact">
-          <button className={unitSystem === 'metric' ? 'active' : ''} onClick={() => handleUnitChange('metric')}>mm</button>
-          <button className={unitSystem === 'imperial' ? 'active' : ''} onClick={() => handleUnitChange('imperial')}>in</button>
-        </div>
-
-        {unitSystem === 'imperial' && (
-          <div className="format-toggle-compact">
-            <button className={imperialFormat === 'decimal' ? 'active' : ''} onClick={() => setImperialFormat('decimal')}>.00</button>
-            <button className={imperialFormat === 'fractional' ? 'active' : ''} onClick={() => setImperialFormat('fractional')}>{'\u00BD'}</button>
-          </div>
-        )}
-
-        <div className="dimension-inputs-row">
-          <DimensionInput label="Width" value={width} onChange={setWidth} unit={unitSystem} imperialFormat={imperialFormat} />
-          <span className="dimension-separator">x</span>
-          <DimensionInput label="Depth" value={depth} onChange={setDepth} unit={unitSystem} imperialFormat={imperialFormat} />
-        </div>
-
-        <SpacerControls config={spacerConfig} onConfigChange={setSpacerConfig} />
-
-        <GridSummary
-          gridX={gridResult.gridX} gridY={gridResult.gridY}
-          gapWidth={gridResult.gapWidth} gapDepth={gridResult.gapDepth}
-          unit={unitSystem} imperialFormat={imperialFormat}
-        />
-      </section>
+      </nav>
 
       <main className="app-main">
         <SidebarPanel
@@ -571,6 +594,8 @@ function App() {
           itemLibraryContent={itemLibraryContent}
           imageTabContent={imageTabContent}
           selectionControls={selectionControls}
+          dimensionsContent={dimensionsContent}
+          spacerContent={spacerContent}
         />
 
         <section className="preview">
@@ -681,6 +706,43 @@ function App() {
           <BillOfMaterials items={bomItems} />
         </section>
       </main>
+
+      <div className="app-status-bar">
+        {(() => {
+          const totalPlaced = bomItems.reduce((s, i) => s + i.quantity, 0);
+          const capacity = gridResult.gridX * gridResult.gridY;
+          const pct = capacity > 0 ? Math.min(100, Math.round((totalPlaced / capacity) * 100)) : 0;
+          return (
+            <>
+              <div className="status-capacity">
+                <span className="status-dot" />
+                <span className="status-cap-label">
+                  Capacity: <strong>{pct}%</strong>
+                </span>
+                <div className="status-bar-track">
+                  <div className="status-bar-fill" style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+              <div className="status-spacer" />
+              <div className="status-count">
+                <strong>{totalPlaced} item{totalPlaced !== 1 ? 's' : ''}</strong>
+                {' · '}{gridResult.gridX}×{gridResult.gridY} grid
+              </div>
+              <div className="status-spacer" />
+              {isAuthenticated && layoutMeta.status !== 'submitted' && layoutMeta.status !== 'delivered' && (
+                <button
+                  className="status-submit-btn"
+                  onClick={handleSubmitClick}
+                  type="button"
+                  disabled={submitLayoutMutation.isPending || totalPlaced === 0}
+                >
+                  {submitLayoutMutation.isPending ? 'Submitting…' : 'Review & Submit →'}
+                </button>
+              )}
+            </>
+          );
+        })()}
+      </div>
 
       <KeyboardShortcutsHelp isOpen={dialogs.keyboard} onClose={() => dialogDispatch({ type: 'CLOSE', dialog: 'keyboard' })} />
 
