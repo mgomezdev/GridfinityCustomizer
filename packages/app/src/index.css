@@ -1,39 +1,55 @@
 :root {
-  /* Background */
-  --bg-primary: #FAFBFD;
-  --bg-secondary: #FFFFFF;
-  --bg-tertiary: #F1F4F9;
-  --bg-elevated: #F7F9FC;
-  --bg-hover: #EDF1F7;
+  /* Background — DA light palette */
+  --bg-primary: #f8f9fa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f4f7;
+  --bg-elevated: #ffffff;
+  --bg-hover: #eef2f6;
 
-  /* Blue Scale (primary accent) */
+  /* Accent — DA iOS blue */
+  --accent-primary: #007AFF;
+  --accent-secondary: #0062cc;
+  --accent-hover: #0062cc;
+  --accent-glow: rgba(0, 122, 255, 0.2);
+  --accent-alpha-10: rgba(0, 122, 255, 0.1);
+
+  /* Blue scale — remap to iOS blue family */
   --blue-50: #EFF6FF;
   --blue-100: #DBEAFE;
   --blue-200: #BFDBFE;
   --blue-300: #93C5FD;
   --blue-400: #60A5FA;
-  --blue-500: #3B82F6;
-  --blue-600: #2563EB;
+  --blue-500: #007AFF;
+  --blue-600: #0062cc;
   --blue-700: #1D4ED8;
   --blue-800: #1E40AF;
   --blue-900: #1E3A8A;
 
-  /* Grid & Canvas */
-  --grid-primary: #3B82F6;
-  --grid-secondary: #93C5FD;
-  --grid-tertiary: rgba(59, 130, 246, 0.15);
-  --grid-alpha-10: rgba(59, 130, 246, 0.1);
-  --grid-alpha-20: rgba(59, 130, 246, 0.2);
-  --grid-alpha-30: rgba(59, 130, 246, 0.3);
-  --grid-cell-bg: rgba(59, 130, 246, 0.06);
-  --grid-cell-border: rgba(59, 130, 246, 0.25);
+  /* Grid canvas */
+  --grid-primary: #007AFF;
+  --grid-secondary: #66B2FF;
+  --grid-alpha-10: rgba(0, 122, 255, 0.08);
+  --grid-alpha-20: rgba(0, 122, 255, 0.15);
+  --grid-alpha-30: rgba(0, 122, 255, 0.25);
+  --grid-cell-bg: rgba(0, 122, 255, 0.05);
+  --grid-cell-border: rgba(0, 122, 255, 0.20);
+  --border-focus: #007AFF;
 
-  /* Accent */
-  --accent-primary: #3B82F6;
-  --accent-secondary: #2563EB;
-  --accent-hover: #2563EB;
-  --accent-glow: rgba(59, 130, 246, 0.2);
-  --accent-alpha-10: rgba(59, 130, 246, 0.1);
+  /* Borders — DA surface-variant */
+  --border-primary: #dbe4e7;
+  --border-secondary: #eaeff2;
+  --border-elevated: #dbe4e7;
+
+  /* Text */
+  --text-primary: #1a1a1a;
+  --text-secondary: #586064;
+  --text-tertiary: #9ca3af;
+  --text-muted: #c5cdd0;
+
+  /* Typography — Inter replaces DM Sans */
+  --font-display: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
 
   /* Valid State */
   --valid-primary: #10B981;
@@ -53,26 +69,9 @@
   --spacer-bg: rgba(99, 102, 241, 0.08);
   --spacer-alpha-40: rgba(99, 102, 241, 0.12);
 
-  /* Text */
-  --text-primary: #0F172A;
-  --text-secondary: #475569;
-  --text-tertiary: #94A3B8;
-  --text-muted: #CBD5E1;
-
-  /* Borders */
-  --border-primary: #E2E8F0;
-  --border-secondary: #F1F5F9;
-  --border-elevated: #E2E8F0;
-  --border-focus: #3B82F6;
-
   /* Surfaces */
   --surface-overlay: rgba(0, 0, 0, 0.4);
   --surface-modal: #FFFFFF;
-
-  /* Typography */
-  --font-display: 'DM Sans', system-ui, sans-serif;
-  --font-body: 'DM Sans', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
 
   /* Font Sizes */
   --text-xs: 0.625rem;
@@ -131,7 +130,7 @@
   --header-height: 60px;
 
   /* Base font settings */
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
@@ -141,6 +140,19 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Accessibility: visually hidden but available to screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 * {
