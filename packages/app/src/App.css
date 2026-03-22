@@ -758,11 +758,26 @@
   background: var(--bg-secondary);
 }
 
+.library-resize-handle {
+  width: 4px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: var(--border-primary);
+  transition: background 0.15s;
+  position: relative;
+  z-index: 1;
+}
+
+.library-resize-handle:hover,
+.library-resize-handle:active {
+  background: var(--accent-primary);
+}
+
 .library-panel {
   display: flex;
   flex-direction: column;
-  width: var(--bom-width);
-  border-left: 1px solid var(--border-primary);
+  flex-shrink: 0;
+  border-left: none;
   background: var(--bg-secondary);
   overflow: hidden;
 }
@@ -1904,7 +1919,7 @@
 
 .category-items {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: var(--space-sm);
   overflow: hidden;
   transition: max-height 0.3s ease, opacity 0.2s ease, margin 0.2s ease;

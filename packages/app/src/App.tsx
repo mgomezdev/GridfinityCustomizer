@@ -46,6 +46,10 @@ import './App.css';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:3001/api/v1';
 
+const LIBRARY_MIN_WIDTH = 160;
+const LIBRARY_MAX_WIDTH = 520;
+const LIBRARY_DEFAULT_WIDTH = 260;
+
 function App() {
   const [width, setWidth] = useState(168);
   const [depth, setDepth] = useState(168);
@@ -58,6 +62,25 @@ function App() {
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [libraryTab, setLibraryTab] = useState<'items' | 'images'>('items');
   const [libraryCategory, setLibraryCategory] = useState<string | null>(null);
+  const [libraryWidth, setLibraryWidth] = useState(LIBRARY_DEFAULT_WIDTH);
+  const libraryDragRef = useRef<{ startX: number; startWidth: number } | null>(null);
+
+  const handleLibraryResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    libraryDragRef.current = { startX: e.clientX, startWidth: libraryWidth };
+    const onMove = (ev: MouseEvent) => {
+      if (!libraryDragRef.current) return;
+      const delta = libraryDragRef.current.startX - ev.clientX;
+      setLibraryWidth(Math.min(LIBRARY_MAX_WIDTH, Math.max(LIBRARY_MIN_WIDTH, libraryDragRef.current.startWidth + delta)));
+    };
+    const onUp = () => {
+      libraryDragRef.current = null;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }, [libraryWidth]);
   const [imageViewMode, setImageViewMode] = useState<ImageViewMode>(
     () => (localStorage.getItem('gridfinity-image-view-mode') as ImageViewMode) || 'ortho'
   );
@@ -656,7 +679,8 @@ function App() {
           </GridViewport>
         </section>
 
-        <section className="library-panel">
+        <div className="library-resize-handle" onMouseDown={handleLibraryResizeStart} role="separator" aria-label="Resize library panel" />
+        <section className="library-panel" style={{ width: libraryWidth, minWidth: libraryWidth }}>
           <div className="library-panel-header">
             <div className="library-panel-header-icon">⊞</div>
             <div className="library-panel-header-text">
