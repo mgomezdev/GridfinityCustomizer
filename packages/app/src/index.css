@@ -186,24 +186,26 @@ h1 {
 }
 
 button {
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-primary);
-  padding: 0.6em 1.2em;
-  font-size: 1em;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-primary);
+  padding: 0.5em 1em;
+  font-size: var(--text-base);
   font-weight: var(--font-medium);
   font-family: inherit;
   background-color: var(--bg-secondary);
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
 }
+
 button:hover {
-  border-color: var(--blue-500);
-  background-color: var(--blue-50);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background-color: var(--bg-secondary);
 }
-button:focus,
+
 button:focus-visible {
-  outline: 2px solid var(--blue-500);
+  outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
 }
 
