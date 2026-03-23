@@ -301,7 +301,7 @@ export function WorkspacePage() {
         <div className="preview-toolbar">
           <div className="reference-image-toolbar">
             {isAuthenticated && (
-              <button className="layout-toolbar-btn layout-load-btn" onClick={() => navigate('/layouts')} type="button">Load</button>
+              <button className="layout-toolbar-btn layout-load-btn" onClick={() => navigate('/configs')} type="button">Load</button>
             )}
             {isAuthenticated && (
               <button
