@@ -1,6 +1,7 @@
 import { Outlet, NavLink, useSearchParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { WorkspaceProvider, useWorkspace } from './contexts/WorkspaceContext';
+import { calculateOrderTotal } from './utils/exportOrderSummaryPdf';
 import { SaveLayoutDialog } from './components/layouts/SaveLayoutDialog';
 import { RebindImageDialog } from './components/RebindImageDialog';
 import { AdminSubmissionsDialog } from './components/admin/AdminSubmissionsDialog';
@@ -55,6 +56,9 @@ function AppShellInner() {
   const totalPlaced = bomItems.reduce((s, i) => s + i.quantity, 0);
   const capacity = gridResult.gridX * gridResult.gridY;
   const pct = capacity > 0 ? Math.min(100, Math.round((totalPlaced / capacity) * 100)) : 0;
+
+  const { total, hasTbd } = calculateOrderTotal(bomItems, true);
+  const costLabel = hasTbd ? `$${total.toFixed(2)} + TBD` : `$${total.toFixed(2)}`;
 
   return (
     <div className="app">
@@ -142,6 +146,10 @@ function AppShellInner() {
           {' \u00b7 '}{gridResult.gridX}&times;{gridResult.gridY} grid
         </div>
         <div className="status-spacer" />
+        <div className="status-cost">
+          <span className="status-cost-label">Est.</span>
+          <strong>{costLabel}</strong>
+        </div>
         {isAuthenticated && layoutMeta.status !== 'submitted' && layoutMeta.status !== 'delivered' && (
           <NavLink
             to="/order"

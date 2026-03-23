@@ -511,6 +511,17 @@
   color: var(--text-tertiary);
 }
 
+.status-cost {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--text-sm);
+}
+
+.status-cost-label {
+  color: var(--text-tertiary);
+}
+
 .status-submit-btn {
   padding: 6px 18px;
   background: var(--accent-primary);
