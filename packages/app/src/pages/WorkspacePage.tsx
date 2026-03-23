@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { ImageViewMode, DragData } from '../types/gridfinity';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import { useGridTransform } from '../hooks/useGridTransform';
@@ -15,7 +16,6 @@ import { ZoomControls } from '../components/ZoomControls';
 import { ImageViewToggle } from '../components/ImageViewToggle';
 import { GridViewport } from '../components/GridViewport';
 import { SidebarPanel } from '../components/SidebarPanel';
-import { LoadLayoutDialog } from '../components/layouts/LoadLayoutDialog';
 import { SubmissionsBadge } from '../components/admin/SubmissionsBadge';
 import { UserStlLibrarySection } from '../components/UserStlLibrarySection';
 import { exportToPdf } from '../utils/exportPdf';
@@ -27,6 +27,7 @@ const LIBRARY_MAX_WIDTH = 520;
 const LIBRARY_DEFAULT_WIDTH = 260;
 
 export function WorkspacePage() {
+  const navigate = useNavigate();
   const ws = useWorkspace();
 
   const {
@@ -46,11 +47,11 @@ export function WorkspacePage() {
     libraryItems, isLibraryLoading, isLibrariesLoading, libraryError, librariesError,
     categories, getItemById, getLibraryMeta, refreshLibraries, refreshLibrary,
     selectedLibraryMeta,
-    handleLoadLayout, handleSubmitClick, handleWithdrawLayout,
+    handleSubmitClick, handleWithdrawLayout,
     handleCloneCurrentLayout, handleClearAll, handleReset,
     submitLayoutMutation, withdrawLayoutMutation, cloneLayoutMutation,
     submittedCountQuery,
-    dialogs, dialogDispatch,
+    dialogDispatch,
     isAuthenticated, isAdmin,
     exportPdfError, setExportPdfError,
   } = ws;
@@ -300,7 +301,7 @@ export function WorkspacePage() {
         <div className="preview-toolbar">
           <div className="reference-image-toolbar">
             {isAuthenticated && (
-              <button className="layout-toolbar-btn layout-load-btn" onClick={() => dialogDispatch({ type: 'OPEN', dialog: 'load' })} type="button">Load</button>
+              <button className="layout-toolbar-btn layout-load-btn" onClick={() => navigate('/layouts')} type="button">Load</button>
             )}
             {isAuthenticated && (
               <button
@@ -480,12 +481,6 @@ export function WorkspacePage() {
         )}
       </section>
 
-      <LoadLayoutDialog
-        isOpen={dialogs.load}
-        onClose={() => dialogDispatch({ type: 'CLOSE', dialog: 'load' })}
-        onLoad={handleLoadLayout}
-        hasItems={placedItems.length > 0 || refImagePlacements.length > 0}
-      />
     </>
   );
 }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { WorkspacePage } from './pages/WorkspacePage';
 import { WorkspaceProvider, useWorkspace } from './contexts/WorkspaceContext';
 import { KeyboardShortcutsHelp } from './components/KeyboardShortcutsHelp';
@@ -133,14 +134,6 @@ let capturedSaveLayoutDialogProps: Record<string, unknown> = {};
 vi.mock('./components/layouts/SaveLayoutDialog', () => ({
   SaveLayoutDialog: (props: Record<string, unknown>) => {
     capturedSaveLayoutDialogProps = props;
-    return null;
-  },
-}));
-
-let capturedLoadLayoutDialogProps: Record<string, unknown> = {};
-vi.mock('./components/layouts/LoadLayoutDialog', () => ({
-  LoadLayoutDialog: (props: Record<string, unknown>) => {
-    capturedLoadLayoutDialogProps = props;
     return null;
   },
 }));
@@ -323,11 +316,13 @@ function TestAppShellInner({ children }: { children: React.ReactNode }) {
 // --- Helpers ---
 function renderApp() {
   return render(
-    <WorkspaceProvider>
-      <TestAppShellInner>
-        <WorkspacePage />
-      </TestAppShellInner>
-    </WorkspaceProvider>
+    <MemoryRouter>
+      <WorkspaceProvider>
+        <TestAppShellInner>
+          <WorkspacePage />
+        </TestAppShellInner>
+      </WorkspaceProvider>
+    </MemoryRouter>
   );
 }
 
@@ -360,7 +355,6 @@ describe('App Integration Tests', () => {
     capturedGridPreviewProps = {};
     capturedItemLibraryProps = {};
     capturedZoomControlsProps = {};
-    capturedLoadLayoutDialogProps = {};
     capturedSaveLayoutDialogProps = {};
     mockPlacements = [];
     mockIsAuthenticated = false;
@@ -1002,40 +996,7 @@ describe('App Integration Tests', () => {
   });
 
   // ==========================================
-  // 8. Layout subtitle in nav (via LoadLayoutDialog)
-  // ==========================================
-  describe('Layout loading via dialog', () => {
-    it('LoadLayoutDialog onLoad callback is wired up', () => {
-      renderApp();
-      // Verify the LoadLayoutDialog is rendered with an onLoad prop
-      expect(typeof capturedLoadLayoutDialogProps.onLoad).toBe('function');
-    });
-
-    it('shows layout name in SaveLayoutDialog after loading a layout', () => {
-      renderApp();
-
-      const onLoad = capturedLoadLayoutDialogProps.onLoad as (config: Record<string, unknown>) => void;
-      act(() => {
-        onLoad({
-          layoutId: 42,
-          layoutName: 'My Custom Layout',
-          layoutDescription: null,
-          layoutStatus: 'draft',
-          widthMm: 168,
-          depthMm: 168,
-          spacerConfig: { horizontal: 'none', vertical: 'none' },
-          placedItems: [],
-        });
-      });
-
-      // SaveLayoutDialog should reflect the current layout
-      expect(capturedSaveLayoutDialogProps.currentLayoutId).toBe(42);
-      expect(capturedSaveLayoutDialogProps.currentLayoutName).toBe('My Custom Layout');
-    });
-  });
-
-  // ==========================================
-  // 9. Always-visible Submit button
+  // 8. Always-visible Submit button
   // ==========================================
   describe('Always-visible Submit button', () => {
     it('Submit button is visible when authenticated and no layout is saved', () => {
@@ -1084,9 +1045,11 @@ describe('App Integration Tests', () => {
       // Start unauthenticated — capture rerender from the original render
       mockIsAuthenticated = false;
       const { rerender } = render(
-        <WorkspaceProvider>
-          <WorkspacePage />
-        </WorkspaceProvider>
+        <MemoryRouter>
+          <WorkspaceProvider>
+            <WorkspacePage />
+          </WorkspaceProvider>
+        </MemoryRouter>
       );
 
       // No walkthrough yet
@@ -1097,9 +1060,11 @@ describe('App Integration Tests', () => {
         mockIsAuthenticated = true;
       });
       rerender(
-        <WorkspaceProvider>
-          <WorkspacePage />
-        </WorkspaceProvider>
+        <MemoryRouter>
+          <WorkspaceProvider>
+            <WorkspacePage />
+          </WorkspaceProvider>
+        </MemoryRouter>
       );
 
       await waitFor(() => {
@@ -1114,9 +1079,11 @@ describe('App Integration Tests', () => {
       // Start unauthenticated — capture rerender from the original render
       mockIsAuthenticated = false;
       const { rerender } = render(
-        <WorkspaceProvider>
-          <WorkspacePage />
-        </WorkspaceProvider>
+        <MemoryRouter>
+          <WorkspaceProvider>
+            <WorkspacePage />
+          </WorkspaceProvider>
+        </MemoryRouter>
       );
 
       // Simulate login transition: mutate flag then rerender the same instance
@@ -1124,9 +1091,11 @@ describe('App Integration Tests', () => {
         mockIsAuthenticated = true;
       });
       rerender(
-        <WorkspaceProvider>
-          <WorkspacePage />
-        </WorkspaceProvider>
+        <MemoryRouter>
+          <WorkspaceProvider>
+            <WorkspacePage />
+          </WorkspaceProvider>
+        </MemoryRouter>
       );
 
       // Should NOT have called startTour since WALKTHROUGH_SEEN is set
