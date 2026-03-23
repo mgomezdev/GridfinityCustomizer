@@ -297,6 +297,15 @@ export function WorkspacePage() {
       />
 
       <section className="preview">
+        <nav className="canvas-breadcrumb" aria-label="breadcrumb">
+          <span className="canvas-breadcrumb-item">Workspace</span>
+          {layoutMeta.name && (
+            <>
+              <span className="canvas-breadcrumb-sep">›</span>
+              <span className="canvas-breadcrumb-item canvas-breadcrumb-current">{layoutMeta.name}</span>
+            </>
+          )}
+        </nav>
         <div className="preview-toolbar">
           <div className="reference-image-toolbar">
             {isAuthenticated && (

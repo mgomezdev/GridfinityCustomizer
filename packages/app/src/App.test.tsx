@@ -378,6 +378,13 @@ describe('App Integration Tests', () => {
       expect(screen.queryByText('.00')).not.toBeInTheDocument();
       expect(screen.queryByText('\u00BD')).not.toBeInTheDocument();
     });
+
+    it('renders canvas breadcrumb with Workspace label', () => {
+      renderApp();
+      const breadcrumb = screen.getByRole('navigation', { name: /breadcrumb/i });
+      expect(breadcrumb).toBeInTheDocument();
+      expect(breadcrumb).toHaveTextContent('Workspace');
+    });
   });
 
   // ==========================================

@@ -931,6 +931,27 @@
   flex-shrink: 0;
 }
 
+.canvas-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 16px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-primary);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.canvas-breadcrumb-sep {
+  color: var(--text-tertiary);
+}
+
+.canvas-breadcrumb-current {
+  color: var(--text-secondary);
+  font-weight: var(--font-medium);
+}
+
 .preview-viewport {
   flex: 1;
   overflow: auto;
