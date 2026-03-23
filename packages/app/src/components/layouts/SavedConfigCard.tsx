@@ -1,6 +1,31 @@
 import { useState } from 'react';
 import type { ApiLayout } from '@gridfinity/shared';
 
+function GridThumbnail({ gridX, gridY }: { gridX: number; gridY: number }) {
+  const CELL = 10;
+  const PAD = 4;
+  const w = gridX * CELL + PAD * 2;
+  const h = gridY * CELL + PAD * 2;
+
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} width="100%" height="100%" aria-hidden="true">
+      {Array.from({ length: gridY }, (_, row) =>
+        Array.from({ length: gridX }, (_, col) => (
+          <rect
+            key={`${row}-${col}`}
+            className="grid-cell"
+            x={PAD + col * CELL + 1}
+            y={PAD + row * CELL + 1}
+            width={CELL - 2}
+            height={CELL - 2}
+            rx={1}
+          />
+        ))
+      )}
+    </svg>
+  );
+}
+
 interface SavedConfigCardProps {
   layout: ApiLayout;
   onEdit: (id: number) => void;
@@ -37,7 +62,7 @@ export function SavedConfigCard({
   return (
     <div className="saved-config-card">
       <div className="saved-config-thumbnail">
-        <span className="saved-config-grid-dims">{layout.gridX}&times;{layout.gridY}</span>
+        <GridThumbnail gridX={layout.gridX} gridY={layout.gridY} />
       </div>
 
       <div className="saved-config-info">

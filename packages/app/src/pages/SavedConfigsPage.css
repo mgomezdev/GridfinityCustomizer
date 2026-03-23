@@ -22,18 +22,23 @@
 }
 
 .saved-config-thumbnail {
-  background: var(--surface-variant);
+  background: var(--bg-primary);
   height: 140px;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 12px;
 }
 
-.saved-config-grid-dims {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
+.saved-config-thumbnail svg {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.grid-cell {
+  fill: var(--bg-secondary);
+  stroke: var(--border-primary);
+  stroke-width: 0.5;
 }
 
 .saved-config-info { padding: var(--space-md); border-bottom: 1px solid var(--border-primary); }

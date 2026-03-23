@@ -45,9 +45,13 @@ describe('SavedConfigCard', () => {
     expect(screen.getByText('My Layout')).toBeInTheDocument();
   });
 
-  it('renders grid dimensions in thumbnail', () => {
+  it('renders SVG thumbnail with correct cell count (gridX × gridY)', () => {
     renderCard();
-    expect(screen.getByText('4\u00d74')).toBeInTheDocument();
+    const svg = document.querySelector('.saved-config-thumbnail svg');
+    expect(svg).toBeInTheDocument();
+    // mockLayout has gridX: 4, gridY: 4 → 16 cells
+    const cells = svg!.querySelectorAll('rect.grid-cell');
+    expect(cells).toHaveLength(16);
   });
 
   it('renders status badge', () => {
