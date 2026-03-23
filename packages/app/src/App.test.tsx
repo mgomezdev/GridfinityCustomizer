@@ -174,15 +174,12 @@ vi.mock('./components/GridSummary', () => ({
 // --- Mock network/storage hooks ---
 const mockRefreshLibraries = vi.fn().mockResolvedValue(undefined);
 const mockRefreshLibrary = vi.fn().mockResolvedValue(undefined);
-const mockToggleLibrary = vi.fn();
 
 vi.mock('./hooks/useLibraries', () => ({
   useLibraries: () => ({
     availableLibraries: [
       { id: 'bins_standard', name: 'Standard Bins', path: '/libraries/bins_standard/index.json', isEnabled: true },
     ],
-    selectedLibraryIds: ['bins_standard'],
-    toggleLibrary: mockToggleLibrary,
     isLoading: false,
     error: null,
     refreshLibraries: mockRefreshLibraries,

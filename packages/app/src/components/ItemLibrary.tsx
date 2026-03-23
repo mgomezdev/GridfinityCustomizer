@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import type { LibraryItem, Category, Library } from '../types/gridfinity';
+import type { LibraryItem, Category } from '../types/gridfinity';
 import { LibraryItemCard } from './LibraryItemCard';
 import { STORAGE_KEYS } from '../utils/storageKeys';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
@@ -13,10 +13,6 @@ interface ItemLibraryProps {
   isLoading: boolean;
   error: Error | null;
   onRefreshLibrary: () => Promise<void>;
-  availableLibraries: Library[];
-  selectedLibraryIds: string[];
-  onToggleLibrary: (libraryId: string) => void;
-  isLibrariesLoading: boolean;
   activeCategory?: string | null;
 }
 
@@ -26,10 +22,6 @@ export function ItemLibrary({
   isLoading,
   error,
   onRefreshLibrary,
-  availableLibraries,
-  selectedLibraryIds,
-  onToggleLibrary,
-  isLibrariesLoading,
   activeCategory,
 }: ItemLibraryProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -182,13 +174,7 @@ export function ItemLibrary({
         </div>
       )}
 
-      {!error && !isLoading && selectedLibraryIds.length === 0 && (
-        <div className="library-empty-selection">
-          <p>No libraries selected. Use Library Selection above to choose libraries.</p>
-        </div>
-      )}
-
-      {!error && !isLoading && selectedLibraryIds.length > 0 && (
+      {!error && !isLoading && (
         <>
           <div className="library-search">
             <input

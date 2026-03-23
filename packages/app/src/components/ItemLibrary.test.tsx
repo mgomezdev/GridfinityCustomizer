@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ItemLibrary } from './ItemLibrary';
-import type { LibraryItem, Category, Library } from '../types/gridfinity';
+import type { LibraryItem, Category } from '../types/gridfinity';
 
 const mockCategories: Category[] = [
   { id: 'bin', name: 'Bins', color: '#646cff', order: 1 },
@@ -16,22 +16,8 @@ const mockLibraryItems: LibraryItem[] = [
   { id: 'organizer-1x3', name: '1x3 Organizer', widthUnits: 1, heightUnits: 3, color: '#f59e0b', categories: ['organizer'] },
 ];
 
-const mockLibraries: Library[] = [
-  {
-    id: 'bins_standard',
-    name: 'Standard Bins',
-    path: '/libraries/bins_standard/index.json',
-    isEnabled: true,
-    itemCount: 40,
-  },
-];
-
 const mockProps = {
   onRefreshLibrary: vi.fn().mockResolvedValue(undefined),
-  availableLibraries: mockLibraries,
-  selectedLibraryIds: ['bins_standard'],
-  onToggleLibrary: vi.fn(),
-  isLibrariesLoading: false,
 };
 
 describe('ItemLibrary', () => {
@@ -294,84 +280,6 @@ describe('ItemLibrary', () => {
 
     expect(screen.getByText(/Bins \(2\)/)).toBeInTheDocument();
     expect(screen.getByText(/Dividers \(1\)/)).toBeInTheDocument();
-  });
-
-  it('should render refresh library button', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
-
-    const refreshButton = screen.getByText('Refresh Library');
-    expect(refreshButton).toBeInTheDocument();
-  });
-
-  it('should call onRefreshLibrary when refresh button is clicked and confirmed', async () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
-
-    const refreshButton = screen.getByText('Refresh Library');
-    fireEvent.click(refreshButton);
-
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-    });
-    expect(screen.getByText('Refresh all libraries from files?')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
-    await waitFor(() => {
-      expect(mockProps.onRefreshLibrary).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  it('should not call onRefreshLibrary when refresh is cancelled', async () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
-
-    const refreshButton = screen.getByText('Refresh Library');
-    fireEvent.click(refreshButton);
-
-    await waitFor(() => {
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-    expect(mockProps.onRefreshLibrary).not.toHaveBeenCalled();
-  });
-
-  it('should have library selector collapsed by default', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
-
-    // LibrarySelector should not be in DOM initially
-    const librarySelector = document.querySelector('.library-selector');
-    expect(librarySelector).not.toBeInTheDocument();
-
-    // Toggle button should exist
-    const toggleButton = screen.getByText(/Library Selection/);
-    expect(toggleButton).toBeInTheDocument();
-  });
-
-  it('should expand library selector when toggle button clicked', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
-
-    const toggleButton = screen.getByText(/Library Selection/);
-    fireEvent.click(toggleButton);
-
-    // LibrarySelector should now be in DOM
-    const librarySelector = document.querySelector('.library-selector');
-    expect(librarySelector).toBeInTheDocument();
-  });
-
-  it('should show active indicator when multiple libraries selected', () => {
-    const multiLibraryProps = {
-      ...mockProps,
-      selectedLibraryIds: ['bins_standard', 'simple-utensils'],
-    };
-
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...multiLibraryProps} />);
-
-    const activeIndicator = document.querySelector('.library-active-indicator');
-    expect(activeIndicator).toBeInTheDocument();
-  });
-
-  it('should not show active indicator when only one library selected', () => {
-    render(<ItemLibrary items={mockLibraryItems} categories={mockCategories} isLoading={false} error={null} {...mockProps} />);
-
-    const activeIndicator = document.querySelector('.library-active-indicator');
-    expect(activeIndicator).not.toBeInTheDocument();
   });
 
   describe('Category Grouping', () => {
