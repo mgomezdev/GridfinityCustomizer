@@ -53,6 +53,7 @@ export interface LibraryItem {
   stlFile?: string;
   imageUrl?: string;
   perspectiveImageUrl?: string;
+  price?: number;
 }
 
 export interface PlacedItem {
@@ -90,6 +91,7 @@ export interface BOMItem {
   quantity: number;
   customization?: BinCustomization;
   shadowboxId?: string;
+  price?: number;
 }
 
 export interface ReferenceImage {
