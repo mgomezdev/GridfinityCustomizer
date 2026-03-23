@@ -109,7 +109,6 @@ vi.mock('./contexts/WalkthroughContext', () => ({
     dismissTour: mockDismissTour,
   }),
   WALKTHROUGH_STEPS: [
-    { id: 'expand-category', title: 'Open a bin category', body: 'Click any category in the library panel to expand it and see the available bins.', target: '.category-title.collapsible' },
     { id: 'place-bin', title: 'Drag a bin onto your grid', body: 'Pick any bin from the library on the left and drag it onto the grid to place it.', target: '.library-item-card' },
     { id: 'save-grid', title: 'Save your layout', body: 'Give your layout a name and save it.', target: '.layout-save-btn' },
     { id: 'submit-order', title: 'Submit your order', body: 'When your layout is ready, hit Submit.', target: '.layout-submit-btn' },
@@ -853,17 +852,6 @@ describe('App Integration Tests', () => {
       expect(capturedItemLibraryProps.isLoading).toBe(false);
     });
 
-    it('ItemControls renders only when selectedItemIds.size > 0', () => {
-      renderApp();
-      expect(screen.queryByTestId('item-controls')).not.toBeInTheDocument();
-
-      placeItemViaGridPreview();
-      const instanceId = getPlacedItems()[0].instanceId;
-      selectItemViaGridPreview(instanceId);
-
-      expect(screen.getByTestId('item-controls')).toBeInTheDocument();
-    });
-
     it('Clear All button renders only when placedItems.length > 0', () => {
       renderApp();
       expect(screen.queryByText(/Clear All/)).not.toBeInTheDocument();
@@ -1080,7 +1068,7 @@ describe('App Integration Tests', () => {
       renderApp();
 
       expect(screen.getByTestId('walkthrough-overlay')).toBeInTheDocument();
-      expect(screen.getByText('Step 1 of 4')).toBeInTheDocument();
+      expect(screen.getByText('Step 1 of 3')).toBeInTheDocument();
     });
 
     it('does not render WalkthroughOverlay when walkthrough is inactive', () => {

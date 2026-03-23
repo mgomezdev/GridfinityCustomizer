@@ -12,7 +12,7 @@ export default function App() {
         <Route element={<AppShell />}>
           <Route index element={<WorkspacePage />} />
           <Route path="configs" element={<RequireAuth><SavedConfigsPage /></RequireAuth>} />
-          <Route path="order" element={<RequireAuth><OrderSummaryPage /></RequireAuth>} />
+          <Route path="order" element={<OrderSummaryPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

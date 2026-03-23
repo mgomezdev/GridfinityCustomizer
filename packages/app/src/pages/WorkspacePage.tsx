@@ -7,10 +7,7 @@ import { DimensionInput } from '../components/DimensionInput';
 import { GridPreview } from '../components/GridPreview';
 import { GridSummary } from '../components/GridSummary';
 import { ItemLibrary } from '../components/ItemLibrary';
-import { ItemControls } from '../components/ItemControls';
-import { BinCustomizationPanel } from '../components/BinCustomizationPanel';
 import { SpacerControls } from '../components/SpacerControls';
-import { BillOfMaterials } from '../components/BillOfMaterials';
 import { RefImageLibrary } from '../components/RefImageLibrary';
 import { ZoomControls } from '../components/ZoomControls';
 import { ImageViewToggle } from '../components/ImageViewToggle';
@@ -46,7 +43,6 @@ export function WorkspacePage() {
     referenceImagesForGrid,
     libraryItems, isLibraryLoading, isLibrariesLoading, libraryError, librariesError,
     categories, getItemById, getLibraryMeta,
-    selectedLibraryMeta,
     handleSubmitClick, handleWithdrawLayout,
     handleCloneCurrentLayout, handleClearAll, handleReset,
     submitLayoutMutation, withdrawLayoutMutation, cloneLayoutMutation,
@@ -101,10 +97,6 @@ export function WorkspacePage() {
     const viewportRect = viewport.getBoundingClientRect();
     fitToScreen(viewportRect.width, viewportRect.height, content.offsetWidth, content.offsetHeight);
   }, [fitToScreen]);
-
-  const handleRotateSelectedCw = useCallback(() => { rotateSelected('cw'); }, [rotateSelected]);
-  const handleRotateSelectedCcw = useCallback(() => { rotateSelected('ccw'); }, [rotateSelected]);
-  const handleDeleteSelected = useCallback(() => { deleteSelected(); }, [deleteSelected]);
 
   // Metadata map for broken state / image URLs
   const refImageMetadata = useMemo(() => {
@@ -428,7 +420,6 @@ export function WorkspacePage() {
             <>
               <ItemLibrary
                 items={libraryItems}
-                categories={categories}
                 isLoading={isLibraryLoading || isLibrariesLoading}
                 error={libraryError || librariesError}
                 activeCategory={libraryCategory}
@@ -443,32 +434,6 @@ export function WorkspacePage() {
             </div>
           )}
         </div>
-        <div className="library-panel-bom">
-          <BillOfMaterials items={bomItems} />
-        </div>
-        {selectedItemIds.size > 0 && (
-          <div className="library-panel-selection">
-            <ItemControls
-              onRotateCw={handleRotateSelectedCw}
-              onRotateCcw={handleRotateSelectedCcw}
-              onDelete={handleDeleteSelected}
-            />
-            {selectedItemIds.size === 1 && (() => {
-              const selectedId = selectedItemIds.values().next().value as string;
-              const selectedItem = placedItems.find(i => i.instanceId === selectedId);
-              if (!selectedItem) return null;
-              return (
-                <BinCustomizationPanel
-                  customization={selectedItem.customization}
-                  onChange={(c) => updateItemCustomization(selectedId, c)}
-                  onReset={() => updateItemCustomization(selectedId, undefined)}
-                  customizableFields={selectedLibraryMeta.customizableFields}
-                  customizationDefaults={selectedLibraryMeta.customizationDefaults}
-                />
-              );
-            })()}
-          </div>
-        )}
       </section>
 
     </>

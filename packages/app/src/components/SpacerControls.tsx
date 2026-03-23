@@ -14,6 +14,7 @@ const SPACER_OPTIONS: { value: SpacerMode; label: string }[] = [
 export function SpacerControls({ config, onConfigChange }: SpacerControlsProps) {
   return (
     <div className="spacer-controls">
+      <span className="spacer-group-label">Border Spacers</span>
       <div className="spacer-group">
         <label className="spacer-axis-label" htmlFor="spacer-horizontal">Horizontal</label>
         <select

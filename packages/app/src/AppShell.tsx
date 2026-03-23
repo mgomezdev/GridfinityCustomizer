@@ -86,6 +86,12 @@ function AppShellInner() {
               Saved Configs
             </NavLink>
           )}
+          <NavLink
+            to="/order"
+            className={({ isActive }) => `nav-tab${isActive ? ' nav-tab-active' : ''}`}
+          >
+            Order Summary
+          </NavLink>
         </div>
 
         <div className="nav-end">
