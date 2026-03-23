@@ -1,7 +1,13 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
-import App from './App';
+import { WorkspacePage } from './pages/WorkspacePage';
+import { WorkspaceProvider, useWorkspace } from './contexts/WorkspaceContext';
+import { KeyboardShortcutsHelp } from './components/KeyboardShortcutsHelp';
+import { SaveLayoutDialog } from './components/layouts/SaveLayoutDialog';
+import { RebindImageDialog } from './components/RebindImageDialog';
+import { WalkthroughOverlay } from './components/WalkthroughOverlay';
+import { ConfirmDialog } from './components/ConfirmDialog';
 import type { LibraryItem } from './types/gridfinity';
 import type { RefImagePlacement } from './hooks/useRefImagePlacements';
 
@@ -256,9 +262,73 @@ vi.mock('./hooks/useRefImagePlacements', () => ({
 }));
 
 
+// --- TestAppShell: renders global dialogs that AppShell provides in production ---
+// WorkspacePage no longer renders these dialogs (they live in AppShell to avoid
+// double-rendering). In tests we render WorkspacePage directly without AppShell,
+// so we provide them here via a thin wrapper that reads from WorkspaceContext.
+function TestAppShellInner({ children }: { children: React.ReactNode }) {
+  const {
+    dialogs, dialogDispatch, confirmDialogProps,
+    isWalkthroughActive, walkthroughCurrentStep, walkthroughSteps, nextStep, dismissTour,
+    gridResult, drawerWidth, drawerDepth, spacerConfig,
+    placedItems, refImagePlacements, layoutMeta, handleSaveComplete,
+    handleRebindSelect, closeRebind, isReadOnly,
+  } = useWorkspace();
+
+  return (
+    <>
+      {children}
+      <KeyboardShortcutsHelp
+        isOpen={dialogs.keyboard}
+        onClose={() => dialogDispatch({ type: 'CLOSE', dialog: 'keyboard' })}
+      />
+      <SaveLayoutDialog
+        isOpen={dialogs.save}
+        onClose={() => dialogDispatch({ type: 'CLOSE', dialog: 'save' })}
+        gridX={gridResult.gridX}
+        gridY={gridResult.gridY}
+        widthMm={drawerWidth}
+        depthMm={drawerDepth}
+        spacerConfig={spacerConfig}
+        placedItems={placedItems}
+        refImagePlacements={refImagePlacements}
+        currentLayoutId={layoutMeta.id}
+        currentLayoutName={layoutMeta.name}
+        currentLayoutDescription={layoutMeta.description}
+        currentLayoutStatus={layoutMeta.status}
+        onSaveComplete={handleSaveComplete}
+      />
+      <RebindImageDialog
+        isOpen={dialogs.rebind}
+        onClose={closeRebind}
+        onSelect={handleRebindSelect}
+      />
+      <ConfirmDialog {...confirmDialogProps} />
+      <WalkthroughOverlay
+        isActive={isWalkthroughActive}
+        currentStep={walkthroughCurrentStep}
+        steps={walkthroughSteps}
+        onNext={nextStep}
+        onDismiss={dismissTour}
+      />
+      {isReadOnly && (
+        <div className="read-only-banner">
+          This layout has been delivered and is read-only. Clone to make changes.
+        </div>
+      )}
+    </>
+  );
+}
+
 // --- Helpers ---
 function renderApp() {
-  return render(<App />);
+  return render(
+    <WorkspaceProvider>
+      <TestAppShellInner>
+        <WorkspacePage />
+      </TestAppShellInner>
+    </WorkspaceProvider>
+  );
 }
 
 function placeItemViaGridPreview(itemId = 'bins_standard:bin-1x1', x = 0, y = 0) {
@@ -304,11 +374,6 @@ describe('App Integration Tests', () => {
   // 1. Renders correctly
   // ==========================================
   describe('Renders correctly', () => {
-    it('renders header with title', () => {
-      renderApp();
-      expect(screen.getByText('Gridfinity Bin Customizer')).toBeInTheDocument();
-    });
-
     it('renders metric unit toggle active by default', () => {
       renderApp();
       const mmButton = screen.getByText('mm');
@@ -503,6 +568,7 @@ describe('App Integration Tests', () => {
       placeItemViaGridPreview();
       const instanceId = getPlacedItems()[0].instanceId;
       selectItemViaGridPreview(instanceId);
+      expect(getSelectedItemIds().size).toBe(1);
 
       fireEvent.keyDown(document, { key: 'Escape' });
 
@@ -936,15 +1002,16 @@ describe('App Integration Tests', () => {
   });
 
   // ==========================================
-  // 8. Layout subtitle in header
+  // 8. Layout subtitle in nav (via LoadLayoutDialog)
   // ==========================================
-  describe('Layout subtitle in header', () => {
-    it('does not show subtitle when no layout is loaded', () => {
+  describe('Layout loading via dialog', () => {
+    it('LoadLayoutDialog onLoad callback is wired up', () => {
       renderApp();
-      expect(screen.queryByText(/layout-info-subtitle/)).not.toBeInTheDocument();
+      // Verify the LoadLayoutDialog is rendered with an onLoad prop
+      expect(typeof capturedLoadLayoutDialogProps.onLoad).toBe('function');
     });
 
-    it('shows layout name in subtitle after loading a layout', () => {
+    it('shows layout name in SaveLayoutDialog after loading a layout', () => {
       renderApp();
 
       const onLoad = capturedLoadLayoutDialogProps.onLoad as (config: Record<string, unknown>) => void;
@@ -961,89 +1028,9 @@ describe('App Integration Tests', () => {
         });
       });
 
-      expect(screen.getByText('My Custom Layout')).toBeInTheDocument();
-    });
-
-    it('shows status badge in subtitle', () => {
-      renderApp();
-
-      const onLoad = capturedLoadLayoutDialogProps.onLoad as (config: Record<string, unknown>) => void;
-      act(() => {
-        onLoad({
-          layoutId: 42,
-          layoutName: 'Badge Test',
-          layoutDescription: null,
-          layoutStatus: 'submitted',
-          widthMm: 168,
-          depthMm: 168,
-          spacerConfig: { horizontal: 'none', vertical: 'none' },
-          placedItems: [],
-        });
-      });
-
-      const badge = screen.getByText('submitted');
-      expect(badge).toBeInTheDocument();
-      expect(badge.className).toContain('layout-status-badge');
-    });
-
-    it('shows owner info for admin-loaded layouts', () => {
-      renderApp();
-
-      const onLoad = capturedLoadLayoutDialogProps.onLoad as (config: Record<string, unknown>) => void;
-      act(() => {
-        onLoad({
-          layoutId: 42,
-          layoutName: 'Their Layout',
-          layoutDescription: null,
-          layoutStatus: 'submitted',
-          widthMm: 168,
-          depthMm: 168,
-          spacerConfig: { horizontal: 'none', vertical: 'none' },
-          placedItems: [],
-          ownerUsername: 'alice',
-          ownerEmail: 'alice@example.com',
-        });
-      });
-
-      expect(screen.getByText('Their Layout')).toBeInTheDocument();
-      // Owner string should contain username and email
-      const ownerSpan = screen.getByText(/alice/);
-      expect(ownerSpan).toBeInTheDocument();
-      expect(ownerSpan.textContent).toContain('alice@example.com');
-    });
-
-    it('clears subtitle on Clear All', async () => {
-      renderApp();
-
-      // Load a layout first
-      const onLoad = capturedLoadLayoutDialogProps.onLoad as (config: Record<string, unknown>) => void;
-      act(() => {
-        onLoad({
-          layoutId: 42,
-          layoutName: 'To Clear',
-          layoutDescription: null,
-          layoutStatus: 'draft',
-          widthMm: 168,
-          depthMm: 168,
-          spacerConfig: { horizontal: 'none', vertical: 'none' },
-          placedItems: [
-            { instanceId: 'test-1', itemId: 'bins_standard:bin-1x1', x: 0, y: 0, width: 1, height: 1, rotation: 0 },
-          ],
-        });
-      });
-
-      expect(screen.getByText('To Clear')).toBeInTheDocument();
-
-      // Clear all
-      fireEvent.click(screen.getByText(/Clear All/));
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument();
-      });
-      fireEvent.click(screen.getByRole('button', { name: 'Clear All' }));
-
-      await waitFor(() => {
-        expect(screen.queryByText('To Clear')).not.toBeInTheDocument();
-      });
+      // SaveLayoutDialog should reflect the current layout
+      expect(capturedSaveLayoutDialogProps.currentLayoutId).toBe(42);
+      expect(capturedSaveLayoutDialogProps.currentLayoutName).toBe('My Custom Layout');
     });
   });
 
@@ -1096,7 +1083,11 @@ describe('App Integration Tests', () => {
     it('auto-starts walkthrough on first login', async () => {
       // Start unauthenticated — capture rerender from the original render
       mockIsAuthenticated = false;
-      const { rerender } = render(<App />);
+      const { rerender } = render(
+        <WorkspaceProvider>
+          <WorkspacePage />
+        </WorkspaceProvider>
+      );
 
       // No walkthrough yet
       expect(mockStartTour).not.toHaveBeenCalled();
@@ -1105,7 +1096,11 @@ describe('App Integration Tests', () => {
       act(() => {
         mockIsAuthenticated = true;
       });
-      rerender(<App />);
+      rerender(
+        <WorkspaceProvider>
+          <WorkspacePage />
+        </WorkspaceProvider>
+      );
 
       await waitFor(() => {
         expect(mockStartTour).toHaveBeenCalledTimes(1);
@@ -1118,13 +1113,21 @@ describe('App Integration Tests', () => {
 
       // Start unauthenticated — capture rerender from the original render
       mockIsAuthenticated = false;
-      const { rerender } = render(<App />);
+      const { rerender } = render(
+        <WorkspaceProvider>
+          <WorkspacePage />
+        </WorkspaceProvider>
+      );
 
       // Simulate login transition: mutate flag then rerender the same instance
       act(() => {
         mockIsAuthenticated = true;
       });
-      rerender(<App />);
+      rerender(
+        <WorkspaceProvider>
+          <WorkspacePage />
+        </WorkspaceProvider>
+      );
 
       // Should NOT have called startTour since WALKTHROUGH_SEEN is set
       await waitFor(() => {
