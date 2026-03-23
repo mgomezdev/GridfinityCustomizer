@@ -6,6 +6,7 @@ import type {
   GridResult, ReferenceImage, PlacedItem, PlacedItemWithValidity,
   ComputedSpacer, Rotation, SpacerMode,
 } from '../types/gridfinity';
+import type { SelectModifiers } from '../hooks/useGridItems';
 import type { LoadedLayoutConfig } from '../types/layoutConfig';
 import type { LayoutStatus, ApiUser } from '@gridfinity/shared';
 import type { RefImagePlacement, UseRefImagePlacementsReturn } from '../hooks/useRefImagePlacements';
@@ -77,7 +78,7 @@ interface WorkspaceContextValue {
   deleteItem: (instanceId: string) => void;
   clearAll: () => void;
   loadItems: (items: PlacedItem[]) => void;
-  selectItem: (instanceId: string, multi?: boolean) => void;
+  selectItem: (instanceId: string | null, modifiers?: SelectModifiers) => void;
   selectAll: () => void;
   deselectAll: () => void;
   duplicateItem: () => void;
@@ -85,7 +86,7 @@ interface WorkspaceContextValue {
   pasteItems: () => void;
   deleteSelected: () => void;
   rotateSelected: (direction: 'cw' | 'ccw') => void;
-  updateItemCustomization: (instanceId: string, customization: BinCustomization) => void;
+  updateItemCustomization: (instanceId: string, customization: BinCustomization | undefined) => void;
 
   // BOM
   bomItems: BOMItem[];

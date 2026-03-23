@@ -2,8 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import type { LibraryItem, Category } from '../types/gridfinity';
 import { LibraryItemCard } from './LibraryItemCard';
 import { STORAGE_KEYS } from '../utils/storageKeys';
-import { useConfirmDialog } from '../hooks/useConfirmDialog';
-import { ConfirmDialog } from './ConfirmDialog';
 
 const STORAGE_KEY = STORAGE_KEYS.COLLAPSED_CATEGORIES;
 
@@ -12,7 +10,6 @@ interface ItemLibraryProps {
   categories: Category[];
   isLoading: boolean;
   error: Error | null;
-  onRefreshLibrary: () => Promise<void>;
   activeCategory?: string | null;
 }
 
@@ -21,14 +18,12 @@ export function ItemLibrary({
   categories,
   isLoading,
   error,
-  onRefreshLibrary,
   activeCategory,
 }: ItemLibraryProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedWidths, setSelectedWidths] = useState<Set<number>>(new Set());
   const [selectedHeights, setSelectedHeights] = useState<Set<number>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
-  const { confirm, dialogProps: confirmDialogProps } = useConfirmDialog();
 
   // Filter items by search query, dimensions, and active category tab
   const filteredItems = items.filter(item => {
@@ -285,7 +280,6 @@ export function ItemLibrary({
           )}
         </>
       )}
-      <ConfirmDialog {...confirmDialogProps} />
     </div>
   );
 }

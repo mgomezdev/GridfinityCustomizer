@@ -966,37 +966,7 @@ describe('App Integration Tests', () => {
   });
 
   // ==========================================
-  // 7. Refresh All coordination
-  // ==========================================
-  describe('Refresh All coordination', () => {
-    it('handleRefreshAll calls refreshLibraries then refreshLibrary', async () => {
-      renderApp();
-
-      // handleRefreshAll is passed to ItemLibrary as onRefreshLibrary
-      const onRefresh = capturedItemLibraryProps.onRefreshLibrary as () => Promise<void>;
-      await act(async () => { await onRefresh(); });
-
-      expect(mockRefreshLibraries).toHaveBeenCalledTimes(1);
-      expect(mockRefreshLibrary).toHaveBeenCalledTimes(1);
-    });
-
-    it('error in refreshLibraries is caught and does not crash', async () => {
-      mockRefreshLibraries.mockRejectedValueOnce(new Error('Network error'));
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-      renderApp();
-
-      const onRefresh = capturedItemLibraryProps.onRefreshLibrary as () => Promise<void>;
-      // Should not throw
-      await act(async () => { await onRefresh(); });
-
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
-    });
-  });
-
-  // ==========================================
-  // 8. Always-visible Submit button
+  // 7. Always-visible Submit button
   // ==========================================
   describe('Always-visible Submit button', () => {
     it('Submit button is visible when authenticated and no layout is saved', () => {

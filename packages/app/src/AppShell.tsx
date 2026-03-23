@@ -31,7 +31,7 @@ function AppShellInner() {
     drawerDepth,
     spacerConfig,
     handleSaveComplete,
-    submitLayoutMutation,
+    handleLoadLayout,
     submittedCountQuery,
     isWalkthroughActive,
     walkthroughCurrentStep,
@@ -192,6 +192,8 @@ function AppShellInner() {
         <AdminSubmissionsDialog
           isOpen={dialogs.admin}
           onClose={() => dialogDispatch({ type: 'CLOSE', dialog: 'admin' })}
+          onLoad={handleLoadLayout}
+          hasItems={placedItems.length > 0}
         />
       )}
 

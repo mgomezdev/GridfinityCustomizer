@@ -16,9 +16,7 @@ const mockLibraryItems: LibraryItem[] = [
   { id: 'organizer-1x3', name: '1x3 Organizer', widthUnits: 1, heightUnits: 3, color: '#f59e0b', categories: ['organizer'] },
 ];
 
-const mockProps = {
-  onRefreshLibrary: vi.fn().mockResolvedValue(undefined),
-};
+const mockProps = {};
 
 describe('ItemLibrary', () => {
   beforeEach(() => {

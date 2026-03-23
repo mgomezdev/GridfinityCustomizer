@@ -45,7 +45,7 @@ export function WorkspacePage() {
     updateRefImageRotation, toggleRefImageLock,
     referenceImagesForGrid,
     libraryItems, isLibraryLoading, isLibrariesLoading, libraryError, librariesError,
-    categories, getItemById, getLibraryMeta, refreshLibraries, refreshLibrary,
+    categories, getItemById, getLibraryMeta,
     selectedLibraryMeta,
     handleSubmitClick, handleWithdrawLayout,
     handleCloneCurrentLayout, handleClearAll, handleReset,
@@ -133,15 +133,6 @@ export function WorkspacePage() {
       handleDrop(dragData, x, y);
     }
   }, [isReadOnly, gridResult.gridX, gridResult.gridY, addRefImagePlacement, handleDrop]);
-
-  const handleRefreshAll = useCallback(async () => {
-    try {
-      await refreshLibraries();
-      await refreshLibrary();
-    } catch (err) {
-      console.error('Library refresh failed:', err);
-    }
-  }, [refreshLibraries, refreshLibrary]);
 
   const handleExportPdf = useCallback(async () => {
     setExportPdfError(null);
@@ -440,7 +431,6 @@ export function WorkspacePage() {
                 categories={categories}
                 isLoading={isLibraryLoading || isLibrariesLoading}
                 error={libraryError || librariesError}
-                onRefreshLibrary={handleRefreshAll}
                 activeCategory={libraryCategory}
               />
               {isAuthenticated && <UserStlLibrarySection />}
