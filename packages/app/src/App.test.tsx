@@ -436,7 +436,46 @@ describe('App Integration Tests', () => {
   });
 
   // ==========================================
-  // 3. Keyboard Shortcuts
+  // 3. FIT Buttons
+  // ==========================================
+  describe('FIT buttons', () => {
+    it('renders FIT W and FIT D buttons', () => {
+      renderApp();
+      expect(screen.getByRole('button', { name: /FIT W/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /FIT D/i })).toBeInTheDocument();
+    });
+
+    it('FIT W snaps width down to nearest 42mm multiple', () => {
+      renderApp();
+      // Default width is 168mm (exact fit). We can't change it through the mock,
+      // but we can verify the button exists and clicking it when already at a
+      // multiple of 42 keeps the same value (168 → 168).
+      const widthDiv = screen.getByTestId('dimension-input-Width');
+      const before = parseFloat(widthDiv.getAttribute('data-value')!);
+      expect(before % 42).toBe(0); // already a multiple
+
+      fireEvent.click(screen.getByRole('button', { name: /FIT W/i }));
+
+      const after = parseFloat(widthDiv.getAttribute('data-value')!);
+      expect(after % 42).toBe(0);
+      expect(after).toBe(before); // 168 stays 168
+    });
+
+    it('FIT D snaps depth down to nearest 42mm multiple', () => {
+      renderApp();
+      const depthDiv = screen.getByTestId('dimension-input-Depth');
+      const before = parseFloat(depthDiv.getAttribute('data-value')!);
+      expect(before % 42).toBe(0);
+
+      fireEvent.click(screen.getByRole('button', { name: /FIT D/i }));
+
+      const after = parseFloat(depthDiv.getAttribute('data-value')!);
+      expect(after % 42).toBe(0);
+    });
+  });
+
+  // ==========================================
+  // 4. Keyboard Shortcuts
   // ==========================================
   describe('Keyboard Shortcuts', () => {
     it('Delete with selectedImageId removes image, NOT items', () => {

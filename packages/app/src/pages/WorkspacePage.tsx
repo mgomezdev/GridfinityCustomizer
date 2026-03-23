@@ -138,6 +138,20 @@ export function WorkspacePage() {
     );
   }, [bomItems, gridResult, spacerConfig, unitSystem, layoutMeta.name, setExportPdfError]);
 
+  const GRIDFINITY_UNIT_MM = 42;
+
+  const handleFitWidth = useCallback(() => {
+    const mm = unitSystem === 'imperial' ? width * 25.4 : width;
+    const fitted = Math.floor(mm / GRIDFINITY_UNIT_MM) * GRIDFINITY_UNIT_MM;
+    setWidth(unitSystem === 'imperial' ? fitted / 25.4 : fitted);
+  }, [width, unitSystem, setWidth]);
+
+  const handleFitDepth = useCallback(() => {
+    const mm = unitSystem === 'imperial' ? depth * 25.4 : depth;
+    const fitted = Math.floor(mm / GRIDFINITY_UNIT_MM) * GRIDFINITY_UNIT_MM;
+    setDepth(unitSystem === 'imperial' ? fitted / 25.4 : fitted);
+  }, [depth, unitSystem, setDepth]);
+
   const handleRemoveImage = (id: string) => {
     removeRefImagePlacement(id);
     if (selectedImageId === id) setSelectedImageId(null);
@@ -253,10 +267,13 @@ export function WorkspacePage() {
           <button className={imperialFormat === 'fractional' ? 'active' : ''} onClick={() => setImperialFormat('fractional')}>½</button>
         </div>
       )}
-      <div className="dimension-inputs-row">
+      <div className="dimension-input-row">
         <DimensionInput label="Width" value={width} onChange={setWidth} unit={unitSystem} imperialFormat={imperialFormat} />
-        <span className="dimension-separator">x</span>
+        <button className="fit-btn" onClick={handleFitWidth} type="button" title="Snap to nearest full grid unit">FIT W</button>
+      </div>
+      <div className="dimension-input-row">
         <DimensionInput label="Depth" value={depth} onChange={setDepth} unit={unitSystem} imperialFormat={imperialFormat} />
+        <button className="fit-btn" onClick={handleFitDepth} type="button" title="Snap to nearest full grid unit">FIT D</button>
       </div>
       <GridSummary
         gridX={gridResult.gridX} gridY={gridResult.gridY}
