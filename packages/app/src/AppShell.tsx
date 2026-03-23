@@ -9,6 +9,7 @@ import { ConfirmDialog } from './components/ConfirmDialog';
 import { WalkthroughOverlay } from './components/WalkthroughOverlay';
 import { KeyboardShortcutsHelp } from './components/KeyboardShortcutsHelp';
 import { UserMenu } from './components/auth/UserMenu';
+import './App.css';
 import './AppShell.css';
 
 // Inner shell reads from context (must be inside WorkspaceProvider)
