@@ -1,7 +1,6 @@
 import { Outlet, NavLink, useSearchParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { WorkspaceProvider, useWorkspace } from './contexts/WorkspaceContext';
-import { calculateOrderTotal } from './utils/exportOrderSummaryPdf';
 import { SaveLayoutDialog } from './components/layouts/SaveLayoutDialog';
 import { RebindImageDialog } from './components/RebindImageDialog';
 import { AdminSubmissionsDialog } from './components/admin/AdminSubmissionsDialog';
@@ -10,6 +9,7 @@ import { ConfirmDialog } from './components/ConfirmDialog';
 import { WalkthroughOverlay } from './components/WalkthroughOverlay';
 import { KeyboardShortcutsHelp } from './components/KeyboardShortcutsHelp';
 import { UserMenu } from './components/auth/UserMenu';
+import { calculateOrderTotal } from './utils/exportOrderSummaryPdf';
 import './App.css';
 import './AppShell.css';
 
