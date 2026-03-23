@@ -472,6 +472,16 @@ describe('App Integration Tests', () => {
       const after = parseFloat(depthDiv.getAttribute('data-value')!);
       expect(after % 42).toBe(0);
     });
+
+    it('snap logic: floor(200/42)*42 === 168 and clamp ensures minimum of 42', () => {
+      // DimensionInput is mocked as a static div so we cannot drive an arbitrary value
+      // through the rendered UI. This test verifies the snap arithmetic directly.
+      const UNIT = 42;
+      expect(Math.max(UNIT, Math.floor(200 / UNIT) * UNIT)).toBe(168);
+      expect(Math.max(UNIT, Math.floor(84 / UNIT) * UNIT)).toBe(84);
+      // Without the clamp, a sub-42 input would produce 0; with it, the result is 42.
+      expect(Math.max(UNIT, Math.floor(20 / UNIT) * UNIT)).toBe(42);
+    });
   });
 
   // ==========================================

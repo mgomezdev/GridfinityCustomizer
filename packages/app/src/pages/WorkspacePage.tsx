@@ -22,6 +22,7 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?
 const LIBRARY_MIN_WIDTH = 160;
 const LIBRARY_MAX_WIDTH = 520;
 const LIBRARY_DEFAULT_WIDTH = 260;
+const GRIDFINITY_UNIT_MM = 42;
 
 export function WorkspacePage() {
   const navigate = useNavigate();
@@ -138,17 +139,15 @@ export function WorkspacePage() {
     );
   }, [bomItems, gridResult, spacerConfig, unitSystem, layoutMeta.name, setExportPdfError]);
 
-  const GRIDFINITY_UNIT_MM = 42;
-
   const handleFitWidth = useCallback(() => {
     const mm = unitSystem === 'imperial' ? width * 25.4 : width;
-    const fitted = Math.floor(mm / GRIDFINITY_UNIT_MM) * GRIDFINITY_UNIT_MM;
+    const fitted = Math.max(GRIDFINITY_UNIT_MM, Math.floor(mm / GRIDFINITY_UNIT_MM) * GRIDFINITY_UNIT_MM);
     setWidth(unitSystem === 'imperial' ? fitted / 25.4 : fitted);
   }, [width, unitSystem, setWidth]);
 
   const handleFitDepth = useCallback(() => {
     const mm = unitSystem === 'imperial' ? depth * 25.4 : depth;
-    const fitted = Math.floor(mm / GRIDFINITY_UNIT_MM) * GRIDFINITY_UNIT_MM;
+    const fitted = Math.max(GRIDFINITY_UNIT_MM, Math.floor(mm / GRIDFINITY_UNIT_MM) * GRIDFINITY_UNIT_MM);
     setDepth(unitSystem === 'imperial' ? fitted / 25.4 : fitted);
   }, [depth, unitSystem, setDepth]);
 
