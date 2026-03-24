@@ -76,6 +76,12 @@ export function WorkspacePage() {
     isError: false,
   });
 
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+  }, []);
+
   const handleDirectSave = useCallback(async () => {
     if (!layoutMeta.id) return;
     try {
@@ -93,7 +99,8 @@ export function WorkspacePage() {
       const result = await updateLayoutMutation.mutateAsync({ id: layoutMeta.id, data: payload });
       handleSaveComplete(result.id, result.name, result.status);
       setToast({ visible: true, isError: false });
-      setTimeout(() => setToast(t => ({ ...t, visible: false })), 1500);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = setTimeout(() => setToast(t => ({ ...t, visible: false })), 1500);
     } catch {
       setToast({ visible: true, isError: true });
     }
