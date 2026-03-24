@@ -285,6 +285,7 @@ export async function createLayout(
       depthMm: data.depthMm,
       spacerHorizontal: data.spacerHorizontal ?? 'none',
       spacerVertical: data.spacerVertical ?? 'none',
+      status: 'draft',
       isPublic: false,
       createdAt: now,
       updatedAt: now,

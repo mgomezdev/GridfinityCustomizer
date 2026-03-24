@@ -4,6 +4,20 @@ import { useBillOfMaterials } from './useBillOfMaterials';
 import type { PlacedItem, LibraryItem, BinCustomization } from '../types/gridfinity';
 import { DEFAULT_BIN_CUSTOMIZATION } from '../types/gridfinity';
 
+const BASE_ITEM: LibraryItem = {
+  id: 'lib1:item1',
+  name: 'Test Bin',
+  widthUnits: 1,
+  heightUnits: 1,
+  color: '#ff0000',
+  categories: ['bin'],
+};
+const PLACED: PlacedItem = {
+  instanceId: 'p1',
+  itemId: 'lib1:item1',
+  x: 0, y: 0, width: 1, height: 1, rotation: 0,
+};
+
 const mockLibraryItems: LibraryItem[] = [
   { id: 'bin-1x1', name: '1x1 Bin', widthUnits: 1, heightUnits: 1, color: '#646cff', categories: ['bin'] },
   { id: 'bin-1x2', name: '1x2 Bin', widthUnits: 1, heightUnits: 2, color: '#646cff', categories: ['bin'] },
@@ -312,6 +326,22 @@ describe('useBillOfMaterials', () => {
 
     expect(result.current).toHaveLength(1);
     expect(result.current[0].quantity).toBe(2);
+  });
+
+  describe('Price propagation', () => {
+    it('propagates price from LibraryItem to BOMItem', () => {
+      const { result } = renderHook(() =>
+        useBillOfMaterials([PLACED], [{ ...BASE_ITEM, price: 12.50 }])
+      );
+      expect(result.current[0].price).toBe(12.50);
+    });
+
+    it('omits price when LibraryItem has no price', () => {
+      const { result } = renderHook(() =>
+        useBillOfMaterials([PLACED], [BASE_ITEM])
+      );
+      expect(result.current[0].price).toBeUndefined();
+    });
   });
 
   describe('Customization grouping', () => {

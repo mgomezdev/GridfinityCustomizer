@@ -1,0 +1,625 @@
+import { createContext, useContext, useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import type { ReactNode } from 'react';
+import type {
+  UnitSystem, ImperialFormat, GridSpacerConfig, BOMItem, LibraryItem,
+  LibraryMeta, DragData, BinCustomization, Category,
+  GridResult, ReferenceImage, PlacedItem, PlacedItemWithValidity,
+  ComputedSpacer, Rotation, SpacerMode,
+} from '../types/gridfinity';
+import type { SelectModifiers } from '../hooks/useGridItems';
+import type { LoadedLayoutConfig } from '../types/layoutConfig';
+import type { LayoutStatus, ApiUser } from '@gridfinity/shared';
+import type { RefImagePlacement, UseRefImagePlacementsReturn } from '../hooks/useRefImagePlacements';
+import type { LayoutMetaState, LayoutMetaAction } from '../reducers/layoutMetaReducer';
+import type { DialogState, DialogAction } from '../reducers/dialogReducer';
+import { calculateGrid, mmToInches, inchesToMm } from '../utils/conversions';
+import { useLayoutMeta } from '../hooks/useLayoutMeta';
+import { useDialogState } from '../hooks/useDialogState';
+import { useGridItems } from '../hooks/useGridItems';
+import { useSpacerCalculation } from '../hooks/useSpacerCalculation';
+import { useBillOfMaterials } from '../hooks/useBillOfMaterials';
+import { useLibraries } from '../hooks/useLibraries';
+import { useLibraryData } from '../hooks/useLibraryData';
+import { useCategoryData } from '../hooks/useCategoryData';
+import { useRefImagePlacements } from '../hooks/useRefImagePlacements';
+import { useAuth } from './AuthContext';
+import { useWalkthrough, WALKTHROUGH_STEPS } from './WalkthroughContext';
+import {
+  useSubmitLayoutMutation,
+  useWithdrawLayoutMutation,
+  useCloneLayoutMutation,
+  useSubmittedCountQuery,
+} from '../hooks/useLayouts';
+import { useConfirmDialog } from '../hooks/useConfirmDialog';
+import { fetchLayout } from '../api/layouts.api';
+import { STORAGE_KEYS } from '../utils/storageKeys';
+import type { WalkthroughStep } from './WalkthroughContext';
+
+// Re-export for convenience
+export type { WalkthroughStep };
+
+// ConfirmDialog props shape returned by useConfirmDialog
+interface ConfirmDialogProps {
+  open: boolean;
+  title: string;
+  message: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  variant?: 'default' | 'danger';
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+interface WorkspaceContextValue {
+  // Dimensions
+  width: number;
+  setWidth: (w: number) => void;
+  depth: number;
+  setDepth: (d: number) => void;
+  unitSystem: UnitSystem;
+  setUnitSystem: (u: UnitSystem) => void;
+  imperialFormat: ImperialFormat;
+  setImperialFormat: (f: ImperialFormat) => void;
+  spacerConfig: GridSpacerConfig;
+  setSpacerConfig: (c: GridSpacerConfig) => void;
+  handleUnitChange: (newUnit: UnitSystem) => void;
+
+  // Derived grid
+  gridResult: GridResult;
+  drawerWidth: number;
+  drawerDepth: number;
+  spacers: ComputedSpacer[];
+
+  // Grid items
+  placedItems: PlacedItemWithValidity[];
+  selectedItemIds: Set<string>;
+  handleDrop: (dragData: DragData, x: number, y: number) => void;
+  rotateItem: (instanceId: string, direction: 'cw' | 'ccw') => void;
+  deleteItem: (instanceId: string) => void;
+  clearAll: () => void;
+  loadItems: (items: PlacedItem[]) => void;
+  selectItem: (instanceId: string | null, modifiers?: SelectModifiers) => void;
+  selectAll: () => void;
+  deselectAll: () => void;
+  duplicateItem: () => void;
+  copyItems: () => void;
+  pasteItems: () => void;
+  deleteSelected: () => void;
+  rotateSelected: (direction: 'cw' | 'ccw') => void;
+  updateItemCustomization: (instanceId: string, customization: BinCustomization | undefined) => void;
+
+  // BOM
+  bomItems: BOMItem[];
+
+  // Layout meta
+  layoutMeta: LayoutMetaState;
+  layoutDispatch: React.Dispatch<LayoutMetaAction>;
+  isReadOnly: boolean;
+  handleSaveComplete: (layoutId: number, name: string, status: LayoutStatus) => void;
+  handleSetStatus: (status: LayoutStatus | null) => void;
+  handleClearLayout: () => void;
+
+  // Ref images
+  refImagePlacements: RefImagePlacement[];
+  addRefImagePlacement: UseRefImagePlacementsReturn['addPlacement'];
+  removeRefImagePlacement: UseRefImagePlacementsReturn['removePlacement'];
+  updateRefImagePosition: UseRefImagePlacementsReturn['updatePosition'];
+  updateRefImageScale: UseRefImagePlacementsReturn['updateScale'];
+  updateRefImageOpacity: UseRefImagePlacementsReturn['updateOpacity'];
+  updateRefImageRotation: UseRefImagePlacementsReturn['updateRotation'];
+  toggleRefImageLock: UseRefImagePlacementsReturn['toggleLock'];
+  rebindRefImage: UseRefImagePlacementsReturn['rebindImage'];
+  loadRefImagePlacements: UseRefImagePlacementsReturn['loadPlacements'];
+  clearRefImages: UseRefImagePlacementsReturn['clearAll'];
+  referenceImagesForGrid: ReferenceImage[];
+
+  // Library
+  libraryItems: LibraryItem[];
+  isLibraryLoading: boolean;
+  isLibrariesLoading: boolean;
+  libraryError: Error | null;
+  librariesError: Error | null;
+  categories: Category[];
+  getItemById: (prefixedId: string) => LibraryItem | undefined;
+  getLibraryMeta: (libraryId: string) => Promise<LibraryMeta>;
+  refreshLibraries: () => Promise<void>;
+  refreshLibrary: () => Promise<void>;
+  selectedLibraryMeta: LibraryMeta;
+
+  // Layout actions
+  handleLoadLayout: (config: LoadedLayoutConfig) => void;
+  loadLayout: (id: number) => Promise<void>;
+  handleSubmitClick: () => void;
+  handleSubmitLayout: () => Promise<void>;
+  handleWithdrawLayout: () => Promise<void>;
+  handleCloneCurrentLayout: () => Promise<void>;
+  handleClearAll: () => Promise<void>;
+  handleReset: () => void;
+
+  // Mutations / queries
+  submitLayoutMutation: ReturnType<typeof useSubmitLayoutMutation>;
+  withdrawLayoutMutation: ReturnType<typeof useWithdrawLayoutMutation>;
+  cloneLayoutMutation: ReturnType<typeof useCloneLayoutMutation>;
+  submittedCountQuery: ReturnType<typeof useSubmittedCountQuery>;
+
+  // Dialogs
+  dialogs: DialogState;
+  dialogDispatch: React.Dispatch<DialogAction>;
+  closeRebind: () => void;
+  handleRebindSelect: (refImageId: number, imageUrl: string, name: string) => void;
+  confirm: (options: {
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    cancelLabel?: string;
+    variant?: 'default' | 'danger';
+  }) => Promise<boolean>;
+  confirmDialogProps: ConfirmDialogProps;
+
+  // Auth
+  isAuthenticated: boolean;
+  user: ApiUser | null;
+  isAdmin: boolean;
+  getAccessToken: () => string | null;
+
+  // Walkthrough
+  isWalkthroughActive: boolean;
+  walkthroughCurrentStep: number;
+  walkthroughSteps: WalkthroughStep[];
+  startTour: () => void;
+  nextStep: () => void;
+  dismissTour: () => void;
+
+  // Export
+  exportPdfError: string | null;
+  setExportPdfError: (err: string | null) => void;
+}
+
+const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function useWorkspace(): WorkspaceContextValue {
+  const context = useContext(WorkspaceContext);
+  if (!context) throw new Error('useWorkspace must be used within WorkspaceProvider');
+  return context;
+}
+
+interface WorkspaceProviderProps {
+  children: ReactNode;
+}
+
+export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
+  // Dimensions
+  const [width, setWidth] = useState(168);
+  const [depth, setDepth] = useState(168);
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>('metric');
+  const [imperialFormat, setImperialFormat] = useState<ImperialFormat>('decimal');
+  const [spacerConfig, setSpacerConfig] = useState<GridSpacerConfig>({
+    horizontal: 'none',
+    vertical: 'none',
+  });
+
+  const [exportPdfError, setExportPdfError] = useState<string | null>(null);
+  const [selectedLibraryMeta, setSelectedLibraryMeta] = useState<LibraryMeta>({
+    customizableFields: [],
+    customizationDefaults: {},
+  });
+
+  // Hooks
+  const { dialogs, dialogDispatch, closeRebind } = useDialogState();
+  const {
+    layoutMeta, layoutDispatch, isReadOnly,
+    handleSaveComplete: rawHandleSaveComplete,
+    handleSetStatus, handleCloneComplete, handleClearLayout,
+  } = useLayoutMeta();
+
+  const { isAuthenticated, user, getAccessToken } = useAuth();
+  const isAdmin = user?.role === 'admin';
+
+  const { isActive, currentStep, startTour, nextStep, dismissTour } = useWalkthrough();
+
+  // Trigger walkthrough on first auth
+  const prevAuthenticatedRef = useRef(isAuthenticated);
+  useEffect(() => {
+    if (isAuthenticated && !prevAuthenticatedRef.current) {
+      if (!localStorage.getItem(STORAGE_KEYS.WALKTHROUGH_SEEN)) {
+        startTour();
+      }
+    }
+    prevAuthenticatedRef.current = isAuthenticated;
+  }, [isAuthenticated, startTour]);
+
+  const submitLayoutMutation = useSubmitLayoutMutation();
+  const withdrawLayoutMutation = useWithdrawLayoutMutation();
+  const cloneLayoutMutation = useCloneLayoutMutation();
+  const submittedCountQuery = useSubmittedCountQuery();
+  const { confirm, dialogProps: confirmDialogProps } = useConfirmDialog();
+
+  // Library
+  const {
+    availableLibraries,
+    isLoading: isLibrariesLoading,
+    error: librariesError,
+    refreshLibraries,
+  } = useLibraries();
+
+  const allLibraryIds = useMemo(() => availableLibraries.map(l => l.id), [availableLibraries]);
+
+  const {
+    items: libraryItems,
+    isLoading: isLibraryLoading,
+    error: libraryError,
+    getItemById,
+    getLibraryMeta,
+    refreshLibrary,
+  } = useLibraryData(allLibraryIds);
+
+  const { categories } = useCategoryData(libraryItems);
+
+  // Ref images
+  const {
+    placements: refImagePlacements,
+    addPlacement: addRefImagePlacement,
+    removePlacement: removeRefImagePlacement,
+    updatePosition: updateRefImagePosition,
+    updateScale: updateRefImageScale,
+    updateOpacity: updateRefImageOpacity,
+    updateRotation: updateRefImageRotation,
+    toggleLock: toggleRefImageLock,
+    rebindImage: rebindRefImage,
+    loadPlacements: loadRefImagePlacements,
+    clearAll: clearRefImages,
+  } = useRefImagePlacements();
+
+  // Derived grid
+  const gridResult = useMemo(() => calculateGrid(width, depth, unitSystem), [width, depth, unitSystem]);
+  const drawerWidth = unitSystem === 'metric' ? width : inchesToMm(width);
+  const drawerDepth = unitSystem === 'metric' ? depth : inchesToMm(depth);
+
+  const spacers = useSpacerCalculation(
+    unitSystem === 'metric' ? gridResult.gapWidth : inchesToMm(gridResult.gapWidth),
+    unitSystem === 'metric' ? gridResult.gapDepth : inchesToMm(gridResult.gapDepth),
+    spacerConfig,
+    drawerWidth,
+    drawerDepth,
+  );
+
+  // Grid items
+  const {
+    placedItems, selectedItemIds, rotateItem, deleteItem, clearAll, loadItems,
+    selectItem, selectAll, deselectAll, handleDrop, duplicateItem,
+    copyItems, pasteItems, deleteSelected, rotateSelected, updateItemCustomization,
+  } = useGridItems(gridResult.gridX, gridResult.gridY, getItemById);
+
+  const bomItems = useBillOfMaterials(placedItems, libraryItems);
+
+  // Load library meta for the selected single item
+  useEffect(() => {
+    if (selectedItemIds.size !== 1) return;
+    const selectedId = selectedItemIds.values().next().value as string;
+    const selectedItem = placedItems.find(i => i.instanceId === selectedId);
+    if (!selectedItem) return;
+    const colonIdx = selectedItem.itemId.indexOf(':');
+    if (colonIdx === -1) return;
+    const libraryId = selectedItem.itemId.slice(0, colonIdx);
+    getLibraryMeta(libraryId).then(setSelectedLibraryMeta).catch(() => {});
+  }, [selectedItemIds, placedItems, getLibraryMeta]);
+
+  // Convert ref image placements to ReferenceImage format for GridPreview
+  const referenceImagesForGrid: ReferenceImage[] = useMemo(
+    () =>
+      refImagePlacements.map(p => ({
+        id: p.id, name: p.name, dataUrl: '',
+        x: p.x, y: p.y, width: p.width, height: p.height,
+        opacity: p.opacity, scale: p.scale, isLocked: p.isLocked, rotation: p.rotation,
+      })),
+    [refImagePlacements],
+  );
+
+  // Unit change handler
+  const handleUnitChange = useCallback((newUnit: UnitSystem) => {
+    if (newUnit === unitSystem) return;
+    if (newUnit === 'imperial') {
+      setWidth(parseFloat(mmToInches(width).toFixed(4)));
+      setDepth(parseFloat(mmToInches(depth).toFixed(4)));
+    } else {
+      setWidth(Math.round(inchesToMm(width)));
+      setDepth(Math.round(inchesToMm(depth)));
+    }
+    setUnitSystem(newUnit);
+  }, [unitSystem, width, depth]);
+
+  // Submit layout actions
+  const handleSubmitLayout = useCallback(async () => {
+    if (!layoutMeta.id) return;
+    try {
+      const result = await submitLayoutMutation.mutateAsync(layoutMeta.id);
+      handleSetStatus(result.status);
+    } catch {
+      // Error handled by mutation
+    }
+  }, [layoutMeta.id, submitLayoutMutation, handleSetStatus]);
+
+  const submitAfterSaveRef = useRef(false);
+
+  const handleSubmitClick = useCallback(() => {
+    if (!layoutMeta.id) {
+      submitAfterSaveRef.current = true;
+      dialogDispatch({ type: 'OPEN', dialog: 'save' });
+    } else {
+      void handleSubmitLayout();
+    }
+  }, [layoutMeta.id, dialogDispatch, handleSubmitLayout]);
+
+  // handleSaveComplete with submit-after-save support
+  const handleSaveComplete = useCallback((layoutId: number, name: string, status: LayoutStatus) => {
+    rawHandleSaveComplete(layoutId, name, status);
+    if (submitAfterSaveRef.current) {
+      submitAfterSaveRef.current = false;
+      submitLayoutMutation.mutate(layoutId, {
+        onSuccess: (result) => handleSetStatus(result.status),
+      });
+    }
+  }, [rawHandleSaveComplete, submitLayoutMutation, handleSetStatus]);
+
+  const handleWithdrawLayout = useCallback(async () => {
+    if (!layoutMeta.id) return;
+    try {
+      const result = await withdrawLayoutMutation.mutateAsync(layoutMeta.id);
+      handleSetStatus(result.status);
+    } catch {
+      // Error handled by mutation
+    }
+  }, [layoutMeta.id, withdrawLayoutMutation, handleSetStatus]);
+
+  const handleCloneCurrentLayout = useCallback(async () => {
+    if (!layoutMeta.id) return;
+    try {
+      const result = await cloneLayoutMutation.mutateAsync(layoutMeta.id);
+      handleCloneComplete(result.id, result.name, result.status);
+    } catch {
+      // Error handled by mutation
+    }
+  }, [layoutMeta.id, cloneLayoutMutation, handleCloneComplete]);
+
+  // handleLoadLayout: sync, hydrates all state from a LoadedLayoutConfig
+  const handleLoadLayout = useCallback((config: LoadedLayoutConfig) => {
+    if (unitSystem === 'imperial') {
+      setWidth(parseFloat(mmToInches(config.widthMm).toFixed(4)));
+      setDepth(parseFloat(mmToInches(config.depthMm).toFixed(4)));
+    } else {
+      setWidth(config.widthMm);
+      setDepth(config.depthMm);
+    }
+    setSpacerConfig(config.spacerConfig);
+    loadItems(config.placedItems);
+    loadRefImagePlacements(config.refImagePlacements ?? []);
+
+    let owner = '';
+    if (config.ownerUsername) {
+      owner = config.ownerUsername;
+      if (config.ownerEmail) {
+        owner += ` <${config.ownerEmail}>`;
+      }
+    }
+
+    layoutDispatch({
+      type: 'LOAD_LAYOUT',
+      payload: {
+        id: config.layoutId,
+        name: config.layoutName,
+        description: config.layoutDescription ?? '',
+        status: config.layoutStatus,
+        owner,
+      },
+    });
+  }, [unitSystem, loadItems, loadRefImagePlacements, layoutDispatch]);
+
+  // loadLayout: async, fetches by id then calls handleLoadLayout
+  const loadLayout = useCallback(async (id: number) => {
+    const token = getAccessToken();
+    if (!token) throw new Error('Not authenticated');
+    try {
+      const detail = await fetchLayout(token, id);
+      const loadPrefix = Date.now();
+
+      const loadedPlacedItems: PlacedItem[] = detail.placedItems.map((item, index) => ({
+        instanceId: `loaded-${loadPrefix}-${index}`,
+        itemId: `${item.libraryId}:${item.itemId}`,
+        x: item.x,
+        y: item.y,
+        width: item.width,
+        height: item.height,
+        rotation: item.rotation as Rotation,
+        ...(item.customization ? { customization: item.customization } : {}),
+      }));
+
+      const loadedRefImagePlacements: RefImagePlacement[] = (detail.refImagePlacements ?? []).map((p, index) => ({
+        id: `loaded-ref-${loadPrefix}-${index}`,
+        refImageId: p.refImageId,
+        name: p.name,
+        imageUrl: p.imageUrl,
+        x: p.x,
+        y: p.y,
+        width: p.width,
+        height: p.height,
+        opacity: p.opacity,
+        scale: p.scale,
+        isLocked: p.isLocked,
+        rotation: p.rotation as Rotation,
+      }));
+
+      const config: LoadedLayoutConfig = {
+        layoutId: detail.id,
+        layoutName: detail.name,
+        layoutDescription: detail.description,
+        layoutStatus: detail.status,
+        widthMm: detail.widthMm,
+        depthMm: detail.depthMm,
+        spacerConfig: {
+          horizontal: detail.spacerHorizontal as SpacerMode,
+          vertical: detail.spacerVertical as SpacerMode,
+        },
+        placedItems: loadedPlacedItems,
+        refImagePlacements: loadedRefImagePlacements,
+      };
+
+      handleLoadLayout(config);
+    } catch (err) {
+      console.error('Failed to load layout:', err);
+      throw err;
+    }
+  }, [getAccessToken, handleLoadLayout]);
+
+  // handleClearAll: confirms then clears items and ref images
+  const handleClearAll = useCallback(async () => {
+    const message = refImagePlacements.length > 0
+      ? `Remove all ${placedItems.length} placed items and ${refImagePlacements.length} reference images?`
+      : `Remove all ${placedItems.length} placed items?`;
+    if (await confirm({ title: 'Clear All', message, variant: 'danger', confirmLabel: 'Clear All', cancelLabel: 'Cancel' })) {
+      clearAll();
+      clearRefImages();
+      handleClearLayout();
+    }
+  }, [refImagePlacements.length, placedItems.length, confirm, clearAll, clearRefImages, handleClearLayout]);
+
+  const handleReset = useCallback(() => {
+    setWidth(168);
+    setDepth(168);
+    setUnitSystem('metric');
+    setSpacerConfig({ horizontal: 'none', vertical: 'none' });
+  }, []);
+
+  // Rebind image select handler
+  const handleRebindSelect = useCallback((refImageId: number, imageUrl: string, name: string) => {
+    if (dialogs.rebindTargetId) {
+      rebindRefImage(dialogs.rebindTargetId, refImageId, imageUrl, name);
+    }
+    closeRebind();
+  }, [dialogs.rebindTargetId, rebindRefImage, closeRebind]);
+
+  const value: WorkspaceContextValue = {
+    // Dimensions
+    width,
+    setWidth,
+    depth,
+    setDepth,
+    unitSystem,
+    setUnitSystem,
+    imperialFormat,
+    setImperialFormat,
+    spacerConfig,
+    setSpacerConfig,
+    handleUnitChange,
+
+    // Derived grid
+    gridResult,
+    drawerWidth,
+    drawerDepth,
+    spacers,
+
+    // Grid items
+    placedItems,
+    selectedItemIds,
+    handleDrop,
+    rotateItem,
+    deleteItem,
+    clearAll,
+    loadItems,
+    selectItem,
+    selectAll,
+    deselectAll,
+    duplicateItem,
+    copyItems,
+    pasteItems,
+    deleteSelected,
+    rotateSelected,
+    updateItemCustomization,
+
+    // BOM
+    bomItems,
+
+    // Layout meta
+    layoutMeta,
+    layoutDispatch,
+    isReadOnly,
+    handleSaveComplete,
+    handleSetStatus,
+    handleClearLayout,
+
+    // Ref images
+    refImagePlacements,
+    addRefImagePlacement,
+    removeRefImagePlacement,
+    updateRefImagePosition,
+    updateRefImageScale,
+    updateRefImageOpacity,
+    updateRefImageRotation,
+    toggleRefImageLock,
+    rebindRefImage,
+    loadRefImagePlacements,
+    clearRefImages,
+    referenceImagesForGrid,
+
+    // Library
+    libraryItems,
+    isLibraryLoading,
+    isLibrariesLoading,
+    libraryError,
+    librariesError,
+    categories,
+    getItemById,
+    getLibraryMeta,
+    refreshLibraries,
+    refreshLibrary,
+    selectedLibraryMeta,
+
+    // Layout actions
+    handleLoadLayout,
+    loadLayout,
+    handleSubmitClick,
+    handleSubmitLayout,
+    handleWithdrawLayout,
+    handleCloneCurrentLayout,
+    handleClearAll,
+    handleReset,
+
+    // Mutations / queries
+    submitLayoutMutation,
+    withdrawLayoutMutation,
+    cloneLayoutMutation,
+    submittedCountQuery,
+
+    // Dialogs
+    dialogs,
+    dialogDispatch,
+    closeRebind,
+    handleRebindSelect,
+    confirm,
+    confirmDialogProps,
+
+    // Auth
+    isAuthenticated,
+    user,
+    isAdmin,
+    getAccessToken,
+
+    // Walkthrough
+    isWalkthroughActive: isActive,
+    walkthroughCurrentStep: currentStep,
+    walkthroughSteps: WALKTHROUGH_STEPS,
+    startTour,
+    nextStep,
+    dismissTour,
+
+    // Export
+    exportPdfError,
+    setExportPdfError,
+  };
+
+  return (
+    <WorkspaceContext.Provider value={value}>
+      {children}
+    </WorkspaceContext.Provider>
+  );
+}

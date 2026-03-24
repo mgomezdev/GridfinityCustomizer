@@ -63,21 +63,19 @@ test.describe('Bill of Materials Updates', () => {
   });
 
   test('BOM is empty when no items are placed', async () => {
-    // BOM should be empty or show no items
+    // Navigate to order summary — no items placed, should show empty state
+    await bomPage.goToBOM();
     const itemCount = await bomPage.getItemCount();
     expect(itemCount).toBe(0);
   });
 
   test('BOM updates when item is placed', async ({ page }) => {
-    // Initially empty
-    expect(await bomPage.getItemCount()).toBe(0);
-
-    // Place an item
+    // Place an item on the workspace
     const firstItem = libraryPage.libraryItems.first();
     await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
-    // BOM should now have 1 entry
-    await page.waitForTimeout(100);
+    // Navigate to order summary — BOM should now have 1 entry
+    await bomPage.goToBOM();
     expect(await bomPage.getItemCount()).toBe(1);
   });
 
@@ -93,7 +91,8 @@ test.describe('Bill of Materials Updates', () => {
 
     await dragToGridCell(page, firstItem, gridPage.gridContainer, 2, 0, 4, 4);
 
-    await page.waitForTimeout(100);
+    // Navigate to order summary to check BOM
+    await bomPage.goToBOM();
 
     // Should still have 1 BOM entry (same item type)
     expect(await bomPage.getItemCount()).toBe(1);
@@ -118,9 +117,8 @@ test.describe('Bill of Materials Updates', () => {
       // Place second item type at cell (2,0)
       await dragToGridCell(page, items.nth(1), gridPage.gridContainer, 2, 0, 4, 4);
 
-      await page.waitForTimeout(100);
-
-      // Should have 2 BOM entries
+      // Navigate to order summary — should have 2 BOM entries
+      await bomPage.goToBOM();
       expect(await bomPage.getItemCount()).toBe(2);
     }
   });
@@ -130,17 +128,14 @@ test.describe('Bill of Materials Updates', () => {
     const firstItem = libraryPage.libraryItems.first();
     await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
-    // BOM should have 1 entry
-    await page.waitForTimeout(100);
-    expect(await bomPage.getItemCount()).toBe(1);
-
-    // Delete the item
-    const deleteButton = page.locator('.delete-btn');
+    // Delete the item using the inline toolbar button
+    const deleteButton = page.locator('[aria-label="Remove item"]');
     await expect(deleteButton).toBeVisible();
     await deleteButton.click();
     await page.waitForTimeout(100);
 
-    // BOM should be empty again
+    // Navigate to order summary — BOM should be empty
+    await bomPage.goToBOM();
     expect(await bomPage.getItemCount()).toBe(0);
   });
 
@@ -154,22 +149,18 @@ test.describe('Bill of Materials Updates', () => {
     await page.waitForTimeout(50);
 
     await dragToGridCell(page, firstItem, gridPage.gridContainer, 2, 0, 4, 4);
-
     await page.waitForTimeout(100);
 
-    // Should have quantity 2
-    let entries = await bomPage.getBOMEntries();
-    expect(entries[0].quantity).toBe(2);
-
-    // Click on one item and delete it
+    // Click on the first item and delete it
     await page.locator('.placed-item').first().click();
-    const deleteButton = page.locator('.delete-btn');
+    const deleteButton = page.locator('[aria-label="Remove item"]');
     await expect(deleteButton).toBeVisible();
     await deleteButton.click();
     await page.waitForTimeout(100);
 
-    // Quantity should be 1 now
-    entries = await bomPage.getBOMEntries();
+    // Navigate to order summary — quantity should be 1 now
+    await bomPage.goToBOM();
+    const entries = await bomPage.getBOMEntries();
     expect(entries[0].quantity).toBe(1);
   });
 });

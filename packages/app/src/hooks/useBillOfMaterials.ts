@@ -40,6 +40,7 @@ export function useBillOfMaterials(placedItems: PlacedItem[], libraryItems: Libr
           categories: libraryItem.categories,
           quantity: count,
           customization,
+          ...(libraryItem.price !== undefined ? { price: libraryItem.price } : {}),
         });
       }
     });

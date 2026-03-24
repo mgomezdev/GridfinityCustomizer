@@ -3,12 +3,26 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useWalkthrough } from '../../contexts/WalkthroughContext';
 import { AuthModal } from './AuthModal';
 
-export function UserMenu() {
+interface UserMenuProps {
+  openAuth?: boolean;
+  onAuthClosed?: () => void;
+}
+
+export function UserMenu({ openAuth, onAuthClosed }: UserMenuProps) {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const { startTour } = useWalkthrough();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
+
+  useEffect(() => {
+    if (openAuth && !isAuthenticated) {
+      setAuthTab('login');
+      setShowAuthModal(true);
+    } else if (openAuth && isAuthenticated) {
+      onAuthClosed?.(); // already logged in — reset parent's authOpen flag
+    }
+  }, [openAuth, isAuthenticated, onAuthClosed]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on outside click
@@ -50,7 +64,7 @@ export function UserMenu() {
         </div>
         <AuthModal
           isOpen={showAuthModal}
-          onClose={() => setShowAuthModal(false)}
+          onClose={() => { setShowAuthModal(false); onAuthClosed?.(); }}
           initialTab={authTab}
         />
       </>

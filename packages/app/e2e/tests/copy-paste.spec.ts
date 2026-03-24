@@ -285,8 +285,8 @@ test.describe('Copy/Paste/Duplicate', () => {
     const firstItem = libraryPage.libraryItems.first();
     await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
-    // Get the name of the first item from the item controls (if visible)
-    const itemControls = page.locator('.item-controls');
+    // Verify item is selected (inline toolbar visible)
+    const itemControls = page.locator('.placed-item-toolbar');
     await expect(itemControls).toBeVisible();
 
     // Copy and paste

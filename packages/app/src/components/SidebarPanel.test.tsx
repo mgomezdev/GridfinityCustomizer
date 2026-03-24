@@ -2,96 +2,61 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SidebarPanel } from './SidebarPanel';
 
-// Mock child components to keep tests focused on SidebarPanel logic
-vi.mock('./ItemLibrary', () => ({
-  ItemLibrary: () => <div data-testid="item-library" />,
-}));
-
-vi.mock('./RefImageLibrary', () => ({
-  RefImageLibrary: () => <div data-testid="ref-image-library" />,
-}));
-
 describe('SidebarPanel', () => {
   const defaultProps = {
-    sidebarTab: 'items' as const,
-    onTabChange: vi.fn(),
-    isAuthenticated: false,
-    itemLibraryContent: <div data-testid="item-library-content" />,
-    imageTabContent: <div data-testid="image-tab-content" />,
-    selectionControls: null as React.ReactNode,
+    dimensionsContent: <div data-testid="dimensions-content">Dimensions</div>,
+    spacerContent: <div data-testid="spacer-content">Grid Settings</div>,
+    onClearCanvas: vi.fn(),
+    onReset: vi.fn(),
+    isReadOnly: false,
   };
 
-  describe('Tab rendering', () => {
-    it('should render Items and Images tab buttons', () => {
+  describe('Nav rendering', () => {
+    it('should render GRID SETTINGS heading', () => {
       render(<SidebarPanel {...defaultProps} />);
-
-      expect(screen.getByRole('button', { name: 'Items' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Images' })).toBeInTheDocument();
+      expect(screen.getByText('GRID SETTINGS')).toBeInTheDocument();
     });
 
-    it('should mark Items tab as active when sidebarTab is items', () => {
-      render(<SidebarPanel {...defaultProps} sidebarTab="items" />);
-
-      const itemsBtn = screen.getByRole('button', { name: 'Items' });
-      expect(itemsBtn.className).toContain('active');
+    it('should render CLEAR CANVAS and RESET action buttons when not read-only', () => {
+      render(<SidebarPanel {...defaultProps} />);
+      expect(screen.getByText('CLEAR CANVAS')).toBeInTheDocument();
+      expect(screen.getByText('RESET')).toBeInTheDocument();
     });
 
-    it('should mark Images tab as active when sidebarTab is images', () => {
-      render(<SidebarPanel {...defaultProps} sidebarTab="images" />);
-
-      const imagesBtn = screen.getByRole('button', { name: 'Images' });
-      expect(imagesBtn.className).toContain('active');
-    });
-  });
-
-  describe('Tab switching', () => {
-    it('should call onTabChange with items when Items tab is clicked', () => {
-      const onTabChange = vi.fn();
-      render(<SidebarPanel {...defaultProps} sidebarTab="images" onTabChange={onTabChange} />);
-
-      fireEvent.click(screen.getByRole('button', { name: 'Items' }));
-      expect(onTabChange).toHaveBeenCalledWith('items');
-    });
-
-    it('should call onTabChange with images when Images tab is clicked', () => {
-      const onTabChange = vi.fn();
-      render(<SidebarPanel {...defaultProps} onTabChange={onTabChange} />);
-
-      fireEvent.click(screen.getByRole('button', { name: 'Images' }));
-      expect(onTabChange).toHaveBeenCalledWith('images');
+    it('should not render CLEAR CANVAS when isReadOnly is true', () => {
+      render(<SidebarPanel {...defaultProps} isReadOnly={true} />);
+      expect(screen.queryByText('CLEAR CANVAS')).not.toBeInTheDocument();
+      expect(screen.getByText('RESET')).toBeInTheDocument();
     });
   });
 
   describe('Content rendering', () => {
-    it('should render itemLibraryContent when tab is items', () => {
-      render(<SidebarPanel {...defaultProps} sidebarTab="items" />);
-
-      expect(screen.getByTestId('item-library-content')).toBeInTheDocument();
-      expect(screen.queryByTestId('image-tab-content')).not.toBeInTheDocument();
+    it('should show both dimensionsContent and spacerContent simultaneously', () => {
+      render(<SidebarPanel {...defaultProps} />);
+      expect(screen.getByTestId('dimensions-content')).toBeInTheDocument();
+      expect(screen.getByTestId('spacer-content')).toBeInTheDocument();
     });
 
-    it('should render imageTabContent when tab is images', () => {
-      render(<SidebarPanel {...defaultProps} sidebarTab="images" />);
+    it('should show Dimensions group label', () => {
+      render(<SidebarPanel {...defaultProps} />);
+      const label = document.querySelector('.sidebar-settings-group-label');
+      expect(label?.textContent).toBe('Dimensions');
+    });
+  });
 
-      expect(screen.getByTestId('image-tab-content')).toBeInTheDocument();
-      expect(screen.queryByTestId('item-library-content')).not.toBeInTheDocument();
+  describe('Action callbacks', () => {
+    it('should call onClearCanvas when CLEAR CANVAS is clicked', () => {
+      const onClearCanvas = vi.fn();
+      render(<SidebarPanel {...defaultProps} onClearCanvas={onClearCanvas} />);
+      fireEvent.click(screen.getByText('CLEAR CANVAS'));
+      expect(onClearCanvas).toHaveBeenCalledTimes(1);
     });
 
-    it('should render selectionControls when provided', () => {
-      render(
-        <SidebarPanel
-          {...defaultProps}
-          selectionControls={<div data-testid="selection-controls" />}
-        />
-      );
-
-      expect(screen.getByTestId('selection-controls')).toBeInTheDocument();
-    });
-
-    it('should not render selectionControls when null', () => {
-      render(<SidebarPanel {...defaultProps} selectionControls={null} />);
-
-      expect(screen.queryByTestId('selection-controls')).not.toBeInTheDocument();
+    it('should call onReset when RESET is clicked', () => {
+      const onReset = vi.fn();
+      render(<SidebarPanel {...defaultProps} onReset={onReset} />);
+      fireEvent.click(screen.getByText('RESET'));
+      expect(onReset).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -2,7 +2,8 @@ import { useState, useCallback } from 'react';
 import type { PlacedItemWithValidity, GridSpacerConfig } from '../../types/gridfinity';
 import type { LayoutStatus } from '@gridfinity/shared';
 import type { RefImagePlacement } from '../../hooks/useRefImagePlacements';
-import { useSaveLayoutMutation, useUpdateLayoutMutation } from '../../hooks/useLayouts';
+import { buildPayload } from '../../utils/layoutHelpers';
+import { useSaveLayoutMutation } from '../../hooks/useLayouts';
 
 interface SaveLayoutDialogProps {
   isOpen: boolean;
@@ -17,7 +18,6 @@ interface SaveLayoutDialogProps {
   currentLayoutId?: number | null;
   currentLayoutName?: string;
   currentLayoutDescription?: string;
-  currentLayoutStatus?: LayoutStatus | null;
   onSaveComplete?: (layoutId: number, name: string, status: LayoutStatus) => void;
 }
 
@@ -30,59 +30,9 @@ interface SaveLayoutFormProps {
   spacerConfig: GridSpacerConfig;
   placedItems: PlacedItemWithValidity[];
   refImagePlacements?: RefImagePlacement[];
-  currentLayoutId?: number | null;
   currentLayoutName?: string;
   currentLayoutDescription?: string;
-  currentLayoutStatus?: LayoutStatus | null;
   onSaveComplete?: (layoutId: number, name: string, status: LayoutStatus) => void;
-}
-
-function buildPayload(
-  name: string,
-  description: string,
-  gridX: number,
-  gridY: number,
-  widthMm: number,
-  depthMm: number,
-  spacerConfig: GridSpacerConfig,
-  placedItems: PlacedItemWithValidity[],
-  refImagePlacements: RefImagePlacement[],
-) {
-  const validPlacements = refImagePlacements
-    .filter(p => p.refImageId !== null)
-    .map(p => ({
-      refImageId: p.refImageId!,
-      name: p.name,
-      x: p.x,
-      y: p.y,
-      width: p.width,
-      height: p.height,
-      opacity: p.opacity,
-      scale: p.scale,
-      isLocked: p.isLocked,
-      rotation: p.rotation,
-    }));
-
-  return {
-    name: name.trim(),
-    description: description.trim() || undefined,
-    gridX,
-    gridY,
-    widthMm,
-    depthMm,
-    spacerHorizontal: spacerConfig.horizontal,
-    spacerVertical: spacerConfig.vertical,
-    placedItems: placedItems.map(item => ({
-      itemId: item.itemId,
-      x: item.x,
-      y: item.y,
-      width: item.width,
-      height: item.height,
-      rotation: item.rotation,
-      ...(item.customization ? { customization: item.customization } : {}),
-    })),
-    ...(validPlacements.length > 0 ? { refImagePlacements: validPlacements } : {}),
-  };
 }
 
 function SaveLayoutForm({
@@ -94,25 +44,19 @@ function SaveLayoutForm({
   spacerConfig,
   placedItems,
   refImagePlacements = [],
-  currentLayoutId,
   currentLayoutName = '',
   currentLayoutDescription = '',
-  currentLayoutStatus,
   onSaveComplete,
 }: SaveLayoutFormProps) {
-  const isExistingLayout = currentLayoutId != null;
-  const isDelivered = currentLayoutStatus === 'delivered';
-
-  const [name, setName] = useState(isExistingLayout ? currentLayoutName : '');
-  const [description, setDescription] = useState(isExistingLayout ? (currentLayoutDescription ?? '') : '');
+  const [name, setName] = useState(currentLayoutName);
+  const [description, setDescription] = useState(currentLayoutDescription);
   const [successMessage, setSuccessMessage] = useState('');
 
   const saveLayoutMutation = useSaveLayoutMutation();
-  const updateLayoutMutation = useUpdateLayoutMutation();
 
-  const isPending = saveLayoutMutation.isPending || updateLayoutMutation.isPending;
-  const error = saveLayoutMutation.error ?? updateLayoutMutation.error;
-  const isError = saveLayoutMutation.isError || updateLayoutMutation.isError;
+  const isPending = saveLayoutMutation.isPending;
+  const error = saveLayoutMutation.error;
+  const isError = saveLayoutMutation.isError;
 
   const handleSaveNew = async () => {
     if (!name.trim()) return;
@@ -129,30 +73,11 @@ function SaveLayoutForm({
     }
   };
 
-  const handleUpdate = async () => {
-    if (!name.trim() || !currentLayoutId) return;
-
-    try {
-      const payload = buildPayload(name, description, gridX, gridY, widthMm, depthMm, spacerConfig, placedItems, refImagePlacements);
-      const result = await updateLayoutMutation.mutateAsync({ id: currentLayoutId, data: payload });
-
-      onSaveComplete?.(result.id, result.name, result.status);
-      setSuccessMessage('Layout updated successfully!');
-      setTimeout(() => onClose(), 1000);
-    } catch {
-      // Error handled by mutation state
-    }
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       onClose();
     } else if (e.key === 'Enter' && name.trim() && !isPending) {
-      if (isExistingLayout && !isDelivered) {
-        handleUpdate();
-      } else {
-        handleSaveNew();
-      }
+      handleSaveNew();
     }
   };
 
@@ -161,6 +86,8 @@ function SaveLayoutForm({
       setTimeout(() => node.focus(), 50);
     }
   }, []);
+
+  const validImageCount = refImagePlacements.filter(p => p.refImageId !== null).length;
 
   return (
     <div className="layout-dialog-overlay" onClick={onClose} onKeyDown={handleKeyDown}>
@@ -172,7 +99,7 @@ function SaveLayoutForm({
         aria-label="Save Layout"
       >
         <div className="layout-dialog-header">
-          <h2>{isExistingLayout && !isDelivered ? 'Update Layout' : 'Save Layout'}</h2>
+          <h2>Save Layout</h2>
           <button
             className="layout-dialog-close"
             onClick={onClose}
@@ -188,12 +115,6 @@ function SaveLayoutForm({
             <div className="layout-success-message">{successMessage}</div>
           ) : (
             <>
-              {isDelivered && (
-                <div className="layout-dialog-notice">
-                  This layout is archived. You can only save as a new layout.
-                </div>
-              )}
-
               <div className="form-group">
                 <label htmlFor="layout-name">Name</label>
                 <input
@@ -224,9 +145,7 @@ function SaveLayoutForm({
               <div className="layout-dialog-info">
                 <span>Grid: {gridX} x {gridY}</span>
                 <span>Items: {placedItems.length}</span>
-                {refImagePlacements.filter(p => p.refImageId !== null).length > 0 && (
-                  <span>Images: {refImagePlacements.filter(p => p.refImageId !== null).length}</span>
-                )}
+                {validImageCount > 0 && <span>Images: {validImageCount}</span>}
               </div>
 
               {isError && (
@@ -243,23 +162,13 @@ function SaveLayoutForm({
                 >
                   Cancel
                 </button>
-                {isExistingLayout && !isDelivered && (
-                  <button
-                    className="submit-button"
-                    onClick={handleUpdate}
-                    type="button"
-                    disabled={!name.trim() || isPending}
-                  >
-                    {updateLayoutMutation.isPending ? 'Updating...' : 'Update'}
-                  </button>
-                )}
                 <button
-                  className={isExistingLayout && !isDelivered ? 'layout-toolbar-btn' : 'submit-button'}
+                  className="submit-button"
                   onClick={handleSaveNew}
                   type="button"
                   disabled={!name.trim() || isPending}
                 >
-                  {saveLayoutMutation.isPending ? 'Saving...' : 'Save as New'}
+                  {saveLayoutMutation.isPending ? 'Saving...' : 'Save'}
                 </button>
               </div>
             </>
@@ -280,10 +189,8 @@ export function SaveLayoutDialog({
   spacerConfig,
   placedItems,
   refImagePlacements,
-  currentLayoutId,
   currentLayoutName,
   currentLayoutDescription,
-  currentLayoutStatus,
   onSaveComplete,
 }: SaveLayoutDialogProps) {
   if (!isOpen) return null;
@@ -298,11 +205,12 @@ export function SaveLayoutDialog({
       spacerConfig={spacerConfig}
       placedItems={placedItems}
       refImagePlacements={refImagePlacements}
-      currentLayoutId={currentLayoutId}
       currentLayoutName={currentLayoutName}
       currentLayoutDescription={currentLayoutDescription}
-      currentLayoutStatus={currentLayoutStatus}
       onSaveComplete={onSaveComplete}
     />
   );
 }
+
+// eslint-disable-next-line react-refresh/only-export-components
+export { buildPayload } from '../../utils/layoutHelpers';

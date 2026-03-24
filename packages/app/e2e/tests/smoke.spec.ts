@@ -41,10 +41,10 @@ test.describe('Smoke Tests', () => {
   test('bill of materials section is visible', async ({ page }) => {
     const bomPage = new BOMPage(page);
     await page.goto('/');
-    await bomPage.waitForBOMReady();
+    await bomPage.goToBOM();
 
-    // BOM section should be visible
-    await expect(bomPage.bomContainer).toBeVisible();
+    // Order summary page should load (empty state when no items placed)
+    await expect(page.locator('.order-empty, .order-bom-table')).toBeVisible();
   });
 
   test('unit toggle buttons are visible', async ({ page }) => {
