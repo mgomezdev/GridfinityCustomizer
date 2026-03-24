@@ -130,12 +130,16 @@ vi.mock('./components/WalkthroughOverlay', () => ({
 }));
 
 let capturedSaveLayoutDialogProps: Record<string, unknown> = {};
-vi.mock('./components/layouts/SaveLayoutDialog', () => ({
-  SaveLayoutDialog: (props: Record<string, unknown>) => {
-    capturedSaveLayoutDialogProps = props;
-    return null;
-  },
-}));
+vi.mock('./components/layouts/SaveLayoutDialog', async (importOriginal) => {
+  const original = await importOriginal<typeof import('./components/layouts/SaveLayoutDialog')>();
+  return {
+    ...original,
+    SaveLayoutDialog: (props: Record<string, unknown>) => {
+      capturedSaveLayoutDialogProps = props;
+      return null;
+    },
+  };
+});
 
 vi.mock('./components/admin/AdminSubmissionsDialog', () => ({
   AdminSubmissionsDialog: () => null,
@@ -150,10 +154,13 @@ vi.mock('./components/UserStlLibrarySection', () => ({
 }));
 
 const mockSubmitMutate = vi.fn();
+const mockUpdateMutateAsync = vi.fn();
 vi.mock('./hooks/useLayouts', () => ({
   useSubmitLayoutMutation: () => ({ mutate: mockSubmitMutate, mutateAsync: vi.fn(), isPending: false }),
   useWithdrawLayoutMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
   useCloneLayoutMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
+  useUpdateLayoutMutation: () => ({ mutateAsync: mockUpdateMutateAsync, isPending: false }),
+  useSaveLayoutMutation: () => ({ mutateAsync: vi.fn(), isPending: false, isError: false, error: null }),
   useSubmittedCountQuery: () => ({ data: null, isLoading: false }),
 }));
 
@@ -208,13 +215,14 @@ const mockGetItemById = vi.fn((id: string): LibraryItem | undefined => {
   return undefined;
 });
 
+const mockGetLibraryMeta = vi.fn().mockResolvedValue({ customizableFields: [], customizationDefaults: {} });
 vi.mock('./hooks/useLibraryData', () => ({
   useLibraryData: () => ({
     items: [testItem, testItem2x1],
     isLoading: false,
     error: null,
     getItemById: mockGetItemById,
-    getLibraryMeta: vi.fn().mockResolvedValue({ customizableFields: [], customizationDefaults: {} }),
+    getLibraryMeta: mockGetLibraryMeta,
     getItemsByCategory: () => [],
     getItemsByLibrary: () => [],
     refreshLibrary: mockRefreshLibrary,
@@ -487,6 +495,96 @@ describe('App Integration Tests', () => {
       expect(Math.max(UNIT, Math.floor(84 / UNIT) * UNIT)).toBe(84);
       // Without the clamp, a sub-42 input would produce 0; with it, the result is 42.
       expect(Math.max(UNIT, Math.floor(20 / UNIT) * UNIT)).toBe(42);
+    });
+  });
+
+  // ==========================================
+  // Save button states
+  // ==========================================
+  describe('Save button states', () => {
+    beforeEach(() => {
+      mockIsAuthenticated = true;
+      vi.clearAllMocks();
+    });
+
+    it('shows only Save button when layout is unsaved', () => {
+      renderApp();
+      expect(screen.getByRole('button', { name: /^save$/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /save changes/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /save as new/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /build from this/i })).not.toBeInTheDocument();
+    });
+
+    it('Save button is disabled when canvas is empty', () => {
+      renderApp();
+      expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled();
+    });
+
+    it('shows Save Changes and Save as New when layout is saved (draft)', () => {
+      renderApp();
+      act(() => {
+        const onSaveComplete = capturedSaveLayoutDialogProps.onSaveComplete as (id: number, name: string, status: string) => void;
+        onSaveComplete(10, 'My Layout', 'draft');
+      });
+      expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /save as new/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^save$/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /build from this/i })).not.toBeInTheDocument();
+    });
+
+    it('shows only Build from This when layout is delivered', () => {
+      renderApp();
+      act(() => {
+        const onSaveComplete = capturedSaveLayoutDialogProps.onSaveComplete as (id: number, name: string, status: string) => void;
+        onSaveComplete(20, 'Delivered Layout', 'delivered');
+      });
+      expect(screen.getByRole('button', { name: /build from this/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /save changes/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /save as new/i })).not.toBeInTheDocument();
+    });
+
+    it('Save Changes success shows Saved! toast', async () => {
+      mockUpdateMutateAsync.mockResolvedValue({ id: 10, name: 'My Layout', status: 'draft' });
+      renderApp();
+      act(() => {
+        const onSaveComplete = capturedSaveLayoutDialogProps.onSaveComplete as (id: number, name: string, status: string) => void;
+        onSaveComplete(10, 'My Layout', 'draft');
+      });
+      placeItemViaGridPreview();
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+      });
+      expect(await screen.findByText('Saved!')).toBeInTheDocument();
+    });
+
+    it('Save Changes error shows persistent error toast', async () => {
+      mockUpdateMutateAsync.mockRejectedValue(new Error('Network error'));
+      renderApp();
+      act(() => {
+        const onSaveComplete = capturedSaveLayoutDialogProps.onSaveComplete as (id: number, name: string, status: string) => void;
+        onSaveComplete(10, 'My Layout', 'draft');
+      });
+      placeItemViaGridPreview();
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+      });
+      expect(await screen.findByText(/save failed/i)).toBeInTheDocument();
+    });
+
+    it('error toast dismiss button clears the toast', async () => {
+      mockUpdateMutateAsync.mockRejectedValue(new Error('Network error'));
+      renderApp();
+      act(() => {
+        const onSaveComplete = capturedSaveLayoutDialogProps.onSaveComplete as (id: number, name: string, status: string) => void;
+        onSaveComplete(10, 'My Layout', 'draft');
+      });
+      placeItemViaGridPreview();
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+      });
+      await screen.findByText(/save failed/i);
+      fireEvent.click(screen.getByRole('button', { name: /dismiss/i }));
+      expect(screen.queryByText(/save failed/i)).not.toBeInTheDocument();
     });
   });
 

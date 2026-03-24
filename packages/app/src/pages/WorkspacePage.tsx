@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import type { ImageViewMode, DragData } from '../types/gridfinity';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import { useGridTransform } from '../hooks/useGridTransform';
+import { useUpdateLayoutMutation } from '../hooks/useLayouts';
+import { buildPayload } from '../components/layouts/SaveLayoutDialog';
 import { DimensionInput } from '../components/DimensionInput';
 import { GridPreview } from '../components/GridPreview';
 import { GridSummary } from '../components/GridSummary';
@@ -38,6 +40,9 @@ export function WorkspacePage() {
     copyItems, pasteItems, deleteSelected, rotateSelected, updateItemCustomization,
     bomItems,
     layoutMeta, isReadOnly,
+    handleSaveComplete,
+    drawerWidth,
+    drawerDepth,
     refImagePlacements, addRefImagePlacement, removeRefImagePlacement,
     updateRefImagePosition, updateRefImageScale, updateRefImageOpacity,
     updateRefImageRotation, toggleRefImageLock,
@@ -63,6 +68,37 @@ export function WorkspacePage() {
   const [imageViewMode, setImageViewMode] = useState<ImageViewMode>(
     () => (localStorage.getItem('gridfinity-image-view-mode') as ImageViewMode) || 'ortho'
   );
+
+  const updateLayoutMutation = useUpdateLayoutMutation();
+
+  const [toast, setToast] = useState<{ visible: boolean; isError: boolean }>({
+    visible: false,
+    isError: false,
+  });
+
+  const handleDirectSave = useCallback(async () => {
+    if (!layoutMeta.id) return;
+    try {
+      const payload = buildPayload(
+        layoutMeta.name,
+        layoutMeta.description,
+        gridResult.gridX,
+        gridResult.gridY,
+        drawerWidth,
+        drawerDepth,
+        spacerConfig,
+        placedItems,
+        refImagePlacements,
+      );
+      const result = await updateLayoutMutation.mutateAsync({ id: layoutMeta.id, data: payload });
+      handleSaveComplete(result.id, result.name, result.status);
+      setToast({ visible: true, isError: false });
+      setTimeout(() => setToast(t => ({ ...t, visible: false })), 1500);
+    } catch {
+      setToast({ visible: true, isError: true });
+    }
+  }, [layoutMeta, gridResult, drawerWidth, drawerDepth, spacerConfig, placedItems,
+      refImagePlacements, updateLayoutMutation, handleSaveComplete]);
 
   const handleLibraryResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -311,7 +347,8 @@ export function WorkspacePage() {
             {isAuthenticated && (
               <button className="layout-toolbar-btn layout-load-btn" onClick={() => navigate('/configs')} type="button">Load</button>
             )}
-            {isAuthenticated && (
+            {/* Unsaved layout */}
+            {isAuthenticated && !isReadOnly && !layoutMeta.id && (
               <button
                 className="layout-toolbar-btn layout-save-btn"
                 onClick={() => dialogDispatch({ type: 'OPEN', dialog: 'save' })}
@@ -321,6 +358,59 @@ export function WorkspacePage() {
                 Save
               </button>
             )}
+
+            {/* Saved layout — draft or submitted */}
+            {isAuthenticated && !isReadOnly && !!layoutMeta.id && (
+              <>
+                <button
+                  className="layout-toolbar-btn"
+                  onClick={() => dialogDispatch({ type: 'OPEN', dialog: 'save' })}
+                  type="button"
+                >
+                  Save as New
+                </button>
+                <button
+                  className="layout-toolbar-btn layout-save-btn"
+                  onClick={handleDirectSave}
+                  type="button"
+                  disabled={updateLayoutMutation.isPending || (placedItems.length === 0 && refImagePlacements.length === 0)}
+                >
+                  {updateLayoutMutation.isPending ? 'Saving\u2026' : 'Save Changes'}
+                </button>
+              </>
+            )}
+
+            {/* Delivered (read-only) layout */}
+            {isAuthenticated && isReadOnly && (
+              <button
+                className="layout-toolbar-btn layout-save-btn"
+                onClick={() => dialogDispatch({ type: 'OPEN', dialog: 'save' })}
+                type="button"
+              >
+                Build from This
+              </button>
+            )}
+
+            {toast.visible && (
+              <div className={`save-toast ${toast.isError ? 'save-toast-error' : 'save-toast-success'}`}>
+                {toast.isError ? (
+                  <>
+                    <span>Save failed. Try again.</span>
+                    <button
+                      type="button"
+                      className="save-toast-dismiss"
+                      onClick={() => setToast(t => ({ ...t, visible: false }))}
+                      aria-label="Dismiss"
+                    >
+                      &times;
+                    </button>
+                  </>
+                ) : (
+                  <span>Saved!</span>
+                )}
+              </div>
+            )}
+
             {isAuthenticated && layoutMeta.status !== 'submitted' && layoutMeta.status !== 'delivered' && (
               <button
                 className="layout-toolbar-btn layout-submit-btn"
