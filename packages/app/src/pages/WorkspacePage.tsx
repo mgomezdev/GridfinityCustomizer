@@ -431,11 +431,6 @@ export function WorkspacePage() {
                 {withdrawLayoutMutation.isPending ? 'Withdrawing...' : 'Withdraw'}
               </button>
             )}
-            {isAuthenticated && isReadOnly && (
-              <button className="layout-toolbar-btn layout-clone-btn" onClick={handleCloneCurrentLayout} type="button" disabled={cloneLayoutMutation.isPending}>
-                {cloneLayoutMutation.isPending ? 'Cloning...' : 'Clone'}
-              </button>
-            )}
             <button
               className="layout-toolbar-btn layout-export-btn"
               onClick={handleExportPdf}
