@@ -339,7 +339,7 @@ export function WorkspacePage() {
         isReadOnly={isReadOnly}
       />
 
-      <section className="preview">
+      <section className={`preview${isReadOnly ? ' canvas-readonly' : ''}`}>
         <nav className="canvas-breadcrumb" aria-label="breadcrumb">
           <span className="canvas-breadcrumb-item">Workspace</span>
           {layoutMeta.name && (

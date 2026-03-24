@@ -1012,6 +1012,26 @@
   justify-content: center;
 }
 
+/* Read-only canvas overlay */
+.canvas-readonly .preview-viewport {
+  position: relative;
+  cursor: not-allowed;
+}
+
+.canvas-readonly .preview-viewport::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.canvas-readonly .grid-preview {
+  filter: grayscale(50%);
+  pointer-events: none;
+}
+
 .reference-image-toolbar {
   display: flex;
   align-items: center;
