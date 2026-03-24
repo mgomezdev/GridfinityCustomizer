@@ -214,7 +214,9 @@ export function WorkspacePage() {
   // Keyboard shortcuts
   const keyDownHandlerRef = useRef<((event: KeyboardEvent) => void) | undefined>(undefined);
 
-  keyDownHandlerRef.current = (event: KeyboardEvent) => {
+  // Update ref after every render so the handler always has fresh closure values
+  useEffect(() => {
+    keyDownHandlerRef.current = (event: KeyboardEvent) => {
     const activeElement = document.activeElement;
     const isTyping = activeElement?.tagName === 'INPUT' ||
                      activeElement?.tagName === 'TEXTAREA' ||
@@ -277,7 +279,8 @@ export function WorkspacePage() {
       if (viewportRef.current) viewportRef.current.style.cursor = 'grab';
       return;
     }
-  };
+    };
+  });
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => keyDownHandlerRef.current?.(e);

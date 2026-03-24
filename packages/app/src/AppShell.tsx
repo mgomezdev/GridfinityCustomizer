@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useSearchParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import { WorkspaceProvider, useWorkspace } from './contexts/WorkspaceContext';
 import { SaveLayoutDialog } from './components/layouts/SaveLayoutDialog';
 import { RebindImageDialog } from './components/RebindImageDialog';
@@ -43,15 +43,13 @@ function AppShellInner() {
   } = useWorkspace();
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const [authOpen, setAuthOpen] = useState(false);
 
-  // Auto-clear ?authRequired=1 from URL after redirect and open the auth modal
-  useEffect(() => {
-    if (searchParams.get('authRequired') === '1') {
-      setSearchParams({}, { replace: true });
-      setAuthOpen(true);
-    }
-  }, [searchParams, setSearchParams]);
+  // authOpen is derived directly from the URL — no state sync needed
+  const authOpen = searchParams.get('authRequired') === '1';
+  const handleAuthClosed = useCallback(
+    () => setSearchParams({}, { replace: true }),
+    [setSearchParams],
+  );
 
   const totalPlaced = bomItems.reduce((s, i) => s + i.quantity, 0);
   const capacity = gridResult.gridX * gridResult.gridY;
@@ -112,7 +110,7 @@ function AppShellInner() {
               )}
             </div>
           )}
-          <UserMenu openAuth={authOpen} onAuthClosed={() => setAuthOpen(false)} />
+          <UserMenu openAuth={authOpen} onAuthClosed={handleAuthClosed} />
           <button
             className="keyboard-help-button"
             onClick={() => dialogDispatch({ type: 'OPEN', dialog: 'keyboard' })}
