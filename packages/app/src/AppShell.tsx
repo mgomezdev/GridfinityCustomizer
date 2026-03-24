@@ -170,7 +170,7 @@ function AppShellInner() {
 
       {isReadOnly && (
         <div className="read-only-banner">
-          This layout has been delivered and is read-only. Clone to make changes.
+          This layout has been delivered and is read-only. Use "Build from This" to create an editable copy.
         </div>
       )}
 
@@ -193,7 +193,6 @@ function AppShellInner() {
         currentLayoutId={layoutMeta.id}
         currentLayoutName={layoutMeta.name}
         currentLayoutDescription={layoutMeta.description}
-        currentLayoutStatus={layoutMeta.status}
         onSaveComplete={handleSaveComplete}
       />
 
