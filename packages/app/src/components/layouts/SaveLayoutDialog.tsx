@@ -212,5 +212,3 @@ export function SaveLayoutDialog({
   );
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
-export { buildPayload } from '../../utils/layoutHelpers';
