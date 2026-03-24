@@ -31,7 +31,6 @@ interface SaveLayoutFormProps {
   spacerConfig: GridSpacerConfig;
   placedItems: PlacedItemWithValidity[];
   refImagePlacements?: RefImagePlacement[];
-  currentLayoutId?: number | null;
   currentLayoutName?: string;
   currentLayoutDescription?: string;
   onSaveComplete?: (layoutId: number, name: string, status: LayoutStatus) => void;
@@ -50,8 +49,8 @@ function SaveLayoutForm({
   currentLayoutDescription = '',
   onSaveComplete,
 }: SaveLayoutFormProps) {
-  const [name, setName] = useState(currentLayoutName ?? '');
-  const [description, setDescription] = useState(currentLayoutDescription ?? '');
+  const [name, setName] = useState(currentLayoutName);
+  const [description, setDescription] = useState(currentLayoutDescription);
   const [successMessage, setSuccessMessage] = useState('');
 
   const saveLayoutMutation = useSaveLayoutMutation();
@@ -88,6 +87,8 @@ function SaveLayoutForm({
       setTimeout(() => node.focus(), 50);
     }
   }, []);
+
+  const validImageCount = refImagePlacements.filter(p => p.refImageId !== null).length;
 
   return (
     <div className="layout-dialog-overlay" onClick={onClose} onKeyDown={handleKeyDown}>
@@ -145,9 +146,7 @@ function SaveLayoutForm({
               <div className="layout-dialog-info">
                 <span>Grid: {gridX} x {gridY}</span>
                 <span>Items: {placedItems.length}</span>
-                {refImagePlacements.filter(p => p.refImageId !== null).length > 0 && (
-                  <span>Images: {refImagePlacements.filter(p => p.refImageId !== null).length}</span>
-                )}
+                {validImageCount > 0 && <span>Images: {validImageCount}</span>}
               </div>
 
               {isError && (
@@ -191,7 +190,6 @@ export function SaveLayoutDialog({
   spacerConfig,
   placedItems,
   refImagePlacements,
-  currentLayoutId,
   currentLayoutName,
   currentLayoutDescription,
   onSaveComplete,
@@ -208,7 +206,6 @@ export function SaveLayoutDialog({
       spacerConfig={spacerConfig}
       placedItems={placedItems}
       refImagePlacements={refImagePlacements}
-      currentLayoutId={currentLayoutId}
       currentLayoutName={currentLayoutName}
       currentLayoutDescription={currentLayoutDescription}
       onSaveComplete={onSaveComplete}
