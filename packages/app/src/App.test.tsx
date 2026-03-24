@@ -507,6 +507,10 @@ describe('App Integration Tests', () => {
       vi.clearAllMocks();
     });
 
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it('shows only Save button when layout is unsaved', () => {
       renderApp();
       expect(screen.getByRole('button', { name: /^save$/i })).toBeInTheDocument();
@@ -527,6 +531,7 @@ describe('App Integration Tests', () => {
         onSaveComplete(10, 'My Layout', 'draft');
       });
       expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /save changes/i })).toBeDisabled();
       expect(screen.getByRole('button', { name: /save as new/i })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /^save$/i })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /build from this/i })).not.toBeInTheDocument();
@@ -543,7 +548,8 @@ describe('App Integration Tests', () => {
       expect(screen.queryByRole('button', { name: /save as new/i })).not.toBeInTheDocument();
     });
 
-    it('Save Changes success shows Saved! toast', async () => {
+    it('Save Changes success shows Saved! toast that auto-dismisses', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
       mockUpdateMutateAsync.mockResolvedValue({ id: 10, name: 'My Layout', status: 'draft' });
       renderApp();
       act(() => {
@@ -555,6 +561,9 @@ describe('App Integration Tests', () => {
         fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
       });
       expect(await screen.findByText('Saved!')).toBeInTheDocument();
+      // Advance 1.5s — toast should auto-dismiss
+      await act(async () => { vi.advanceTimersByTime(1500); });
+      expect(screen.queryByText('Saved!')).not.toBeInTheDocument();
     });
 
     it('Save Changes error shows persistent error toast', async () => {
