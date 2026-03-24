@@ -34,11 +34,6 @@ export class BOMPage {
     await this.page.locator('.nav-tab', { hasText: 'Workspace' }).click();
   }
 
-  /** @deprecated Use goToBOM() then check bomContainer directly */
-  async waitForBOMReady(): Promise<void> {
-    await this.goToBOM();
-  }
-
   async getItemCount(): Promise<number> {
     const tableVisible = await this.bomContainer.isVisible().catch(() => false);
     if (!tableVisible) return 0;
