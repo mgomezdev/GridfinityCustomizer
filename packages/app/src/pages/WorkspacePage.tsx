@@ -4,7 +4,7 @@ import type { ImageViewMode, DragData } from '../types/gridfinity';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import { useGridTransform } from '../hooks/useGridTransform';
 import { useUpdateLayoutMutation } from '../hooks/useLayouts';
-import { buildPayload } from '../components/layouts/SaveLayoutDialog';
+import { buildPayload } from '../utils/layoutHelpers';
 import { DimensionInput } from '../components/DimensionInput';
 import { GridPreview } from '../components/GridPreview';
 import { GridSummary } from '../components/GridSummary';

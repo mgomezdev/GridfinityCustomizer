@@ -32,20 +32,10 @@ vi.mock('./components/ItemLibrary', () => ({
   },
 }));
 
-vi.mock('./components/ItemControls', () => ({
-  ItemControls: (props: Record<string, unknown>) => {
-    return <div data-testid="item-controls" data-props={JSON.stringify({ hasRotateCw: !!props.onRotateCw })} />;
-  },
-}));
-
 vi.mock('./components/SpacerControls', () => ({
   SpacerControls: (props: Record<string, unknown>) => {
     return <div data-testid="spacer-controls" data-config={JSON.stringify(props.config)} />;
   },
-}));
-
-vi.mock('./components/BillOfMaterials', () => ({
-  BillOfMaterials: () => <div data-testid="bill-of-materials" />,
 }));
 
 vi.mock('./components/RefImageLibrary', () => ({
