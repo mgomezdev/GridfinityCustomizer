@@ -18,7 +18,6 @@ interface SaveLayoutDialogProps {
   currentLayoutId?: number | null;
   currentLayoutName?: string;
   currentLayoutDescription?: string;
-  currentLayoutStatus?: LayoutStatus | null;
   onSaveComplete?: (layoutId: number, name: string, status: LayoutStatus) => void;
 }
 
