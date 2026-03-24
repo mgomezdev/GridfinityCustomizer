@@ -45,7 +45,7 @@ describe('SaveLayoutDialog', () => {
   });
 
   it('does NOT render an Update button for any props combination', () => {
-    render(<SaveLayoutDialog {...baseProps} currentLayoutName="My Layout" />);
+    render(<SaveLayoutDialog {...baseProps} currentLayoutId={42} currentLayoutName="My Layout" />);
     expect(screen.queryByRole('button', { name: /update/i })).not.toBeInTheDocument();
   });
 
@@ -55,12 +55,12 @@ describe('SaveLayoutDialog', () => {
   });
 
   it('pre-fills name field when currentLayoutName is provided', () => {
-    render(<SaveLayoutDialog {...baseProps} currentLayoutName="Existing Layout" />);
+    render(<SaveLayoutDialog {...baseProps} currentLayoutId={42} currentLayoutName="Existing Layout" />);
     expect(screen.getByDisplayValue('Existing Layout')).toBeInTheDocument();
   });
 
   it('does NOT render the archived layout notice', () => {
-    render(<SaveLayoutDialog {...baseProps} currentLayoutName="Archived" />);
+    render(<SaveLayoutDialog {...baseProps} currentLayoutId={42} currentLayoutName="Archived" />);
     expect(screen.queryByText(/archived/i)).not.toBeInTheDocument();
   });
 

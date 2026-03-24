@@ -190,8 +190,10 @@ function AppShellInner() {
         spacerConfig={spacerConfig}
         placedItems={placedItems}
         refImagePlacements={refImagePlacements}
+        currentLayoutId={layoutMeta.id}
         currentLayoutName={layoutMeta.name}
         currentLayoutDescription={layoutMeta.description}
+        currentLayoutStatus={layoutMeta.status}
         onSaveComplete={handleSaveComplete}
       />
 

@@ -15,8 +15,10 @@ interface SaveLayoutDialogProps {
   spacerConfig: GridSpacerConfig;
   placedItems: PlacedItemWithValidity[];
   refImagePlacements?: RefImagePlacement[];
+  currentLayoutId?: number | null;
   currentLayoutName?: string;
   currentLayoutDescription?: string;
+  currentLayoutStatus?: LayoutStatus | null;
   onSaveComplete?: (layoutId: number, name: string, status: LayoutStatus) => void;
 }
 
@@ -29,6 +31,7 @@ interface SaveLayoutFormProps {
   spacerConfig: GridSpacerConfig;
   placedItems: PlacedItemWithValidity[];
   refImagePlacements?: RefImagePlacement[];
+  currentLayoutId?: number | null;
   currentLayoutName?: string;
   currentLayoutDescription?: string;
   onSaveComplete?: (layoutId: number, name: string, status: LayoutStatus) => void;
@@ -188,6 +191,7 @@ export function SaveLayoutDialog({
   spacerConfig,
   placedItems,
   refImagePlacements,
+  currentLayoutId,
   currentLayoutName,
   currentLayoutDescription,
   onSaveComplete,
@@ -204,9 +208,13 @@ export function SaveLayoutDialog({
       spacerConfig={spacerConfig}
       placedItems={placedItems}
       refImagePlacements={refImagePlacements}
+      currentLayoutId={currentLayoutId}
       currentLayoutName={currentLayoutName}
       currentLayoutDescription={currentLayoutDescription}
       onSaveComplete={onSaveComplete}
     />
   );
 }
+
+// eslint-disable-next-line react-refresh/only-export-components
+export { buildPayload } from '../../utils/layoutHelpers';
