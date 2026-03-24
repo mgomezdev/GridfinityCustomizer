@@ -10,12 +10,6 @@ vi.mock('../../hooks/useLayouts', () => ({
     isError: false,
     error: null,
   }),
-  useUpdateLayoutMutation: () => ({
-    mutateAsync: vi.fn(),
-    isPending: false,
-    isError: false,
-    error: null,
-  }),
 }));
 
 const baseProps = {
@@ -74,5 +68,24 @@ describe('SaveLayoutDialog', () => {
     render(<SaveLayoutDialog {...baseProps} />);
     fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'My Layout' } });
     expect(screen.getByRole('button', { name: /^save$/i })).not.toBeDisabled();
+  });
+
+  it('Enter key always triggers the save-new path, never update', () => {
+    const onSaveComplete = vi.fn();
+    mockSaveAsync.mockResolvedValueOnce({ id: 1, name: 'Test Layout', status: 'draft' });
+
+    render(
+      <SaveLayoutDialog
+        {...baseProps}
+        currentLayoutId={42}
+        currentLayoutName="Existing Layout"
+        onSaveComplete={onSaveComplete}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Test Layout' } });
+    fireEvent.keyDown(screen.getByRole('dialog').parentElement!, { key: 'Enter' });
+
+    expect(mockSaveAsync).toHaveBeenCalledTimes(1);
   });
 });
