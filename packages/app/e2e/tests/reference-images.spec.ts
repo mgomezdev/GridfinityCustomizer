@@ -145,14 +145,10 @@ test.describe('Reference Images — Unauthenticated', () => {
     await gridPage.waitForGridReady();
   });
 
-  test('Images tab shows sign-in prompt when not authenticated', async ({ page }) => {
-    // Click the Images tab
-    const imagesTab = page.locator('.sidebar-tab', { hasText: 'Images' });
-    await imagesTab.click();
-
-    // Should show auth prompt, not the library
-    await expect(page.locator('.ref-image-auth-prompt')).toBeVisible();
-    await expect(page.locator('.ref-image-auth-prompt')).toContainText('Sign in');
+  test('Images tab is not shown when not authenticated', async ({ page }) => {
+    // The Images tab is only rendered for authenticated users
+    const imagesTab = page.locator('.library-cat-tab', { hasText: 'Images' });
+    await expect(imagesTab).not.toBeVisible();
   });
 });
 
@@ -173,7 +169,7 @@ test.describe('Reference Images — Authenticated', () => {
   });
 
   test('Images tab shows ref image library', async ({ page }) => {
-    const imagesTab = page.locator('.sidebar-tab', { hasText: 'Images' });
+    const imagesTab = page.locator('.library-cat-tab', { hasText: 'Images' });
     await imagesTab.click();
 
     // Should show "Reference Images" heading
@@ -184,7 +180,7 @@ test.describe('Reference Images — Authenticated', () => {
   });
 
   test('displays images from API in "My Images" section', async ({ page }) => {
-    const imagesTab = page.locator('.sidebar-tab', { hasText: 'Images' });
+    const imagesTab = page.locator('.library-cat-tab', { hasText: 'Images' });
     await imagesTab.click();
 
     // Should show "My Images" section with the mock image
@@ -198,7 +194,7 @@ test.describe('Reference Images — Authenticated', () => {
 
   test('can drag ref image from library to grid', async ({ page }) => {
     // Switch to Images tab
-    const imagesTab = page.locator('.sidebar-tab', { hasText: 'Images' });
+    const imagesTab = page.locator('.library-cat-tab', { hasText: 'Images' });
     await imagesTab.click();
 
     // Wait for card to appear
@@ -220,7 +216,7 @@ test.describe('Reference Images — Authenticated', () => {
 
   test('placed ref image shows toolbar when selected', async ({ page }) => {
     // Switch to Images tab and drag an image to grid
-    const imagesTab = page.locator('.sidebar-tab', { hasText: 'Images' });
+    const imagesTab = page.locator('.library-cat-tab', { hasText: 'Images' });
     await imagesTab.click();
     const card = page.locator('.ref-image-card').first();
     await expect(card).toBeVisible();
@@ -244,7 +240,7 @@ test.describe('Reference Images — Authenticated', () => {
 
   test('can adjust image opacity via slider', async ({ page }) => {
     // Place image on grid
-    const imagesTab = page.locator('.sidebar-tab', { hasText: 'Images' });
+    const imagesTab = page.locator('.library-cat-tab', { hasText: 'Images' });
     await imagesTab.click();
     const card = page.locator('.ref-image-card').first();
     await expect(card).toBeVisible();
@@ -276,7 +272,7 @@ test.describe('Reference Images — Authenticated', () => {
 
   test('can lock and unlock image', async ({ page }) => {
     // Place image on grid
-    const imagesTab = page.locator('.sidebar-tab', { hasText: 'Images' });
+    const imagesTab = page.locator('.library-cat-tab', { hasText: 'Images' });
     await imagesTab.click();
     const card = page.locator('.ref-image-card').first();
     await expect(card).toBeVisible();
@@ -306,7 +302,7 @@ test.describe('Reference Images — Authenticated', () => {
 
   test('can remove image from grid', async ({ page }) => {
     // Place image on grid
-    const imagesTab = page.locator('.sidebar-tab', { hasText: 'Images' });
+    const imagesTab = page.locator('.library-cat-tab', { hasText: 'Images' });
     await imagesTab.click();
     const card = page.locator('.ref-image-card').first();
     await expect(card).toBeVisible();
@@ -339,7 +335,7 @@ test.describe('Reference Images — Authenticated', () => {
     expect(placedCount).toBe(1);
 
     // Switch to Images tab and drag a ref image
-    const imagesTab = page.locator('.sidebar-tab', { hasText: 'Images' });
+    const imagesTab = page.locator('.library-cat-tab', { hasText: 'Images' });
     await imagesTab.click();
     const card = page.locator('.ref-image-card').first();
     await expect(card).toBeVisible();
@@ -353,7 +349,7 @@ test.describe('Reference Images — Authenticated', () => {
 
   test('reference image is always interactive (pointer-events: auto)', async ({ page }) => {
     // Place image on grid
-    const imagesTab = page.locator('.sidebar-tab', { hasText: 'Images' });
+    const imagesTab = page.locator('.library-cat-tab', { hasText: 'Images' });
     await imagesTab.click();
     const card = page.locator('.ref-image-card').first();
     await expect(card).toBeVisible();

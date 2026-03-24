@@ -13,15 +13,35 @@ export class BOMPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.bomContainer = page.locator('.bill-of-materials');
-    this.bomItems = page.locator('.bom-item');
+    this.bomContainer = page.locator('.order-bom-table');
+    this.bomItems = page.locator('.order-bom-table tbody tr');
   }
 
+  /** Client-side navigate to Order Summary page (preserves React context). */
+  async goToBOM(): Promise<void> {
+    await this.page.locator('.nav-tab', { hasText: 'Order Summary' }).click();
+    // Wait for either the table (has items) or empty state
+    const table = this.page.locator('.order-bom-table');
+    const empty = this.page.locator('.order-empty');
+    await Promise.race([
+      table.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {}),
+      empty.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {}),
+    ]);
+  }
+
+  /** Client-side navigate back to Workspace page (preserves React context). */
+  async goToWorkspace(): Promise<void> {
+    await this.page.locator('.nav-tab', { hasText: 'Workspace' }).click();
+  }
+
+  /** @deprecated Use goToBOM() then check bomContainer directly */
   async waitForBOMReady(): Promise<void> {
-    await this.bomContainer.waitFor({ state: 'visible' });
+    await this.goToBOM();
   }
 
   async getItemCount(): Promise<number> {
+    const tableVisible = await this.bomContainer.isVisible().catch(() => false);
+    if (!tableVisible) return 0;
     return await this.bomItems.count();
   }
 
@@ -30,11 +50,11 @@ export class BOMPage {
     const count = await this.bomItems.count();
 
     for (let i = 0; i < count; i++) {
-      const item = this.bomItems.nth(i);
-      const name = await item.locator('.bom-item-name').textContent() || '';
-      const size = await item.locator('.bom-item-size').textContent() || '';
-      const quantityText = await item.locator('.bom-item-quantity').textContent() || '0';
-      const quantity = parseInt(quantityText.replace(/[^0-9]/g, ''), 10);
+      const row = this.bomItems.nth(i);
+      const name = (await row.locator('.order-bom-name').textContent()) ?? '';
+      const size = (await row.locator('.order-bom-size').textContent()) ?? '';
+      const cells = await row.locator('td').allTextContents();
+      const quantity = parseInt((cells[2] ?? '0').trim(), 10);
 
       entries.push({ name: name.trim(), size: size.trim(), quantity });
     }
@@ -44,7 +64,7 @@ export class BOMPage {
 
   async getEntryByName(name: string): Promise<BOMEntry | null> {
     const entries = await this.getBOMEntries();
-    return entries.find((e) => e.name === name) || null;
+    return entries.find((e) => e.name === name) ?? null;
   }
 
   async getTotalQuantity(): Promise<number> {

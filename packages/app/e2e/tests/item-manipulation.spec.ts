@@ -28,8 +28,8 @@ test.describe('Item Manipulation', () => {
     const initialBox = await placedItem.boundingBox();
     expect(initialBox).not.toBeNull();
 
-    // Click CW rotate button in sidebar
-    const cwButton = page.locator('.rotate-btn', { hasText: 'CW' });
+    // Click CW rotate button in inline toolbar
+    const cwButton = page.locator('[aria-label="Rotate clockwise"]');
     await expect(cwButton.first()).toBeVisible();
     await cwButton.first().click();
 
@@ -50,8 +50,8 @@ test.describe('Item Manipulation', () => {
     const placedItem = page.locator('.placed-item').first();
     await expect(placedItem).toBeVisible();
 
-    // Click CCW rotate button in sidebar
-    const ccwButton = page.locator('.rotate-btn', { hasText: 'CCW' });
+    // Click CCW rotate button in inline toolbar
+    const ccwButton = page.locator('[aria-label="Rotate counter-clockwise"]');
     await expect(ccwButton).toBeVisible();
     await ccwButton.click();
 
@@ -71,8 +71,8 @@ test.describe('Item Manipulation', () => {
     // Should have 1 item
     expect(await gridPage.getPlacedItemCount()).toBe(1);
 
-    // Click delete button
-    const deleteButton = page.locator('.delete-btn');
+    // Click delete button in inline toolbar
+    const deleteButton = page.locator('[aria-label="Remove item"]');
     await expect(deleteButton).toBeVisible();
     await deleteButton.click();
 
@@ -85,7 +85,7 @@ test.describe('Item Manipulation', () => {
 
   test('item controls appear when item is selected', async ({ page }) => {
     // Initially, item controls should not be visible (no selection)
-    const itemControls = page.locator('.item-controls');
+    const itemControls = page.locator('.placed-item-toolbar');
     await expect(itemControls).not.toBeVisible();
 
     // Place an item - it becomes selected automatically
@@ -102,7 +102,7 @@ test.describe('Item Manipulation', () => {
     await dragToGridCell(page, firstItem, gridPage.gridContainer, 0, 0, 4, 4);
 
     // Item controls should be visible
-    const itemControls = page.locator('.item-controls');
+    const itemControls = page.locator('.placed-item-toolbar');
     await expect(itemControls).toBeVisible();
 
     // Click on empty grid area to deselect

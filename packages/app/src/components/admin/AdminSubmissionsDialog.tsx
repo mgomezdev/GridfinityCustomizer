@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ApiLayout, LayoutStatus, ApiUserStlAdmin } from '@gridfinity/shared';
-import type { LoadedLayoutConfig } from '../layouts/LoadLayoutDialog';
+import type { LoadedLayoutConfig } from '../../types/layoutConfig';
 import { useAdminLayoutsQuery, useDeliverLayoutMutation, useCloneLayoutMutation } from '../../hooks/useLayouts';
 import {
   useAdminUserStlsQuery,

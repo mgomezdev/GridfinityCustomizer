@@ -14,15 +14,8 @@ export class LibraryPage {
 
   async waitForLibraryReady(): Promise<void> {
     await this.libraryContainer.waitFor({ state: 'visible' });
-    // Wait for loading to complete (no loading text visible)
+    // Wait for loading to complete
     await this.page.locator('.library-loading').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
-    // Wait for at least one category to appear
-    await this.page.locator('.category-title').first().waitFor({ state: 'visible', timeout: 10000 });
-    // Categories are collapsed by default — expand the first one so items become visible
-    const firstCategory = this.page.locator('.category-items').first();
-    if (await firstCategory.evaluate(el => el.classList.contains('collapsed'))) {
-      await this.page.locator('.category-title').first().click();
-    }
     // Wait for at least one library item to appear
     await this.libraryItems.first().waitFor({ state: 'visible', timeout: 10000 });
   }

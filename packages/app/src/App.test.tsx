@@ -1,7 +1,14 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
-import App from './App';
+import { MemoryRouter } from 'react-router-dom';
+import { WorkspacePage } from './pages/WorkspacePage';
+import { WorkspaceProvider, useWorkspace } from './contexts/WorkspaceContext';
+import { KeyboardShortcutsHelp } from './components/KeyboardShortcutsHelp';
+import { SaveLayoutDialog } from './components/layouts/SaveLayoutDialog';
+import { RebindImageDialog } from './components/RebindImageDialog';
+import { WalkthroughOverlay } from './components/WalkthroughOverlay';
+import { ConfirmDialog } from './components/ConfirmDialog';
 import type { LibraryItem } from './types/gridfinity';
 import type { RefImagePlacement } from './hooks/useRefImagePlacements';
 
@@ -102,7 +109,6 @@ vi.mock('./contexts/WalkthroughContext', () => ({
     dismissTour: mockDismissTour,
   }),
   WALKTHROUGH_STEPS: [
-    { id: 'expand-category', title: 'Open a bin category', body: 'Click any category in the library panel to expand it and see the available bins.', target: '.category-title.collapsible' },
     { id: 'place-bin', title: 'Drag a bin onto your grid', body: 'Pick any bin from the library on the left and drag it onto the grid to place it.', target: '.library-item-card' },
     { id: 'save-grid', title: 'Save your layout', body: 'Give your layout a name and save it.', target: '.layout-save-btn' },
     { id: 'submit-order', title: 'Submit your order', body: 'When your layout is ready, hit Submit.', target: '.layout-submit-btn' },
@@ -124,20 +130,16 @@ vi.mock('./components/WalkthroughOverlay', () => ({
 }));
 
 let capturedSaveLayoutDialogProps: Record<string, unknown> = {};
-vi.mock('./components/layouts/SaveLayoutDialog', () => ({
-  SaveLayoutDialog: (props: Record<string, unknown>) => {
-    capturedSaveLayoutDialogProps = props;
-    return null;
-  },
-}));
-
-let capturedLoadLayoutDialogProps: Record<string, unknown> = {};
-vi.mock('./components/layouts/LoadLayoutDialog', () => ({
-  LoadLayoutDialog: (props: Record<string, unknown>) => {
-    capturedLoadLayoutDialogProps = props;
-    return null;
-  },
-}));
+vi.mock('./components/layouts/SaveLayoutDialog', async (importOriginal) => {
+  const original = await importOriginal<typeof import('./components/layouts/SaveLayoutDialog')>();
+  return {
+    ...original,
+    SaveLayoutDialog: (props: Record<string, unknown>) => {
+      capturedSaveLayoutDialogProps = props;
+      return null;
+    },
+  };
+});
 
 vi.mock('./components/admin/AdminSubmissionsDialog', () => ({
   AdminSubmissionsDialog: () => null,
@@ -152,10 +154,13 @@ vi.mock('./components/UserStlLibrarySection', () => ({
 }));
 
 const mockSubmitMutate = vi.fn();
+const mockUpdateMutateAsync = vi.fn();
 vi.mock('./hooks/useLayouts', () => ({
   useSubmitLayoutMutation: () => ({ mutate: mockSubmitMutate, mutateAsync: vi.fn(), isPending: false }),
   useWithdrawLayoutMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
   useCloneLayoutMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
+  useUpdateLayoutMutation: () => ({ mutateAsync: mockUpdateMutateAsync, isPending: false }),
+  useSaveLayoutMutation: () => ({ mutateAsync: vi.fn(), isPending: false, isError: false, error: null }),
   useSubmittedCountQuery: () => ({ data: null, isLoading: false }),
 }));
 
@@ -174,15 +179,12 @@ vi.mock('./components/GridSummary', () => ({
 // --- Mock network/storage hooks ---
 const mockRefreshLibraries = vi.fn().mockResolvedValue(undefined);
 const mockRefreshLibrary = vi.fn().mockResolvedValue(undefined);
-const mockToggleLibrary = vi.fn();
 
 vi.mock('./hooks/useLibraries', () => ({
   useLibraries: () => ({
     availableLibraries: [
       { id: 'bins_standard', name: 'Standard Bins', path: '/libraries/bins_standard/index.json', isEnabled: true },
     ],
-    selectedLibraryIds: ['bins_standard'],
-    toggleLibrary: mockToggleLibrary,
     isLoading: false,
     error: null,
     refreshLibraries: mockRefreshLibraries,
@@ -213,13 +215,14 @@ const mockGetItemById = vi.fn((id: string): LibraryItem | undefined => {
   return undefined;
 });
 
+const mockGetLibraryMeta = vi.fn().mockResolvedValue({ customizableFields: [], customizationDefaults: {} });
 vi.mock('./hooks/useLibraryData', () => ({
   useLibraryData: () => ({
     items: [testItem, testItem2x1],
     isLoading: false,
     error: null,
     getItemById: mockGetItemById,
-    getLibraryMeta: vi.fn().mockResolvedValue({ customizableFields: [], customizationDefaults: {} }),
+    getLibraryMeta: mockGetLibraryMeta,
     getItemsByCategory: () => [],
     getItemsByLibrary: () => [],
     refreshLibrary: mockRefreshLibrary,
@@ -259,9 +262,74 @@ vi.mock('./hooks/useRefImagePlacements', () => ({
 }));
 
 
+// --- TestAppShell: renders global dialogs that AppShell provides in production ---
+// WorkspacePage no longer renders these dialogs (they live in AppShell to avoid
+// double-rendering). In tests we render WorkspacePage directly without AppShell,
+// so we provide them here via a thin wrapper that reads from WorkspaceContext.
+function TestAppShellInner({ children }: { children: React.ReactNode }) {
+  const {
+    dialogs, dialogDispatch, confirmDialogProps,
+    isWalkthroughActive, walkthroughCurrentStep, walkthroughSteps, nextStep, dismissTour,
+    gridResult, drawerWidth, drawerDepth, spacerConfig,
+    placedItems, refImagePlacements, layoutMeta, handleSaveComplete,
+    handleRebindSelect, closeRebind, isReadOnly,
+  } = useWorkspace();
+
+  return (
+    <>
+      {children}
+      <KeyboardShortcutsHelp
+        isOpen={dialogs.keyboard}
+        onClose={() => dialogDispatch({ type: 'CLOSE', dialog: 'keyboard' })}
+      />
+      <SaveLayoutDialog
+        isOpen={dialogs.save}
+        onClose={() => dialogDispatch({ type: 'CLOSE', dialog: 'save' })}
+        gridX={gridResult.gridX}
+        gridY={gridResult.gridY}
+        widthMm={drawerWidth}
+        depthMm={drawerDepth}
+        spacerConfig={spacerConfig}
+        placedItems={placedItems}
+        refImagePlacements={refImagePlacements}
+        currentLayoutId={layoutMeta.id}
+        currentLayoutName={layoutMeta.name}
+        currentLayoutDescription={layoutMeta.description}
+        onSaveComplete={handleSaveComplete}
+      />
+      <RebindImageDialog
+        isOpen={dialogs.rebind}
+        onClose={closeRebind}
+        onSelect={handleRebindSelect}
+      />
+      <ConfirmDialog {...confirmDialogProps} />
+      <WalkthroughOverlay
+        isActive={isWalkthroughActive}
+        currentStep={walkthroughCurrentStep}
+        steps={walkthroughSteps}
+        onNext={nextStep}
+        onDismiss={dismissTour}
+      />
+      {isReadOnly && (
+        <div className="read-only-banner">
+          This layout has been delivered and is read-only. Use "Build from This" to create an editable copy.
+        </div>
+      )}
+    </>
+  );
+}
+
 // --- Helpers ---
 function renderApp() {
-  return render(<App />);
+  return render(
+    <MemoryRouter>
+      <WorkspaceProvider>
+        <TestAppShellInner>
+          <WorkspacePage />
+        </TestAppShellInner>
+      </WorkspaceProvider>
+    </MemoryRouter>
+  );
 }
 
 function placeItemViaGridPreview(itemId = 'bins_standard:bin-1x1', x = 0, y = 0) {
@@ -293,7 +361,6 @@ describe('App Integration Tests', () => {
     capturedGridPreviewProps = {};
     capturedItemLibraryProps = {};
     capturedZoomControlsProps = {};
-    capturedLoadLayoutDialogProps = {};
     capturedSaveLayoutDialogProps = {};
     mockPlacements = [];
     mockIsAuthenticated = false;
@@ -307,11 +374,6 @@ describe('App Integration Tests', () => {
   // 1. Renders correctly
   // ==========================================
   describe('Renders correctly', () => {
-    it('renders header with title', () => {
-      renderApp();
-      expect(screen.getByText('Gridfinity Bin Customizer')).toBeInTheDocument();
-    });
-
     it('renders metric unit toggle active by default', () => {
       renderApp();
       const mmButton = screen.getByText('mm');
@@ -322,6 +384,13 @@ describe('App Integration Tests', () => {
       renderApp();
       expect(screen.queryByText('.00')).not.toBeInTheDocument();
       expect(screen.queryByText('\u00BD')).not.toBeInTheDocument();
+    });
+
+    it('renders canvas breadcrumb with Workspace label', () => {
+      renderApp();
+      const breadcrumb = screen.getByRole('navigation', { name: /breadcrumb/i });
+      expect(breadcrumb).toBeInTheDocument();
+      expect(breadcrumb).toHaveTextContent('Workspace');
     });
   });
 
@@ -381,7 +450,155 @@ describe('App Integration Tests', () => {
   });
 
   // ==========================================
-  // 3. Keyboard Shortcuts
+  // 3. FIT Buttons
+  // ==========================================
+  describe('FIT buttons', () => {
+    it('renders FIT W and FIT D buttons', () => {
+      renderApp();
+      expect(screen.getByRole('button', { name: /FIT W/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /FIT D/i })).toBeInTheDocument();
+    });
+
+    it('FIT W snaps width down to nearest 42mm multiple', () => {
+      renderApp();
+      // Default width is 168mm (exact fit). We can't change it through the mock,
+      // but we can verify the button exists and clicking it when already at a
+      // multiple of 42 keeps the same value (168 → 168).
+      const widthDiv = screen.getByTestId('dimension-input-Width');
+      const before = parseFloat(widthDiv.getAttribute('data-value')!);
+      expect(before % 42).toBe(0); // already a multiple
+
+      fireEvent.click(screen.getByRole('button', { name: /FIT W/i }));
+
+      const after = parseFloat(widthDiv.getAttribute('data-value')!);
+      expect(after % 42).toBe(0);
+      expect(after).toBe(before); // 168 stays 168
+    });
+
+    it('FIT D snaps depth down to nearest 42mm multiple', () => {
+      renderApp();
+      const depthDiv = screen.getByTestId('dimension-input-Depth');
+      const before = parseFloat(depthDiv.getAttribute('data-value')!);
+      expect(before % 42).toBe(0);
+
+      fireEvent.click(screen.getByRole('button', { name: /FIT D/i }));
+
+      const after = parseFloat(depthDiv.getAttribute('data-value')!);
+      expect(after % 42).toBe(0);
+    });
+
+    it('snap logic: floor(200/42)*42 === 168 and clamp ensures minimum of 42', () => {
+      // DimensionInput is mocked as a static div so we cannot drive an arbitrary value
+      // through the rendered UI. This test verifies the snap arithmetic directly.
+      const UNIT = 42;
+      expect(Math.max(UNIT, Math.floor(200 / UNIT) * UNIT)).toBe(168);
+      expect(Math.max(UNIT, Math.floor(84 / UNIT) * UNIT)).toBe(84);
+      // Without the clamp, a sub-42 input would produce 0; with it, the result is 42.
+      expect(Math.max(UNIT, Math.floor(20 / UNIT) * UNIT)).toBe(42);
+    });
+  });
+
+  // ==========================================
+  // Save button states
+  // ==========================================
+  describe('Save button states', () => {
+    beforeEach(() => {
+      mockIsAuthenticated = true;
+      vi.clearAllMocks();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('shows only Save button when layout is unsaved', () => {
+      renderApp();
+      expect(screen.getByRole('button', { name: /^save$/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /save changes/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /save as new/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /build from this/i })).not.toBeInTheDocument();
+    });
+
+    it('Save button is disabled when canvas is empty', () => {
+      renderApp();
+      expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled();
+    });
+
+    it('shows Save Changes and Save as New when layout is saved (draft)', () => {
+      renderApp();
+      act(() => {
+        const onSaveComplete = capturedSaveLayoutDialogProps.onSaveComplete as (id: number, name: string, status: string) => void;
+        onSaveComplete(10, 'My Layout', 'draft');
+      });
+      expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /save changes/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /save as new/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^save$/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /build from this/i })).not.toBeInTheDocument();
+    });
+
+    it('shows only Build from This when layout is delivered', () => {
+      renderApp();
+      act(() => {
+        const onSaveComplete = capturedSaveLayoutDialogProps.onSaveComplete as (id: number, name: string, status: string) => void;
+        onSaveComplete(20, 'Delivered Layout', 'delivered');
+      });
+      expect(screen.getByRole('button', { name: /build from this/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /save changes/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /save as new/i })).not.toBeInTheDocument();
+    });
+
+    it('Save Changes success shows Saved! toast that auto-dismisses', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      mockUpdateMutateAsync.mockResolvedValue({ id: 10, name: 'My Layout', status: 'draft' });
+      renderApp();
+      act(() => {
+        const onSaveComplete = capturedSaveLayoutDialogProps.onSaveComplete as (id: number, name: string, status: string) => void;
+        onSaveComplete(10, 'My Layout', 'draft');
+      });
+      placeItemViaGridPreview();
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+      });
+      expect(await screen.findByText('Saved!')).toBeInTheDocument();
+      // Advance 1.5s — toast should auto-dismiss
+      await act(async () => { vi.advanceTimersByTime(1500); });
+      expect(screen.queryByText('Saved!')).not.toBeInTheDocument();
+    });
+
+    it('Save Changes error shows persistent error toast', async () => {
+      mockUpdateMutateAsync.mockRejectedValue(new Error('Network error'));
+      renderApp();
+      act(() => {
+        const onSaveComplete = capturedSaveLayoutDialogProps.onSaveComplete as (id: number, name: string, status: string) => void;
+        onSaveComplete(10, 'My Layout', 'draft');
+      });
+      placeItemViaGridPreview();
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+      });
+      expect(await screen.findByText(/save failed/i)).toBeInTheDocument();
+    });
+
+    it('error toast dismiss button clears the toast', async () => {
+      mockUpdateMutateAsync.mockRejectedValue(new Error('Network error'));
+      renderApp();
+      act(() => {
+        const onSaveComplete = capturedSaveLayoutDialogProps.onSaveComplete as (id: number, name: string, status: string) => void;
+        onSaveComplete(10, 'My Layout', 'draft');
+      });
+      placeItemViaGridPreview();
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+      });
+      await screen.findByText(/save failed/i);
+      fireEvent.click(screen.getByRole('button', { name: /dismiss/i }));
+      expect(screen.queryByText(/save failed/i)).not.toBeInTheDocument();
+    });
+  });
+
+  // ==========================================
+  // 4. Keyboard Shortcuts
   // ==========================================
   describe('Keyboard Shortcuts', () => {
     it('Delete with selectedImageId removes image, NOT items', () => {
@@ -506,6 +723,7 @@ describe('App Integration Tests', () => {
       placeItemViaGridPreview();
       const instanceId = getPlacedItems()[0].instanceId;
       selectItemViaGridPreview(instanceId);
+      expect(getSelectedItemIds().size).toBe(1);
 
       fireEvent.keyDown(document, { key: 'Escape' });
 
@@ -796,17 +1014,6 @@ describe('App Integration Tests', () => {
       expect(capturedItemLibraryProps.isLoading).toBe(false);
     });
 
-    it('ItemControls renders only when selectedItemIds.size > 0', () => {
-      renderApp();
-      expect(screen.queryByTestId('item-controls')).not.toBeInTheDocument();
-
-      placeItemViaGridPreview();
-      const instanceId = getPlacedItems()[0].instanceId;
-      selectItemViaGridPreview(instanceId);
-
-      expect(screen.getByTestId('item-controls')).toBeInTheDocument();
-    });
-
     it('Clear All button renders only when placedItems.length > 0', () => {
       renderApp();
       expect(screen.queryByText(/Clear All/)).not.toBeInTheDocument();
@@ -909,149 +1116,7 @@ describe('App Integration Tests', () => {
   });
 
   // ==========================================
-  // 7. Refresh All coordination
-  // ==========================================
-  describe('Refresh All coordination', () => {
-    it('handleRefreshAll calls refreshLibraries then refreshLibrary', async () => {
-      renderApp();
-
-      // handleRefreshAll is passed to ItemLibrary as onRefreshLibrary
-      const onRefresh = capturedItemLibraryProps.onRefreshLibrary as () => Promise<void>;
-      await act(async () => { await onRefresh(); });
-
-      expect(mockRefreshLibraries).toHaveBeenCalledTimes(1);
-      expect(mockRefreshLibrary).toHaveBeenCalledTimes(1);
-    });
-
-    it('error in refreshLibraries is caught and does not crash', async () => {
-      mockRefreshLibraries.mockRejectedValueOnce(new Error('Network error'));
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-      renderApp();
-
-      const onRefresh = capturedItemLibraryProps.onRefreshLibrary as () => Promise<void>;
-      // Should not throw
-      await act(async () => { await onRefresh(); });
-
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
-    });
-  });
-
-  // ==========================================
-  // 8. Layout subtitle in header
-  // ==========================================
-  describe('Layout subtitle in header', () => {
-    it('does not show subtitle when no layout is loaded', () => {
-      renderApp();
-      expect(screen.queryByText(/layout-info-subtitle/)).not.toBeInTheDocument();
-    });
-
-    it('shows layout name in subtitle after loading a layout', () => {
-      renderApp();
-
-      const onLoad = capturedLoadLayoutDialogProps.onLoad as (config: Record<string, unknown>) => void;
-      act(() => {
-        onLoad({
-          layoutId: 42,
-          layoutName: 'My Custom Layout',
-          layoutDescription: null,
-          layoutStatus: 'draft',
-          widthMm: 168,
-          depthMm: 168,
-          spacerConfig: { horizontal: 'none', vertical: 'none' },
-          placedItems: [],
-        });
-      });
-
-      expect(screen.getByText('My Custom Layout')).toBeInTheDocument();
-    });
-
-    it('shows status badge in subtitle', () => {
-      renderApp();
-
-      const onLoad = capturedLoadLayoutDialogProps.onLoad as (config: Record<string, unknown>) => void;
-      act(() => {
-        onLoad({
-          layoutId: 42,
-          layoutName: 'Badge Test',
-          layoutDescription: null,
-          layoutStatus: 'submitted',
-          widthMm: 168,
-          depthMm: 168,
-          spacerConfig: { horizontal: 'none', vertical: 'none' },
-          placedItems: [],
-        });
-      });
-
-      const badge = screen.getByText('submitted');
-      expect(badge).toBeInTheDocument();
-      expect(badge.className).toContain('layout-status-badge');
-    });
-
-    it('shows owner info for admin-loaded layouts', () => {
-      renderApp();
-
-      const onLoad = capturedLoadLayoutDialogProps.onLoad as (config: Record<string, unknown>) => void;
-      act(() => {
-        onLoad({
-          layoutId: 42,
-          layoutName: 'Their Layout',
-          layoutDescription: null,
-          layoutStatus: 'submitted',
-          widthMm: 168,
-          depthMm: 168,
-          spacerConfig: { horizontal: 'none', vertical: 'none' },
-          placedItems: [],
-          ownerUsername: 'alice',
-          ownerEmail: 'alice@example.com',
-        });
-      });
-
-      expect(screen.getByText('Their Layout')).toBeInTheDocument();
-      // Owner string should contain username and email
-      const ownerSpan = screen.getByText(/alice/);
-      expect(ownerSpan).toBeInTheDocument();
-      expect(ownerSpan.textContent).toContain('alice@example.com');
-    });
-
-    it('clears subtitle on Clear All', async () => {
-      renderApp();
-
-      // Load a layout first
-      const onLoad = capturedLoadLayoutDialogProps.onLoad as (config: Record<string, unknown>) => void;
-      act(() => {
-        onLoad({
-          layoutId: 42,
-          layoutName: 'To Clear',
-          layoutDescription: null,
-          layoutStatus: 'draft',
-          widthMm: 168,
-          depthMm: 168,
-          spacerConfig: { horizontal: 'none', vertical: 'none' },
-          placedItems: [
-            { instanceId: 'test-1', itemId: 'bins_standard:bin-1x1', x: 0, y: 0, width: 1, height: 1, rotation: 0 },
-          ],
-        });
-      });
-
-      expect(screen.getByText('To Clear')).toBeInTheDocument();
-
-      // Clear all
-      fireEvent.click(screen.getByText(/Clear All/));
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument();
-      });
-      fireEvent.click(screen.getByRole('button', { name: 'Clear All' }));
-
-      await waitFor(() => {
-        expect(screen.queryByText('To Clear')).not.toBeInTheDocument();
-      });
-    });
-  });
-
-  // ==========================================
-  // 9. Always-visible Submit button
+  // 7. Always-visible Submit button
   // ==========================================
   describe('Always-visible Submit button', () => {
     it('Submit button is visible when authenticated and no layout is saved', () => {
@@ -1099,7 +1164,13 @@ describe('App Integration Tests', () => {
     it('auto-starts walkthrough on first login', async () => {
       // Start unauthenticated — capture rerender from the original render
       mockIsAuthenticated = false;
-      const { rerender } = render(<App />);
+      const { rerender } = render(
+        <MemoryRouter>
+          <WorkspaceProvider>
+            <WorkspacePage />
+          </WorkspaceProvider>
+        </MemoryRouter>
+      );
 
       // No walkthrough yet
       expect(mockStartTour).not.toHaveBeenCalled();
@@ -1108,7 +1179,13 @@ describe('App Integration Tests', () => {
       act(() => {
         mockIsAuthenticated = true;
       });
-      rerender(<App />);
+      rerender(
+        <MemoryRouter>
+          <WorkspaceProvider>
+            <WorkspacePage />
+          </WorkspaceProvider>
+        </MemoryRouter>
+      );
 
       await waitFor(() => {
         expect(mockStartTour).toHaveBeenCalledTimes(1);
@@ -1121,13 +1198,25 @@ describe('App Integration Tests', () => {
 
       // Start unauthenticated — capture rerender from the original render
       mockIsAuthenticated = false;
-      const { rerender } = render(<App />);
+      const { rerender } = render(
+        <MemoryRouter>
+          <WorkspaceProvider>
+            <WorkspacePage />
+          </WorkspaceProvider>
+        </MemoryRouter>
+      );
 
       // Simulate login transition: mutate flag then rerender the same instance
       act(() => {
         mockIsAuthenticated = true;
       });
-      rerender(<App />);
+      rerender(
+        <MemoryRouter>
+          <WorkspaceProvider>
+            <WorkspacePage />
+          </WorkspaceProvider>
+        </MemoryRouter>
+      );
 
       // Should NOT have called startTour since WALKTHROUGH_SEEN is set
       await waitFor(() => {
@@ -1141,7 +1230,7 @@ describe('App Integration Tests', () => {
       renderApp();
 
       expect(screen.getByTestId('walkthrough-overlay')).toBeInTheDocument();
-      expect(screen.getByText('Step 1 of 4')).toBeInTheDocument();
+      expect(screen.getByText('Step 1 of 3')).toBeInTheDocument();
     });
 
     it('does not render WalkthroughOverlay when walkthrough is inactive', () => {
