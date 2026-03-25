@@ -5,6 +5,30 @@
 }
 
 .saved-configs-header { margin-bottom: var(--space-xl); }
+
+.saved-configs-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #b91c1c;
+  font-size: 0.875rem;
+  margin-bottom: var(--space-md);
+}
+
+.saved-configs-error-dismiss {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: inherit;
+  padding: 0 2px;
+  line-height: 1;
+}
 .saved-configs-title { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin: 0 0 var(--space-xs); }
 .saved-configs-subtitle { color: var(--text-secondary); font-size: 0.875rem; margin: 0; }
 
