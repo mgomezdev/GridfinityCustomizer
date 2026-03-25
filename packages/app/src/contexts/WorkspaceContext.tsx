@@ -10,7 +10,7 @@ import type { SelectModifiers } from '../hooks/useGridItems';
 import type { LoadedLayoutConfig } from '../types/layoutConfig';
 import type { LayoutStatus, ApiUser } from '@gridfinity/shared';
 import type { RefImagePlacement, UseRefImagePlacementsReturn } from '../hooks/useRefImagePlacements';
-import type { LayoutMetaState, LayoutMetaAction } from '../reducers/layoutMetaReducer';
+import type { LayoutMetaState } from '../reducers/layoutMetaReducer';
 import type { DialogState, DialogAction } from '../reducers/dialogReducer';
 import { calculateGrid, mmToInches, inchesToMm } from '../utils/conversions';
 import { useLayoutMeta } from '../hooks/useLayoutMeta';
@@ -93,7 +93,6 @@ interface WorkspaceContextValue {
 
   // Layout meta
   layoutMeta: LayoutMetaState;
-  layoutDispatch: React.Dispatch<LayoutMetaAction>;
   isReadOnly: boolean;
   handleSaveComplete: (layoutId: number, name: string, status: LayoutStatus) => void;
   handleSetStatus: (status: LayoutStatus | null) => void;
@@ -457,7 +456,6 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
 
     // Layout meta
     layoutMeta,
-    layoutDispatch,
     isReadOnly,
     handleSaveComplete,
     handleSetStatus,
