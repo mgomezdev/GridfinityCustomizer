@@ -4,7 +4,7 @@ import type {
   UnitSystem, ImperialFormat, GridSpacerConfig, BOMItem, LibraryItem,
   LibraryMeta, DragData, BinCustomization, Category,
   GridResult, ReferenceImage, PlacedItem, PlacedItemWithValidity,
-  ComputedSpacer, Rotation, SpacerMode,
+  ComputedSpacer,
 } from '../types/gridfinity';
 import type { SelectModifiers } from '../hooks/useGridItems';
 import type { LoadedLayoutConfig } from '../types/layoutConfig';
@@ -31,7 +31,7 @@ import {
   useSubmittedCountQuery,
 } from '../hooks/useLayouts';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
-import { fetchLayout } from '../api/layouts.api';
+import { useLayoutLoader } from '../hooks/useLayoutLoader';
 import { STORAGE_KEYS } from '../utils/storageKeys';
 import type { WalkthroughStep } from './WalkthroughContext';
 
@@ -382,94 +382,10 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
     }
   }, [layoutMeta.id, cloneLayoutMutation, handleCloneComplete]);
 
-  // handleLoadLayout: sync, hydrates all state from a LoadedLayoutConfig
-  const handleLoadLayout = useCallback((config: LoadedLayoutConfig) => {
-    if (unitSystem === 'imperial') {
-      setWidth(parseFloat(mmToInches(config.widthMm).toFixed(4)));
-      setDepth(parseFloat(mmToInches(config.depthMm).toFixed(4)));
-    } else {
-      setWidth(config.widthMm);
-      setDepth(config.depthMm);
-    }
-    setSpacerConfig(config.spacerConfig);
-    loadItems(config.placedItems);
-    loadRefImagePlacements(config.refImagePlacements ?? []);
-
-    let owner = '';
-    if (config.ownerUsername) {
-      owner = config.ownerUsername;
-      if (config.ownerEmail) {
-        owner += ` <${config.ownerEmail}>`;
-      }
-    }
-
-    layoutDispatch({
-      type: 'LOAD_LAYOUT',
-      payload: {
-        id: config.layoutId,
-        name: config.layoutName,
-        description: config.layoutDescription ?? '',
-        status: config.layoutStatus,
-        owner,
-      },
-    });
-  }, [unitSystem, loadItems, loadRefImagePlacements, layoutDispatch]);
-
-  // loadLayout: async, fetches by id then calls handleLoadLayout
-  const loadLayout = useCallback(async (id: number) => {
-    const token = getAccessToken();
-    if (!token) throw new Error('Not authenticated');
-    try {
-      const detail = await fetchLayout(token, id);
-      const loadPrefix = Date.now();
-
-      const loadedPlacedItems: PlacedItem[] = detail.placedItems.map((item, index) => ({
-        instanceId: `loaded-${loadPrefix}-${index}`,
-        itemId: `${item.libraryId}:${item.itemId}`,
-        x: item.x,
-        y: item.y,
-        width: item.width,
-        height: item.height,
-        rotation: item.rotation as Rotation,
-        ...(item.customization ? { customization: item.customization } : {}),
-      }));
-
-      const loadedRefImagePlacements: RefImagePlacement[] = (detail.refImagePlacements ?? []).map((p, index) => ({
-        id: `loaded-ref-${loadPrefix}-${index}`,
-        refImageId: p.refImageId,
-        name: p.name,
-        imageUrl: p.imageUrl,
-        x: p.x,
-        y: p.y,
-        width: p.width,
-        height: p.height,
-        opacity: p.opacity,
-        scale: p.scale,
-        isLocked: p.isLocked,
-        rotation: p.rotation as Rotation,
-      }));
-
-      const config: LoadedLayoutConfig = {
-        layoutId: detail.id,
-        layoutName: detail.name,
-        layoutDescription: detail.description,
-        layoutStatus: detail.status,
-        widthMm: detail.widthMm,
-        depthMm: detail.depthMm,
-        spacerConfig: {
-          horizontal: detail.spacerHorizontal as SpacerMode,
-          vertical: detail.spacerVertical as SpacerMode,
-        },
-        placedItems: loadedPlacedItems,
-        refImagePlacements: loadedRefImagePlacements,
-      };
-
-      handleLoadLayout(config);
-    } catch (err) {
-      console.error('Failed to load layout:', err);
-      throw err;
-    }
-  }, [getAccessToken, handleLoadLayout]);
+  const { handleLoadLayout, loadLayout } = useLayoutLoader({
+    unitSystem, setWidth, setDepth, setSpacerConfig,
+    loadItems, loadRefImagePlacements, layoutDispatch, getAccessToken,
+  });
 
   // handleClearAll: confirms then clears items and ref images
   const handleClearAll = useCallback(async () => {
