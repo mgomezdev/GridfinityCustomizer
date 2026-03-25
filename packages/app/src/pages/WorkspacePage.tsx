@@ -5,15 +5,13 @@ import { useGridTransform } from '../hooks/useGridTransform';
 import { DimensionInput } from '../components/DimensionInput';
 import { GridPreview } from '../components/GridPreview';
 import { GridSummary } from '../components/GridSummary';
-import { ItemLibrary } from '../components/ItemLibrary';
 import { SpacerControls } from '../components/SpacerControls';
-import { RefImageLibrary } from '../components/RefImageLibrary';
 import { ZoomControls } from '../components/ZoomControls';
 import { ImageViewToggle } from '../components/ImageViewToggle';
 import { GridViewport } from '../components/GridViewport';
 import { SidebarPanel } from '../components/SidebarPanel';
-import { UserStlLibrarySection } from '../components/UserStlLibrarySection';
 import { WorkspaceToolbar } from '../components/WorkspaceToolbar';
+import { LibraryPanel } from '../components/LibraryPanel';
 import { exportToPdf } from '../utils/exportPdf';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:3001/api/v1';
@@ -40,18 +38,14 @@ export function WorkspacePage() {
     updateRefImagePosition, updateRefImageScale, updateRefImageOpacity,
     updateRefImageRotation, toggleRefImageLock,
     referenceImagesForGrid,
-    libraryItems, isLibraryLoading, isLibrariesLoading, libraryError, librariesError,
-    categories, getItemById, getLibraryMeta,
+    getItemById, getLibraryMeta,
     handleClearAll, handleReset,
     dialogDispatch,
-    isAuthenticated,
     exportPdfError, setExportPdfError,
   } = ws;
 
   // Local UI state
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
-  const [libraryTab, setLibraryTab] = useState<'items' | 'images'>('items');
-  const [libraryCategory, setLibraryCategory] = useState<string | null>(null);
   const [libraryWidth, setLibraryWidth] = useState(LIBRARY_DEFAULT_WIDTH);
   const libraryDragRef = useRef<{ startX: number; startWidth: number } | null>(null);
 
@@ -351,56 +345,7 @@ export function WorkspacePage() {
       </section>
 
       <div className="library-resize-handle" onMouseDown={handleLibraryResizeStart} role="separator" aria-label="Resize library panel" />
-      <section className="library-panel" style={{ width: libraryWidth, minWidth: libraryWidth }}>
-        <div className="library-panel-header">
-          <div className="library-panel-header-icon">⊞</div>
-          <div className="library-panel-header-text">
-            <span className="library-panel-title">Component Library</span>
-            <span className="library-panel-subtitle">Drag to workspace</span>
-          </div>
-        </div>
-        <div className="library-panel-tabs">
-          <button
-            className={`library-cat-tab${libraryTab === 'items' && !libraryCategory ? ' active' : ''}`}
-            onClick={() => { setLibraryTab('items'); setLibraryCategory(null); }}
-            type="button"
-          >All</button>
-          {categories.map(cat => (
-            <button
-              key={cat.id}
-              className={`library-cat-tab${libraryTab === 'items' && libraryCategory === cat.id ? ' active' : ''}`}
-              onClick={() => { setLibraryTab('items'); setLibraryCategory(cat.id); }}
-              type="button"
-            >{cat.name}</button>
-          ))}
-          {isAuthenticated && (
-            <button
-              className={`library-cat-tab${libraryTab === 'images' ? ' active' : ''}`}
-              onClick={() => setLibraryTab('images')}
-              type="button"
-            >Images</button>
-          )}
-        </div>
-        <div className="library-panel-content">
-          {libraryTab === 'items' ? (
-            <>
-              <ItemLibrary
-                items={libraryItems}
-                isLoading={isLibraryLoading || isLibrariesLoading}
-                error={libraryError || librariesError}
-                activeCategory={libraryCategory}
-              />
-              {isAuthenticated && <UserStlLibrarySection />}
-            </>
-          ) : isAuthenticated ? (
-            <RefImageLibrary />
-          ) : (
-            <div className="ref-image-auth-prompt">
-              <p>Sign in to upload and manage reference images.</p>
-            </div>
-          )}
-        </div>
-      </section>
+      <LibraryPanel width={libraryWidth} />
 
     </>
   );
