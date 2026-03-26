@@ -32,6 +32,7 @@ import {
 } from '../hooks/useLayouts';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { useLayoutLoader } from '../hooks/useLayoutLoader';
+import { useLayoutActions } from '../hooks/useLayoutActions';
 import { STORAGE_KEYS } from '../utils/storageKeys';
 import type { WalkthroughStep } from './WalkthroughContext';
 
@@ -328,58 +329,22 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
     setUnitSystem(newUnit);
   }, [unitSystem, width, depth]);
 
-  // Submit layout actions
-  const handleSubmitLayout = useCallback(async () => {
-    if (!layoutMeta.id) return;
-    try {
-      const result = await submitLayoutMutation.mutateAsync(layoutMeta.id);
-      handleSetStatus(result.status);
-    } catch {
-      // Error handled by mutation
-    }
-  }, [layoutMeta.id, submitLayoutMutation, handleSetStatus]);
-
-  const submitAfterSaveRef = useRef(false);
-
-  const handleSubmitClick = useCallback(() => {
-    if (!layoutMeta.id) {
-      submitAfterSaveRef.current = true;
-      dialogDispatch({ type: 'OPEN', dialog: 'save' });
-    } else {
-      void handleSubmitLayout();
-    }
-  }, [layoutMeta.id, dialogDispatch, handleSubmitLayout]);
-
-  // handleSaveComplete with submit-after-save support
-  const handleSaveComplete = useCallback((layoutId: number, name: string, status: LayoutStatus) => {
-    rawHandleSaveComplete(layoutId, name, status);
-    if (submitAfterSaveRef.current) {
-      submitAfterSaveRef.current = false;
-      submitLayoutMutation.mutate(layoutId, {
-        onSuccess: (result) => handleSetStatus(result.status),
-      });
-    }
-  }, [rawHandleSaveComplete, submitLayoutMutation, handleSetStatus]);
-
-  const handleWithdrawLayout = useCallback(async () => {
-    if (!layoutMeta.id) return;
-    try {
-      const result = await withdrawLayoutMutation.mutateAsync(layoutMeta.id);
-      handleSetStatus(result.status);
-    } catch {
-      // Error handled by mutation
-    }
-  }, [layoutMeta.id, withdrawLayoutMutation, handleSetStatus]);
-
-  const handleCloneCurrentLayout = useCallback(async () => {
-    if (!layoutMeta.id) return;
-    try {
-      const result = await cloneLayoutMutation.mutateAsync(layoutMeta.id);
-      handleCloneComplete(result.id, result.name, result.status);
-    } catch {
-      // Error handled by mutation
-    }
-  }, [layoutMeta.id, cloneLayoutMutation, handleCloneComplete]);
+  const {
+    handleSubmitLayout,
+    handleSubmitClick,
+    handleSaveComplete,
+    handleWithdrawLayout,
+    handleCloneCurrentLayout,
+  } = useLayoutActions({
+    layoutId: layoutMeta.id,
+    submitLayoutMutation,
+    withdrawLayoutMutation,
+    cloneLayoutMutation,
+    handleSetStatus,
+    handleCloneComplete,
+    rawHandleSaveComplete,
+    dialogDispatch,
+  });
 
   const { handleLoadLayout, loadLayout } = useLayoutLoader({
     unitSystem, setWidth, setDepth, setSpacerConfig,
