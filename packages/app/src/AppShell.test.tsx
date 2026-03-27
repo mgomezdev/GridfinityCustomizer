@@ -60,7 +60,6 @@ vi.mock('./contexts/WorkspaceContext', () => ({
     deleteSelected: vi.fn(),
     rotateSelected: vi.fn(),
     updateItemCustomization: vi.fn(),
-    layoutDispatch: vi.fn(),
     handleSetStatus: vi.fn(),
     handleClearLayout: vi.fn(),
     addRefImagePlacement: vi.fn(),

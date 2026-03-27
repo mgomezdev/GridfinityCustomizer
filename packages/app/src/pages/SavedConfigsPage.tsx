@@ -20,6 +20,7 @@ export function SavedConfigsPage() {
   const withdrawMutation = useWithdrawLayoutMutation();
   const cloneMutation = useCloneLayoutMutation();
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [pageError, setPageError] = useState<string | null>(null);
 
   const handleEdit = async (id: number) => {
     try {
@@ -44,6 +45,19 @@ export function SavedConfigsPage() {
 
   return (
     <div className="saved-configs-page">
+      {pageError && (
+        <div className="saved-configs-error" role="alert">
+          {pageError}
+          <button
+            type="button"
+            className="saved-configs-error-dismiss"
+            onClick={() => setPageError(null)}
+            aria-label="Dismiss error"
+          >
+            &times;
+          </button>
+        </div>
+      )}
       <div className="saved-configs-header">
         <h2 className="saved-configs-title">My Saved Configs</h2>
         <p className="saved-configs-subtitle">Review and manage your gridfinity layouts.</p>
@@ -74,9 +88,18 @@ export function SavedConfigsPage() {
                   setDeletingId(null);
                 }
               }}
-              onSubmit={(id) => submitMutation.mutate(id, { onError: (err) => console.error('Submit failed:', err) })}
-              onWithdraw={(id) => withdrawMutation.mutate(id, { onError: (err) => console.error('Withdraw failed:', err) })}
-              onDuplicate={(id) => cloneMutation.mutate(id, { onError: (err) => console.error('Duplicate failed:', err) })}
+              onSubmit={(id) => submitMutation.mutate(id, {
+                onError: () => setPageError('Failed to submit. Please try again.'),
+                onSuccess: () => setPageError(null),
+              })}
+              onWithdraw={(id) => withdrawMutation.mutate(id, {
+                onError: () => setPageError('Failed to withdraw. Please try again.'),
+                onSuccess: () => setPageError(null),
+              })}
+              onDuplicate={(id) => cloneMutation.mutate(id, {
+                onError: () => setPageError('Failed to duplicate. Please try again.'),
+                onSuccess: () => setPageError(null),
+              })}
               isDeleting={deletingId === layout.id}
             />
           ))}

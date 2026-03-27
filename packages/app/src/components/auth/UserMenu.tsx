@@ -15,14 +15,15 @@ export function UserMenu({ openAuth, onAuthClosed }: UserMenuProps) {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
 
+  // If already logged in when auth is requested, notify parent immediately
   useEffect(() => {
-    if (openAuth && !isAuthenticated) {
-      setAuthTab('login');
-      setShowAuthModal(true);
-    } else if (openAuth && isAuthenticated) {
-      onAuthClosed?.(); // already logged in — reset parent's authOpen flag
+    if (openAuth && isAuthenticated) {
+      onAuthClosed?.();
     }
   }, [openAuth, isAuthenticated, onAuthClosed]);
+
+  // Derive effective modal visibility: open if manually triggered OR externally requested while not authenticated
+  const effectiveShowModal = showAuthModal || (openAuth === true && !isAuthenticated);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on outside click
@@ -63,7 +64,7 @@ export function UserMenu({ openAuth, onAuthClosed }: UserMenuProps) {
           </button>
         </div>
         <AuthModal
-          isOpen={showAuthModal}
+          isOpen={effectiveShowModal}
           onClose={() => { setShowAuthModal(false); onAuthClosed?.(); }}
           initialTab={authTab}
         />

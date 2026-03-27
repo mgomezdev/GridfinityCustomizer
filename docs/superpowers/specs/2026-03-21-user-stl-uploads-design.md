@@ -43,24 +43,26 @@ All shadowbox functionality is deleted:
 ### New table: `user_stl_uploads`
 
 ```sql
-id              TEXT  NOT NULL PRIMARY KEY   -- UUID
-userId          INT   NOT NULL REFERENCES users(id)
-name            TEXT  NOT NULL               -- display name, user-editable
-originalFilename TEXT NOT NULL              -- original uploaded filename
-filePath        TEXT  NOT NULL               -- absolute path to stored STL/3MF
-imageUrl        TEXT                         -- orthographic preview (relative path)
-perspImageUrls  TEXT                         -- JSON array: [0°, 90°, 180°, 270°] paths
-gridX           INT                          -- auto-detected or user-corrected
-gridY           INT                          -- auto-detected or user-corrected
-status          TEXT  NOT NULL               -- 'pending' | 'processing' | 'ready' | 'error'
-errorMessage    TEXT                         -- populated on error
-createdAt       TEXT  NOT NULL               -- ISO timestamp
-updatedAt       TEXT  NOT NULL               -- ISO timestamp
+id               TEXT  NOT NULL PRIMARY KEY   -- UUID (server-generated)
+userId           INT   NOT NULL REFERENCES users(id)
+name             TEXT  NOT NULL               -- display name, user-editable
+originalFilename TEXT  NOT NULL               -- original uploaded filename
+filePath         TEXT  NOT NULL               -- absolute path to stored STL/3MF
+imageUrl         TEXT                         -- orthographic preview filename (relative)
+perspImageUrls   TEXT                         -- JSON array: 4 perspective filenames [p0, p90, p180, p270]
+gridX            INT                          -- auto-detected or user-corrected
+gridY            INT                          -- auto-detected or user-corrected
+status           TEXT  NOT NULL               -- 'pending' | 'processing' | 'ready' | 'error'
+errorMessage     TEXT                         -- populated on processing error
+createdAt        TEXT  NOT NULL               -- ISO timestamp
+updatedAt        TEXT  NOT NULL               -- ISO timestamp
 ```
 
 **File storage:**
 - Uploaded files: `packages/server/data/user-stls/{userId}/{id}.{ext}`
-- Preview images: `packages/server/data/user-stl-images/{userId}/{id}.png`, `{id}-p90.png`, `{id}-p180.png`, `{id}-p270.png`
+- Preview images: `packages/server/data/user-stl-images/{userId}/{id}.png` (ortho), `{id}-p0.png`, `{id}-p90.png`, `{id}-p180.png`, `{id}-p270.png` (perspective)
+
+**Upload quota:** A `maxUserStls` field is added to `userStorage` (default: 50). Checked on `POST /api/v1/user-stls` — upload is rejected with 409 if the user's current upload count meets or exceeds the limit.
 
 ### Shared types (`packages/shared/src/types.ts`)
 
@@ -71,7 +73,7 @@ export interface ApiUserStl {
   gridX: number | null;
   gridY: number | null;
   imageUrl: string | null;
-  perspImageUrls: string[];      // up to 4 rotation previews
+  perspImageUrls: string[];      // up to 4 rotation previews: [p0, p90, p180, p270]
   status: 'pending' | 'processing' | 'ready' | 'error';
   errorMessage: string | null;
   createdAt: string;
@@ -81,6 +83,7 @@ export interface ApiUserStlAdmin extends ApiUserStl {
   userId: number;
   userName: string;
   originalFilename: string;
+  updatedAt: string;             // useful for sorting by last-processed in admin table
 }
 ```
 
@@ -117,15 +120,22 @@ Outputs JSON to stdout on success:
 }
 ```
 
-Exits non-zero with error message on stderr on failure.
+Exits non-zero with error message to stderr on failure. Node reads stderr and stores it as `errorMessage` in the DB.
 
 **`detect_dimensions.py`:**
-Loads geometry via `numpy-stl` (STL) or `trimesh` (3MF), computes bounding box extents, applies `ceil(extent / 42.0)` for both X and Y. This is a geometry-based enhancement over the CLI tool's filename-based approach — works regardless of filename.
+Loads geometry via `numpy-stl` (STL) or `trimesh` (3MF), computes bounding box extents, applies `ceil(extent / 42.0)` for both axes. This is a geometry-based approach — works regardless of filename convention.
 
 **`render_previews.py`:**
 Adapted from `tools/library-builder/stl_to_png.py`. Renders:
-- 1 orthographic (top-down) PNG
-- 4 perspective PNGs at 0°, 90°, 180°, 270° Z-axis rotation
+- 1 orthographic (top-down) PNG: `{id}.png`
+- 4 perspective PNGs at 0°, 90°, 180°, 270° Z-axis rotation: `{id}-p0.png`, `{id}-p90.png`, `{id}-p180.png`, `{id}-p270.png`
+
+**File validation (magic bytes):**
+`process_stl.py` validates the actual file header before processing:
+- Binary STL: 80-byte header (no magic, but not starting with `solid` — checked by attempting ASCII parse fallback)
+- ASCII STL: starts with `solid`
+- 3MF: ZIP container, first bytes `PK\x03\x04`
+Script exits non-zero immediately if the file header does not match an expected format, regardless of file extension. This prevents arbitrary files renamed to `.stl` from being processed.
 
 **`requirements.txt`:**
 ```
@@ -141,10 +151,10 @@ networkx>=3.0
 ### Node.js services
 
 **`stlProcessing.service.ts`:**
-Spawns `process_stl.py` as a child process, pipes stdout/stderr, parses JSON result, updates DB row to `ready` or `error`.
+Spawns `process_stl.py` as a child process, pipes stdout/stderr, parses JSON result, updates DB row to `ready` (with image paths + grid dims) or `error` (with errorMessage).
 
 **`stlQueue.service.ts`:**
-Simple in-memory semaphore. Configurable via `MAX_STL_WORKERS` env var (default: 2). Jobs beyond the concurrency limit wait in an in-memory array. On server startup, resets any rows stuck in `'processing'` back to `'pending'` and re-enqueues them.
+Simple in-memory semaphore. Configurable via `MAX_STL_WORKERS` env var (default: 2). Jobs beyond the concurrency limit wait in an in-memory array.
 
 ```typescript
 class StlQueue {
@@ -154,18 +164,25 @@ class StlQueue {
 }
 ```
 
+**Startup recovery:** On server boot, rows with `status = 'processing'` or `status = 'pending'` are both reset to `'pending'` and re-enqueued. This handles graceful restarts (pending jobs lost from memory) and crash recovery (stuck processing jobs) identically. The in-memory queue is intentionally non-persistent; the DB is the source of truth.
+
 ### Container setup
 
 Root-level `Dockerfile`:
 ```dockerfile
 FROM node:20-slim
-RUN apt-get update && apt-get install -y python3 python3-pip python3-venv
+RUN apt-get update && apt-get install -y python3 python3-pip python3-venv --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
 COPY packages/server/scripts/py/requirements.txt /app/scripts/py/requirements.txt
 RUN pip3 install --no-cache-dir -r /app/scripts/py/requirements.txt
 # ... rest of Node app setup
+WORKDIR /app
+COPY . .
+RUN npm ci && npm run build
+CMD ["node", "packages/server/dist/index.js"]
 ```
 
-`MAX_STL_WORKERS` documented in `.env.example`.
+`.env.example` documents: `MAX_STL_WORKERS=2`
 
 ---
 
@@ -175,17 +192,38 @@ RUN pip3 install --no-cache-dir -r /app/scripts/py/requirements.txt
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `POST` | `/` | user | Upload STL/3MF (multipart, 50MB limit). Creates `pending` row, enqueues processing. Returns `ApiUserStl`. |
+| `POST` | `/` | user | Upload STL/3MF (multipart, 50MB limit). Checks upload quota. Creates `pending` row, enqueues processing. Returns `ApiUserStl` immediately. |
 | `GET` | `/` | user | List current user's uploads |
 | `GET` | `/:id` | user | Get single upload |
 | `PUT` | `/:id` | owner or admin | Edit name, gridX, gridY |
-| `DELETE` | `/:id` | owner or admin | Delete record + files on disk |
-| `PUT` | `/:id/file` | owner or admin | Replace STL/3MF file, resets to `pending`, re-enqueues |
-| `POST` | `/:id/reprocess` | owner or admin | Retrigger image generation, resets to `pending` |
+| `DELETE` | `/:id` | owner or admin | Delete record + all files on disk |
+| `PUT` | `/:id/file` | owner or admin | Replace STL/3MF file. Resets status to `pending`, re-enqueues. |
+| `POST` | `/:id/reprocess` | owner or admin | Retrigger image generation. Resets status to `pending`, re-enqueues. |
+| `GET` | `/:id/file` | owner or admin | Stream original STL/3MF with `Content-Disposition: attachment`. |
+| `GET` | `/:id/images/:filename` | owner or admin | Serve a preview image file. Applies path traversal guard (same pattern as existing `images.routes.ts`). |
 
-**Ownership check:** `if (req.user.id !== upload.userId && req.user.role !== 'admin') → 403`
+**Ownership check (applied to all owner-or-admin endpoints):**
+```typescript
+if (req.user.userId !== upload.userId && req.user.role !== 'admin') {
+  return res.status(403).json({ error: 'Forbidden' });
+}
+```
+Note: `req.user.userId` (not `req.user.id`) matches the existing auth middleware shape.
 
-**Accepted file types:** `.stl`, `.3mf`. MIME type checked by extension (browser MIME reporting for 3D files is inconsistent). File size limit: 50MB.
+**File upload validation:**
+1. Extension must be `.stl` or `.3mf` (checked before writing to disk)
+2. Magic-byte validation occurs inside `process_stl.py` before any processing; if it fails, the row is set to `error` immediately
+
+**Image serving security:** `GET /:id/images/:filename` must apply the same traversal guard already in `images.routes.ts`:
+```typescript
+if (filename.includes('..') || filename.includes('/') || filename.includes('\0')) {
+  return res.status(400).json({ error: 'Invalid filename' });
+}
+const resolved = path.join(imageDir, filename);
+if (!resolved.startsWith(imageDir)) {
+  return res.status(400).json({ error: 'Invalid path' });
+}
+```
 
 ### Admin endpoints (`/api/v1/admin/user-stls`)
 
@@ -194,11 +232,12 @@ RUN pip3 install --no-cache-dir -r /app/scripts/py/requirements.txt
 | `GET` | `/` | List all users' uploads (`ApiUserStlAdmin[]`) |
 | `POST` | `/:id/promote` | Export item to `public/libraries/user-uploads/`, update `index.json` |
 
-**Promote flow:**
+**Promote flow (server-side):**
 1. Copy STL/3MF + all images to `public/libraries/user-uploads/`
 2. Read (or create) `public/libraries/user-uploads/index.json`
-3. Append item entry with name, widthUnits, heightUnits, imageUrl, perspImageUrls
-4. Atomic write of `index.json`
+3. Append item entry: id, name, widthUnits, heightUnits, imageUrl, perspImageUrls (all 4 rotations)
+4. Atomic write: write to temp file, rename over existing
+5. Return success
 
 ---
 
@@ -210,23 +249,45 @@ All shadowbox components, hooks, routes, and API client (listed in "What Gets Re
 ### Added
 
 **`UserStlLibrarySection`** (sidebar, items tab, visible when authenticated):
-Lists user's uploads. Status badges: spinner for `pending`/`processing`, warning for `error`, draggable card for `ready`. "Upload model" button opens the upload modal.
+- Lists user's uploads. Status badges: spinner for `pending`/`processing`, warning + error tooltip for `error`, draggable card for `ready`
+- Empty state: "No models yet — upload your first one"
+- "Upload model" button opens `UserStlUploadModal`
+- Each item has an edit (pencil) button that opens `UserStlEditModal`
 
-**`UserStlUploadModal`** (modal, not a separate page):
-Fields: file picker (`.stl`/`.3mf`), name (pre-filled from filename). On submit: modal closes, item appears immediately with processing spinner.
+**`UserStlUploadModal`** (modal — no separate route, avoids page-reload auth issues):
+- Fields: file picker (`.stl`/`.3mf`), name (pre-filled from filename, editable)
+- Validation: file required, name required, file extension check client-side
+- On submit: modal closes immediately, item appears in library with processing spinner
+- Error state: if upload API call itself fails, modal shows inline error
 
 **`UserStlEditModal`**:
-Fields: name, gridX, gridY (pre-filled from detected values). Actions: save, replace file, delete. Admins additionally see a "Reprocess" button.
+- Fields: name, gridX, gridY (pre-filled from detected values, editable)
+- Actions: Save, Replace file (file picker, re-uploads), Delete (confirm dialog)
+- Admins additionally see: Reprocess button
+- Error state shown inline if any action fails
 
 **Hooks/API client:**
-- `useUserStls.ts` — query (list) + mutations (upload, edit, delete, reprocess, replace file)
-- `userStls.api.ts` — API client functions
+- `useUserStls.ts` — `useUserStlsQuery` (list), plus mutations: upload, edit, delete, reprocess, replaceFile
+- `userStls.api.ts` — typed API client functions, image URL helper (`getUserStlImageUrl(id, filename)`)
 
 **Library integration:**
-`useLibraryData` calls `userStlToLibraryItem` to convert `ready` uploads to `LibraryItem` entries. Color hardcoded as `#F97316` (orange). Grid units from `gridX`/`gridY`.
-
-### Routing
-The `/shadowbox/*` routes in `App.tsx` are removed. No new routes — upload and edit are modals, avoiding page-reload auth issues.
+`useLibraryData` calls `userStlToLibraryItem` to convert `ready` uploads to `LibraryItem` entries:
+```typescript
+function userStlToLibraryItem(item: ApiUserStl): LibraryItem {
+  return {
+    id: `user-stl:${item.id}`,
+    name: item.name,
+    widthUnits: item.gridX ?? 1,
+    heightUnits: item.gridY ?? 1,
+    color: '#F97316',   // orange, always
+    categories: ['user-upload'],
+    imageUrl: item.imageUrl ? getUserStlImageUrl(item.id, item.imageUrl) : undefined,
+    perspectiveImageUrl: item.perspImageUrls[0]
+      ? getUserStlImageUrl(item.id, item.perspImageUrls[0])
+      : undefined,
+  };
+}
+```
 
 ---
 
@@ -234,24 +295,32 @@ The `/shadowbox/*` routes in `App.tsx` are removed. No new routes — upload and
 
 New "User Models" tab in `AdminSubmissionsDialog`:
 
-- Table: username, filename, name, grid dimensions, status, date
-- Error rows show `errorMessage` inline
-- Per-row actions: **Reprocess**, **Edit** (opens `UserStlEditModal`), **Delete**, **Promote** (ready items only)
-- Promote writes item to `public/libraries/user-uploads/index.json`
+- Table columns: username, filename, name, grid dimensions, status, updatedAt
+- Error rows show `errorMessage` inline (truncated with tooltip for long messages)
+- Per-row actions:
+  - **Reprocess** — always available; resets to `pending` and re-enqueues
+  - **Edit** — opens `UserStlEditModal` (same component, admin gets Reprocess button)
+  - **Download** — streams original STL/3MF via `GET /:id/file`
+  - **Delete** — removes record + files (confirm dialog)
+  - **Promote** — visible only on `ready` items; writes to static library
 
-The existing submissions badge and tab are unchanged — user STL uploads are tracked separately.
+The existing submissions badge and layout submissions tab are unchanged.
 
 ---
 
 ## Testing Strategy
 
 **Unit tests:**
-- `stlQueue.service.ts` — semaphore concurrency, startup recovery
-- `stlProcessing.service.ts` — child process spawn, stdout parsing, error handling (mock `child_process`)
-- `userStls.service.ts` — DB operations
-- `UserStlUploadModal`, `UserStlLibrarySection`, `UserStlEditModal` — component tests with mocked hooks
+- `stlQueue.service.ts` — semaphore concurrency limit enforced, startup recovery resets `pending` + `processing` rows
+- `stlProcessing.service.ts` — child process spawn, stdout JSON parsing, stderr captured as errorMessage (mock `child_process.spawn`)
+- `userStls.service.ts` — DB CRUD, quota check
+- `UserStlUploadModal` — renders fields, validates extension client-side, shows error on API failure, closes on success
+- `UserStlLibrarySection` — renders pending/processing/error/ready states, empty state
+- `UserStlEditModal` — pre-fills values, save/delete/reprocess actions
 
 **E2E tests:**
-- Upload flow: select file → processing state → ready → drag to grid
-- Edit metadata (name + grid correction)
-- Admin reprocess + promote flows
+- **Upload → ready flow:** select `.stl` file → modal closes → item shows processing → polling resolves to ready → item appears draggable in grid
+- **Edit metadata:** correct gridX/gridY → item updates in grid with new dimensions
+- **Error state + admin reprocess:** mock processing failure → item shows error badge with message → admin reprocesses → item eventually becomes ready
+- **Admin promote:** ready item in admin tab → promote → item appears in shared library on reload
+- **Quota enforcement:** uploading beyond `maxUserStls` returns 409 error shown in modal

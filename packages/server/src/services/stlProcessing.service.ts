@@ -10,6 +10,7 @@ export function processUpload(
   uploadId: string,
   filePath: string,
   imageOutputDir: string,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _userId: number,
 ): Promise<void> {
   return stlQueue.enqueue(async () => {

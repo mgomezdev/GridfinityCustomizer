@@ -51,10 +51,26 @@ Gridfinity is a modular storage system designed for 3D printing, using standardi
 
 ```bash
 npm install
+npm run build --workspace=packages/shared  # required before first server start
+```
+
+Then start the backend and frontend in separate terminals:
+
+**Terminal 1 — backend (port 3001):**
+```bash
+npm run server:dev
+```
+
+**Terminal 2 — frontend (port 5173):**
+```bash
 npm run dev
 ```
 
 Visit `http://localhost:5173`
+
+The backend auto-runs database migrations and seeds library data on startup. Default dev accounts are created: `admin@gridfinity.local` and `test@gridfinity.local`.
+
+> **Note:** You only need to build the shared package once (or after changes to `packages/shared`).
 
 See [CLAUDE.md](CLAUDE.md) for detailed development setup and commands.
 
@@ -119,12 +135,14 @@ For detailed development guidelines, coding standards, and architecture:
 
 **Quick Commands:**
 ```bash
-npm run dev          # Start dev server
-npm test             # Run unit tests (watch mode)
-npm run test:run     # Run all unit tests once
-npm run test:e2e     # Run E2E tests (Playwright)
-npm run build        # Production build
-npm run lint         # Lint codebase
+npm run build --workspace=packages/shared  # build shared package (required first)
+npm run dev              # Start frontend dev server (port 5173)
+npm run server:dev       # Start backend dev server (port 3001)
+npm test                 # Run unit tests (watch mode)
+npm run test:run         # Run all unit tests once
+npm run test:e2e         # Run E2E tests (Playwright)
+npm run build            # Production build (all packages)
+npm run lint             # Lint codebase
 ```
 
 ## 🚀 Deployment
