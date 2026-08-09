@@ -4,17 +4,21 @@ import type { Request, Response, NextFunction } from 'express';
 
 const THEMIS = 'http://localhost:8001';
 
-const mocks = vi.hoisted(() => ({
-  uploadStlToThemis: vi.fn(),
-  createThemisProject: vi.fn(),
-  addThemisProjectItem: vi.fn(),
-  addThemisProjectLink: vi.fn(),
-  getThemisProject: vi.fn(),
-  getSetting: vi.fn(),
-  updateSet: vi.fn(),
-  selectQueue: [] as unknown[][],
-  callOrder: [] as string[],
-}));
+const mocks = vi.hoisted(() => {
+  class ThemisTimeoutError extends Error {}
+  return {
+    uploadStlToThemis: vi.fn(),
+    createThemisProject: vi.fn(),
+    addThemisProjectItem: vi.fn(),
+    addThemisProjectLink: vi.fn(),
+    getThemisProject: vi.fn(),
+    getSetting: vi.fn(),
+    updateSet: vi.fn(),
+    selectQueue: [] as unknown[][],
+    callOrder: [] as string[],
+    ThemisTimeoutError,
+  };
+});
 
 vi.mock('../services/themis.service.js', () => ({
   uploadStlToThemis: mocks.uploadStlToThemis,
@@ -22,6 +26,7 @@ vi.mock('../services/themis.service.js', () => ({
   addThemisProjectItem: mocks.addThemisProjectItem,
   addThemisProjectLink: mocks.addThemisProjectLink,
   getThemisProject: mocks.getThemisProject,
+  ThemisTimeoutError: mocks.ThemisTimeoutError,
 }));
 
 vi.mock('fs/promises', () => ({
@@ -143,5 +148,26 @@ describe('sendToThemisHandler', () => {
     expect(mocks.addThemisProjectItem).toHaveBeenCalledWith(THEMIS, 5, 20, 1);
     expect(mocks.addThemisProjectLink).not.toHaveBeenCalled();
     expect(res.json).toHaveBeenCalledWith({ data: { projectUrl: `${THEMIS}/projects/5`, needsFilamentProfiles: true } });
+  });
+
+  it('returns 504 when a Themis request times out, instead of a generic 500', async () => {
+    mocks.selectQueue.push(
+      [{ id: 1, name: 'My Layout', customerId: null }], // layouts
+      [{
+        id: 1,
+        layoutId: 1,
+        status: 'ready',
+        themisProjectId: null,
+        fileManifest: JSON.stringify([{ filename: 'a.stl', widthUnits: 1, heightUnits: 1, qty: 2 }]),
+      }], // bomGenerations
+    );
+    mocks.uploadStlToThemis.mockRejectedValue(new mocks.ThemisTimeoutError('Themis did not respond within 120000ms'));
+
+    const res = makeRes();
+    const next = vi.fn();
+    await sendToThemisHandler(makeReq(), res, next as NextFunction);
+
+    expect(res.status).toHaveBeenCalledWith(504);
+    expect(next).not.toHaveBeenCalled();
   });
 });

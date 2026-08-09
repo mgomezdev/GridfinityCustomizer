@@ -7,7 +7,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { db } from '../db/connection.js';
 import { layouts, bomGenerations, customers } from '../db/schema.js';
 import { config } from '../config.js';
-import { uploadStlToThemis, createThemisProject, addThemisProjectItem, addThemisProjectLink, getThemisProject } from '../services/themis.service.js';
+import { uploadStlToThemis, createThemisProject, addThemisProjectItem, addThemisProjectLink, getThemisProject, ThemisTimeoutError } from '../services/themis.service.js';
 import { getSetting } from '../services/settings.service.js';
 import { logger } from '../logger.js';
 
@@ -54,7 +54,10 @@ export async function sendToThemisHandler(req: Request, res: Response, next: Nex
         const project = await getThemisProject(themisUrl, projectId);
         existingItemFileIds = new Set(project.items.map((i) => i.file_id));
         existingLinkUrls = new Set(project.links.map((l) => l.url));
-      } catch {
+      } catch (err) {
+        // A timeout doesn't mean the project is gone — surface it rather
+        // than silently creating a duplicate project.
+        if (err instanceof ThemisTimeoutError) throw err;
         // Project no longer exists on Themis (e.g. deleted) — create a new one.
         projectId = null;
       }
@@ -116,6 +119,10 @@ export async function sendToThemisHandler(req: Request, res: Response, next: Nex
     const needsFilamentProfiles = manifest.length > 0;
     res.status(200).json({ data: { projectUrl, needsFilamentProfiles } });
   } catch (err) {
+    if (err instanceof ThemisTimeoutError) {
+      res.status(504).json({ error: { message: err.message } });
+      return;
+    }
     next(err);
   }
 }

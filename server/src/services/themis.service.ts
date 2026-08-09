@@ -1,9 +1,32 @@
+// JSON calls should be quick; uploads carry file bytes and get more headroom.
+const REQUEST_TIMEOUT_MS = 30_000;
+const UPLOAD_TIMEOUT_MS = 120_000;
+
+/** Thrown when a Themis request exceeds its timeout — distinct from a Themis-side rejection or network error. */
+export class ThemisTimeoutError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ThemisTimeoutError';
+  }
+}
+
+async function themisFetch(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+  try {
+    return await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+  } catch (err) {
+    if (err instanceof Error && err.name === 'TimeoutError') {
+      throw new ThemisTimeoutError(`Themis did not respond within ${timeoutMs}ms: ${url}`);
+    }
+    throw err;
+  }
+}
+
 async function themisPost(url: string, body: unknown): Promise<unknown> {
-  const resp = await fetch(url, {
+  const resp = await themisFetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-  });
+  }, REQUEST_TIMEOUT_MS);
   if (!resp.ok) throw new Error(`Themis ${resp.status}: POST ${url}`);
   return resp.json();
 }
@@ -18,7 +41,7 @@ export async function uploadStlToThemis(
   const form = new FormData();
   form.append('file', new Blob([new Uint8Array(bytes)], { type: 'application/octet-stream' }), filename);
   form.append('folder', folder);
-  const resp = await fetch(`${themisUrl}/api/v1/files/upload`, { method: 'POST', body: form });
+  const resp = await themisFetch(`${themisUrl}/api/v1/files/upload`, { method: 'POST', body: form }, UPLOAD_TIMEOUT_MS);
   if (!resp.ok) throw new Error(`Themis ${resp.status}: upload ${filename}`);
   const data = await resp.json() as { id: number };
   return data.id;
@@ -81,7 +104,7 @@ export interface ThemisProject {
 
 /** Fetch a Themis project's current items and links, used to resume a partially-sent project. */
 export async function getThemisProject(themisUrl: string, projectId: number): Promise<ThemisProject> {
-  const resp = await fetch(`${themisUrl}/api/v1/projects/${projectId}`);
+  const resp = await themisFetch(`${themisUrl}/api/v1/projects/${projectId}`, {}, REQUEST_TIMEOUT_MS);
   if (!resp.ok) throw new Error(`Themis ${resp.status}: GET project ${projectId}`);
   return resp.json() as Promise<ThemisProject>;
 }

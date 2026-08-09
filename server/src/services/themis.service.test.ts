@@ -4,6 +4,7 @@ import {
   createThemisProject,
   addThemisProjectItem,
   getThemisProject,
+  ThemisTimeoutError,
 } from './themis.service.js';
 
 const THEMIS = 'http://localhost:8001';
@@ -93,5 +94,35 @@ describe('getThemisProject', () => {
   it('throws if Themis returns non-ok', async () => {
     global.fetch = mockFetch({}, 404);
     await expect(getThemisProject(THEMIS, 7)).rejects.toThrow('404');
+  });
+});
+
+describe('request timeouts', () => {
+  function mockFetchTimeout() {
+    return vi.fn().mockRejectedValue(Object.assign(new Error('The operation was aborted due to timeout'), { name: 'TimeoutError' }));
+  }
+
+  it('every call passes an AbortSignal so a hung request eventually gives up', async () => {
+    global.fetch = mockFetch({ id: 7, items: [], links: [] });
+    await createThemisProject(THEMIS, 'X', '');
+    const [, opts] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
+    expect(opts.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('createThemisProject surfaces a timeout as ThemisTimeoutError, not a generic rejection', async () => {
+    global.fetch = mockFetchTimeout();
+    await expect(createThemisProject(THEMIS, 'X', '')).rejects.toThrow(ThemisTimeoutError);
+  });
+
+  it('uploadStlToThemis surfaces a timeout as ThemisTimeoutError', async () => {
+    global.fetch = mockFetchTimeout();
+    await expect(
+      uploadStlToThemis(THEMIS, Buffer.from('stl'), 'bin.stl', '/Gridfinity/x')
+    ).rejects.toThrow(ThemisTimeoutError);
+  });
+
+  it('getThemisProject surfaces a timeout as ThemisTimeoutError', async () => {
+    global.fetch = mockFetchTimeout();
+    await expect(getThemisProject(THEMIS, 7)).rejects.toThrow(ThemisTimeoutError);
   });
 });
