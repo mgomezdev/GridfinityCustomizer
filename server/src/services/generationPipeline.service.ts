@@ -123,9 +123,16 @@ export class GenerationPipelineService extends EventEmitter {
     baseModelPath: string,
     subdir: 'library' | 'custom',
   ): void {
-    const job = this.runJob(hash, params, baseModelPath, subdir).finally(() => {
-      this.jobs.delete(hash);
-    });
+    const job = this.runJob(hash, params, baseModelPath, subdir)
+      .catch((err) => {
+        // runJob catches its own errors internally, but guard here too so a
+        // stray rejection can never become an unhandled promise rejection.
+        const msg = err instanceof Error ? err.message : String(err);
+        logger.error({ hash, subdir, err: msg }, 'generation: unhandled job rejection');
+      })
+      .finally(() => {
+        this.jobs.delete(hash);
+      });
     this.jobs.set(hash, job);
   }
 
@@ -136,14 +143,13 @@ export class GenerationPipelineService extends EventEmitter {
     subdir: 'library' | 'custom',
   ): Promise<void> {
     const dir = path.join(this.generatedDir, subdir, hash);
-    await fs.mkdir(dir, { recursive: true });
-
     const paramsFile = path.join(dir, 'params.json');
     const stlFile = path.join(dir, 'bin.stl');
     const generateScript = path.join(this.generatorDir, 'generate_bin.py');
     const stlToPngScript = path.join(this.libraryBuilderDir, 'stl_to_png.py');
 
     try {
+      await fs.mkdir(dir, { recursive: true });
       logger.info({ hash, subdir }, 'generation: rendering STL');
       await fs.writeFile(paramsFile, JSON.stringify(params));
       await runPython([generateScript, paramsFile, '--output', stlFile, '--model', baseModelPath]);

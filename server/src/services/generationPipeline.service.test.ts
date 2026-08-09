@@ -117,6 +117,26 @@ describe('enqueue', () => {
     expect(errContent).toContain('openscad crashed');
   });
 
+  it('does not raise an unhandled rejection when mkdir fails, and still emits generation:failed', async () => {
+    const mkdirSpy = vi.spyOn(fs, 'mkdir').mockRejectedValueOnce(new Error('ENOSPC: no space left on device'));
+    const errors: string[] = [];
+    svc.on('generation:failed', ({ hash }: { hash: string }) => errors.push(hash));
+
+    const unhandled: unknown[] = [];
+    const onUnhandledRejection = (reason: unknown) => unhandled.push(reason);
+    process.on('unhandledRejection', onUnhandledRejection);
+
+    await svc.enqueue('hash-mkdir-fail', { width: [2, 0] }, '/fake/base.scad');
+    await new Promise(r => setTimeout(r, 50));
+
+    process.off('unhandledRejection', onUnhandledRejection);
+    mkdirSpy.mockRestore();
+
+    expect(unhandled).toHaveLength(0);
+    expect(errors).toContain('hash-mkdir-fail');
+    expect(mockSpawn).not.toHaveBeenCalled();
+  });
+
   it('deduplicates concurrent enqueue calls for same hash', async () => {
     makeSpawnSuccess();
     makeSpawnSuccess();
