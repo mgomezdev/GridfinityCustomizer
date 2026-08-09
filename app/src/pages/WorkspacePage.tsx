@@ -177,6 +177,7 @@ export function WorkspacePage() {
 
   const navigate = useNavigate();
   const updateLayoutMutation = useUpdateLayoutMutation();
+  const [mobileSaveError, setMobileSaveError] = useState(false);
 
   const handleMobileSave = useCallback(async () => {
     if (!layoutMeta.id) {
@@ -190,9 +191,10 @@ export function WorkspacePage() {
     );
     try {
       const result = await updateLayoutMutation.mutateAsync({ id: layoutMeta.id, data: payload });
+      setMobileSaveError(false);
       handleSaveComplete(result.id, result.name);
     } catch {
-      // updateLayoutMutation.isError is set true by TanStack Query; error UI is a future iteration
+      setMobileSaveError(true);
     }
   }, [layoutMeta, gridResult, drawerWidth, drawerDepth, spacerConfig, placedItems,
     refImagePlacements, updateLayoutMutation, handleSaveComplete, dialogDispatch]);
@@ -445,6 +447,20 @@ export function WorkspacePage() {
             onSnapChange={setRawSnapPreview}
           />
         </GridViewport>
+
+        {mobileSaveError && (
+          <div className="save-toast save-toast-error mobile-save-toast">
+            <span>Save failed. Try again.</span>
+            <button
+              type="button"
+              className="save-toast-dismiss"
+              onClick={() => setMobileSaveError(false)}
+              aria-label="Dismiss"
+            >
+              &times;
+            </button>
+          </div>
+        )}
 
         <MobileActionBar
           layoutMeta={layoutMeta}
