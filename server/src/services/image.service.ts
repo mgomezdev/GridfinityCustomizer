@@ -6,6 +6,10 @@ import { AppError, ErrorCodes } from '@gridfinity/shared';
 import { config } from '../config.js';
 
 const MAX_INPUT_SIZE = 5 * 1024 * 1024; // 5MB
+// Compressed byte size alone doesn't bound decoded memory — a mostly-uniform
+// PNG well under MAX_INPUT_SIZE can still decode to a huge raw allocation.
+// 8000x8000 (64MP) comfortably covers any real reference photo for this tool.
+const MAX_INPUT_PIXELS = 8000 * 8000;
 
 // PNG: 89 50 4E 47
 // JPEG: FF D8 FF
@@ -87,20 +91,29 @@ export async function processAndSaveImage(
 
   // Re-encode with sharp to strip EXIF/embedded scripts
   let outputBuffer: Buffer;
-  const sharpInstance = sharp(inputBuffer);
+  const sharpInstance = sharp(inputBuffer, { limitInputPixels: MAX_INPUT_PIXELS });
 
-  switch (mimeType) {
-    case 'image/png':
-      outputBuffer = await sharpInstance.png().toBuffer();
-      break;
-    case 'image/jpeg':
-      outputBuffer = await sharpInstance.jpeg({ quality: 90 }).toBuffer();
-      break;
-    case 'image/webp':
-      outputBuffer = await sharpInstance.webp({ quality: 90 }).toBuffer();
-      break;
-    default:
-      throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Unsupported image format');
+  try {
+    switch (mimeType) {
+      case 'image/png':
+        outputBuffer = await sharpInstance.png().toBuffer();
+        break;
+      case 'image/jpeg':
+        outputBuffer = await sharpInstance.jpeg({ quality: 90 }).toBuffer();
+        break;
+      case 'image/webp':
+        outputBuffer = await sharpInstance.webp({ quality: 90 }).toBuffer();
+        break;
+      default:
+        throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Unsupported image format');
+    }
+  } catch (err) {
+    if (err instanceof AppError) throw err;
+    const message = err instanceof Error ? err.message : String(err);
+    if (/pixel limit/i.test(message)) {
+      throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Image dimensions exceed the maximum allowed');
+    }
+    throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Failed to process image');
   }
 
   // Build output path
