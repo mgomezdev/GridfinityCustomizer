@@ -3,6 +3,7 @@ import {
   uploadStlToThemis,
   createThemisProject,
   addThemisProjectItem,
+  getThemisProject,
 } from './themis.service.js';
 
 const THEMIS = 'http://localhost:8001';
@@ -77,5 +78,20 @@ describe('addThemisProjectItem', () => {
   it('throws if Themis returns non-ok', async () => {
     global.fetch = mockFetch({}, 404);
     await expect(addThemisProjectItem(THEMIS, 7, 99, 1)).rejects.toThrow('404');
+  });
+});
+
+describe('getThemisProject', () => {
+  it('gets /api/v1/projects/:id and returns items and links', async () => {
+    global.fetch = mockFetch({ id: 7, items: [{ file_id: 42 }], links: [{ url: 'http://x/1' }] });
+    const result = await getThemisProject(THEMIS, 7);
+    expect(result).toEqual({ id: 7, items: [{ file_id: 42 }], links: [{ url: 'http://x/1' }] });
+    expect((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][0])
+      .toBe(`${THEMIS}/api/v1/projects/7`);
+  });
+
+  it('throws if Themis returns non-ok', async () => {
+    global.fetch = mockFetch({}, 404);
+    await expect(getThemisProject(THEMIS, 7)).rejects.toThrow('404');
   });
 });

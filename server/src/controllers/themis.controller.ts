@@ -7,7 +7,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { db } from '../db/connection.js';
 import { layouts, bomGenerations, customers } from '../db/schema.js';
 import { config } from '../config.js';
-import { uploadStlToThemis, createThemisProject, addThemisProjectItem, addThemisProjectLink } from '../services/themis.service.js';
+import { uploadStlToThemis, createThemisProject, addThemisProjectItem, addThemisProjectLink, getThemisProject } from '../services/themis.service.js';
 import { getSetting } from '../services/settings.service.js';
 import { logger } from '../logger.js';
 
@@ -43,6 +43,23 @@ export async function sendToThemisHandler(req: Request, res: Response, next: Nex
     // across layouts that use the same bin model.
     const folder = '/Gridfinity';
 
+    // Resume a partially-sent project from a prior failed attempt instead of
+    // creating a duplicate. File uploads dedup by content hash in Themis, so
+    // re-uploading is safe; items/links already present are skipped below.
+    let existingItemFileIds = new Set<number>();
+    let existingLinkUrls = new Set<string>();
+    let projectId = gen.themisProjectId;
+    if (projectId !== null) {
+      try {
+        const project = await getThemisProject(themisUrl, projectId);
+        existingItemFileIds = new Set(project.items.map((i) => i.file_id));
+        existingLinkUrls = new Set(project.links.map((l) => l.url));
+      } catch {
+        // Project no longer exists on Themis (e.g. deleted) — create a new one.
+        projectId = null;
+      }
+    }
+
     // Upload unique STL files; collect filename → Themis file id mapping.
     const fileIdMap = new Map<string, number>();
     const seen = new Set<string>();
@@ -62,30 +79,37 @@ export async function sendToThemisHandler(req: Request, res: Response, next: Nex
       if (customerRows.length) customerName = customerRows[0]!.name;
     }
 
-    const projectId = await createThemisProject(
-      themisUrl,
-      layout.name,
-      'Imported from Ordinus',
-      undefined,  // no username — auth removed
-      layoutId,
-      customerName,
-    );
-    logger.info({ projectId, layoutId }, 'Created Themis project');
+    if (projectId === null) {
+      projectId = await createThemisProject(
+        themisUrl,
+        layout.name,
+        'Imported from Ordinus',
+        undefined,  // no username — auth removed
+        layoutId,
+        customerName,
+      );
+      logger.info({ projectId, layoutId }, 'Created Themis project');
+
+      // Persist immediately so a later failure resumes this project instead
+      // of orphaning it and creating a duplicate on retry.
+      await db.update(bomGenerations)
+        .set({ themisProjectId: projectId })
+        .where(eq(bomGenerations.layoutId, layoutId));
+    }
 
     for (const entry of manifest) {
       const fileId = fileIdMap.get(entry.filename);
       if (fileId === undefined) continue;
+      if (existingItemFileIds.has(fileId)) continue;
       await addThemisProjectItem(themisUrl, projectId, fileId, entry.qty);
     }
 
     const publicUrl = config.PUBLIC_URL;
-    await addThemisProjectLink(themisUrl, projectId, `${publicUrl}/layouts/${layoutId}`, 'Ordinus layout');
-    logger.info({ projectId, layoutId }, 'Added Ordinus backlink to Themis project');
-
-    // Write Themis project ID back to bom_generations for bidirectional link.
-    await db.update(bomGenerations)
-      .set({ themisProjectId: projectId })
-      .where(eq(bomGenerations.layoutId, layoutId));
+    const backlinkUrl = `${publicUrl}/layouts/${layoutId}`;
+    if (!existingLinkUrls.has(backlinkUrl)) {
+      await addThemisProjectLink(themisUrl, projectId, backlinkUrl, 'Ordinus layout');
+      logger.info({ projectId, layoutId }, 'Added Ordinus backlink to Themis project');
+    }
 
     const projectUrl = `${themisUrl}/projects/${projectId}`;
     // Ordinus never assigns filament profiles, so any non-empty send always needs them

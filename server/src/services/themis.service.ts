@@ -72,3 +72,16 @@ export async function addThemisProjectItem(
     color_hex: '#FFFFFF',
   });
 }
+
+export interface ThemisProject {
+  id: number;
+  items: Array<{ file_id: number }>;
+  links: Array<{ url: string }>;
+}
+
+/** Fetch a Themis project's current items and links, used to resume a partially-sent project. */
+export async function getThemisProject(themisUrl: string, projectId: number): Promise<ThemisProject> {
+  const resp = await fetch(`${themisUrl}/api/v1/projects/${projectId}`);
+  if (!resp.ok) throw new Error(`Themis ${resp.status}: GET project ${projectId}`);
+  return resp.json() as Promise<ThemisProject>;
+}
