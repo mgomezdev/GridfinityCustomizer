@@ -888,6 +888,66 @@ describe('usePointerDrag', () => {
       });
     });
 
+    describe('Cross-instance concurrent drag (two-finger)', () => {
+      // Regression for: dragStore.activeDrag is a single shared slot while
+      // activePointerIdRef is per-hook-instance. Two draggable cards each
+      // starting their own drag used to let the second overwrite the first's
+      // activeDrag; lifting the first finger then dropped the SECOND card's
+      // data at the FIRST finger's position, and lifting the second finger
+      // was a silent no-op because clearActiveDrag() had already run.
+      it('does not let a second card dragged concurrently corrupt or steal the first drop', () => {
+        const onDrop = vi.fn();
+        registerDropTarget({ element: mockGridElement, gridX: 4, gridY: 4, onDrop });
+
+        const dragDataA: DragData = { type: 'library', itemId: 'card-a' };
+        const dragDataB: DragData = { type: 'library', itemId: 'card-b' };
+
+        const elementA = mockElement;
+        const elementB = document.createElement('div');
+        elementB.style.width = '100px';
+        elementB.style.height = '100px';
+        document.body.appendChild(elementB);
+        elementB.getBoundingClientRect = vi.fn(() => ({
+          left: 200, top: 10, width: 100, height: 100, right: 300, bottom: 110, x: 200, y: 10, toJSON: () => ({}),
+        }));
+
+        const { result: resultA } = renderHook(() => usePointerDragSource({ dragData: dragDataA }));
+        const { result: resultB } = renderHook(() => usePointerDragSource({ dragData: dragDataB }));
+
+        function down(result: typeof resultA, target: HTMLElement, pointerId: number, x: number, y: number) {
+          const ev = new PointerEvent('pointerdown', { pointerId, clientX: x, clientY: y, button: 0, bubbles: true });
+          Object.defineProperty(ev, 'currentTarget', { value: target, writable: false });
+          Object.defineProperty(ev, 'target', { value: target, writable: false });
+          act(() => { result.current.onPointerDown(ev as unknown as React.PointerEvent); });
+        }
+        function move(pointerId: number, x: number, y: number) {
+          act(() => { document.dispatchEvent(new PointerEvent('pointermove', { pointerId, clientX: x, clientY: y })); });
+        }
+        function up(pointerId: number, x: number, y: number) {
+          act(() => { document.dispatchEvent(new PointerEvent('pointerup', { pointerId, clientX: x, clientY: y })); });
+        }
+
+        // Finger A starts dragging card A, then finger B starts dragging card B
+        // while A is still active.
+        down(resultA, elementA, 1, 50, 50);
+        move(1, 60, 60); // A crosses threshold, owns dragStore.activeDrag
+
+        down(resultB, elementB, 2, 250, 50);
+        move(2, 260, 60); // B attempts to cross threshold but must be blocked
+
+        // Lift finger A first — must drop card A's data, not card B's.
+        up(1, 150, 150);
+        expect(onDrop).toHaveBeenCalledTimes(1);
+        expect(onDrop).toHaveBeenCalledWith(dragDataA, expect.any(Number), expect.any(Number));
+
+        // Lifting finger B must not throw and must not produce a second drop.
+        up(2, 250, 250);
+        expect(onDrop).toHaveBeenCalledTimes(1);
+
+        expect(getActiveDrag()).toBeNull();
+      });
+    });
+
     describe('pointercancel handling', () => {
       it('should trigger cleanup on pointercancel', () => {
         const onDragEnd = vi.fn();

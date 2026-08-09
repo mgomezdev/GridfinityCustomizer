@@ -15,6 +15,7 @@ interface ActiveDrag {
   sourceElement: HTMLElement;
   offsetX: number;
   offsetY: number;
+  pointerId: number;
 }
 
 interface DropTargetConfig {
@@ -89,9 +90,12 @@ function createGhostElement(sourceElement: HTMLElement): HTMLElement {
 
 // --- Drop detection ---
 
-function attemptDrop(clientX: number, clientY: number): void {
+function attemptDrop(clientX: number, clientY: number, pointerId: number): void {
   const { activeDrag, dropTarget } = dragStore;
   if (!activeDrag || !dropTarget) return;
+  // Guard against a stale/foreign drag: activeDrag is a single shared slot,
+  // so only the pointer that owns it may complete it.
+  if (activeDrag.pointerId !== pointerId) return;
 
   const rect = dropTarget.element.getBoundingClientRect();
 
@@ -159,17 +163,27 @@ export function usePointerDragSource(
     const startY = e.clientY;
     const sourceElement = e.currentTarget as HTMLElement;
     let isDragging = false;
+    // Set when a second pointer crosses the drag threshold while dragStore's
+    // single activeDrag slot is already owned by another pointer/instance —
+    // its pointerup must not be treated as a tap or corrupt the other drag.
+    let blockedByOtherDrag = false;
     activePointerIdRef.current = e.pointerId;
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
       // Only track the pointer we started with
       if (moveEvent.pointerId !== activePointerIdRef.current) return;
+      if (blockedByOtherDrag) return;
 
       const dx = moveEvent.clientX - startX;
       const dy = moveEvent.clientY - startY;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
       if (!isDragging && distance >= DRAG_THRESHOLD) {
+        if (dragStore.activeDrag) {
+          // Another pointer already owns the (single) active drag slot.
+          blockedByOtherDrag = true;
+          return;
+        }
         isDragging = true;
 
         const rect = sourceElement.getBoundingClientRect();
@@ -179,6 +193,7 @@ export function usePointerDragSource(
           sourceElement,
           offsetX: startX - rect.left,
           offsetY: startY - rect.top,
+          pointerId: moveEvent.pointerId,
         };
 
         sourceElement.classList.add('pointer-dragging');
@@ -219,6 +234,12 @@ export function usePointerDragSource(
     const handlePointerUp = (upEvent: PointerEvent) => {
       if (upEvent.pointerId !== activePointerIdRef.current) return;
 
+      if (blockedByOtherDrag) {
+        // This pointer never got to drag or tap — another drag owned the slot.
+        cleanup();
+        return;
+      }
+
       if (!isDragging) {
         // Below threshold — this was a tap
         cleanup();
@@ -226,7 +247,7 @@ export function usePointerDragSource(
       } else {
         // End of drag — attempt drop
         dragStore.dropTarget?.onSnapChange?.(null);
-        attemptDrop(upEvent.clientX, upEvent.clientY);
+        attemptDrop(upEvent.clientX, upEvent.clientY, upEvent.pointerId);
         clearActiveDrag();
         cleanup();
         optionsRef.current.onDragEnd?.();
@@ -235,10 +256,15 @@ export function usePointerDragSource(
 
     const handlePointerCancel = (cancelEvent: PointerEvent) => {
       if (cancelEvent.pointerId !== activePointerIdRef.current) return;
-      dragStore.dropTarget?.onSnapChange?.(null);
-      clearActiveDrag();
+      // Only tear down the shared drag slot if this pointer actually owns
+      // it — a blocked second pointer (or one cancelled pre-threshold) must
+      // not clear or end a drag that belongs to someone else.
+      if (isDragging) {
+        dragStore.dropTarget?.onSnapChange?.(null);
+        clearActiveDrag();
+        optionsRef.current.onDragEnd?.();
+      }
       cleanup();
-      optionsRef.current.onDragEnd?.();
     };
 
     document.addEventListener('pointermove', handlePointerMove);
