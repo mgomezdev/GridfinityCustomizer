@@ -85,6 +85,59 @@ export async function reseedLibraryData(client: Client, logger: Logger): Promise
   const manifest: Manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'));
   logger.info(`Reseeding library data — found ${manifest.libraries.length} libraries in manifest`);
 
+  // Everything below runs in one transaction: any failure (malformed JSON,
+  // a duplicate id violating a primary key, a file-copy error) rolls back
+  // the deletes instead of leaving the library tables permanently empty.
+  // Note: client.transaction() hands the connection to a separate Transaction
+  // object, which for a `:memory:` DB means any later client.execute() opens
+  // a fresh, empty database — so this uses plain BEGIN/COMMIT/ROLLBACK on the
+  // same client connection instead.
+  await client.execute('BEGIN');
+  try {
+    await reseedLibraryDataTx(client, manifest, librariesDir, publicDir, imageDir, generatorModelsDir, staticStlsDir, logger);
+    await client.execute('COMMIT');
+  } catch (err) {
+    await client.execute('ROLLBACK');
+    throw err;
+  }
+
+  // Seed-time cleanup: delete library/{hash} dirs not referenced by any current library item
+  const hashRows = await client.execute(`SELECT DISTINCT param_hash FROM library_items WHERE param_hash IS NOT NULL`);
+  const currentHashes = new Set(hashRows.rows.map(r => r.param_hash as string));
+
+  const libraryGenDir = resolve(config.GENERATED_STL_DIR, 'library');
+  if (existsSync(libraryGenDir)) {
+    const { readdir, rm: rmDir } = await import('node:fs/promises');
+    const entries = await readdir(libraryGenDir).catch(() => [] as string[]);
+    for (const hash of entries) {
+      if (!currentHashes.has(hash)) {
+        await rmDir(resolve(libraryGenDir, hash), { recursive: true, force: true });
+        logger.info({ hash }, 'Removed stale library generation dir');
+      }
+    }
+  }
+
+  // Log summary
+  const libCount = await client.execute('SELECT COUNT(*) as count FROM libraries');
+  const itemCount = await client.execute('SELECT COUNT(*) as count FROM library_items');
+  const catCount = await client.execute('SELECT COUNT(*) as count FROM categories');
+  const junctionCount = await client.execute('SELECT COUNT(*) as count FROM item_categories');
+
+  logger.info(
+    `Reseed complete — Libraries: ${libCount.rows[0].count}, Items: ${itemCount.rows[0].count}, Categories: ${catCount.rows[0].count}, Item-Category links: ${junctionCount.rows[0].count}`
+  );
+}
+
+async function reseedLibraryDataTx(
+  client: Client,
+  manifest: Manifest,
+  librariesDir: string,
+  publicDir: string,
+  imageDir: string,
+  generatorModelsDir: string,
+  staticStlsDir: string,
+  logger: Logger,
+): Promise<void> {
   // Clear existing library data (FK-safe order)
   await client.execute('DELETE FROM item_categories;');
   await client.execute('DELETE FROM library_items;');
@@ -274,30 +327,4 @@ export async function reseedLibraryData(client: Client, logger: Logger): Promise
       }
     }
   }
-
-  // Seed-time cleanup: delete library/{hash} dirs not referenced by any current library item
-  const hashRows = await client.execute(`SELECT DISTINCT param_hash FROM library_items WHERE param_hash IS NOT NULL`);
-  const currentHashes = new Set(hashRows.rows.map(r => r.param_hash as string));
-
-  const libraryGenDir = resolve(config.GENERATED_STL_DIR, 'library');
-  if (existsSync(libraryGenDir)) {
-    const { readdir, rm: rmDir } = await import('node:fs/promises');
-    const entries = await readdir(libraryGenDir).catch(() => [] as string[]);
-    for (const hash of entries) {
-      if (!currentHashes.has(hash)) {
-        await rmDir(resolve(libraryGenDir, hash), { recursive: true, force: true });
-        logger.info({ hash }, 'Removed stale library generation dir');
-      }
-    }
-  }
-
-  // Log summary
-  const libCount = await client.execute('SELECT COUNT(*) as count FROM libraries');
-  const itemCount = await client.execute('SELECT COUNT(*) as count FROM library_items');
-  const catCount = await client.execute('SELECT COUNT(*) as count FROM categories');
-  const junctionCount = await client.execute('SELECT COUNT(*) as count FROM item_categories');
-
-  logger.info(
-    `Reseed complete — Libraries: ${libCount.rows[0].count}, Items: ${itemCount.rows[0].count}, Categories: ${catCount.rows[0].count}, Item-Category links: ${junctionCount.rows[0].count}`
-  );
 }

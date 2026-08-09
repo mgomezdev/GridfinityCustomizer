@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { createClient } from '@libsql/client';
 import type { Client } from '@libsql/client';
+import { readFileSync } from 'node:fs';
 import pino from 'pino';
 
 // Mock node:fs — we verify DB state, not file ops
@@ -83,5 +84,42 @@ describe('reseedLibraryData — base model and static stl', () => {
     const rows = await client.execute(`SELECT stl_file FROM library_items WHERE library_id = 'test-gen-lib' AND id = 'item-1'`);
     const stlFile = rows.rows[0]?.stl_file as string | null;
     expect(stlFile).toBeNull();
+  });
+
+  it('rolls back to the prior state instead of leaving tables empty when a later reseed fails', async () => {
+    // A library index with a duplicate item id violates the (library_id, id)
+    // primary key partway through the insert loop. Without a transaction,
+    // the preceding DELETEs would already be committed, leaving the tables
+    // empty on every subsequent boot.
+    vi.mocked(readFileSync).mockImplementation((filePath: unknown) => {
+      const path = String(filePath);
+      if (path.includes('manifest.json')) {
+        return JSON.stringify({
+          version: '1.0.0',
+          libraries: [
+            { id: 'test-static-lib', name: 'Static Lib', path: '/libraries/test-static-lib/index.json' },
+          ],
+        });
+      }
+      if (path.includes('test-static-lib')) {
+        return JSON.stringify({
+          version: '1.0.0',
+          items: [
+            { id: 'item-2', name: 'Item 2', widthUnits: 1, heightUnits: 1, color: '#000', categories: ['bin'], stlFile: 'item2.stl' },
+            { id: 'item-2', name: 'Item 2 dup', widthUnits: 1, heightUnits: 1, color: '#000', categories: ['bin'], stlFile: 'item2.stl' },
+          ],
+        });
+      }
+      throw new Error(`Unexpected readFileSync: ${filePath}`);
+    });
+
+    await expect(reseedLibraryData(client, pino({ level: 'silent' }))).rejects.toThrow();
+
+    // The prior successful reseed's data (from the outer beforeAll) must
+    // still be intact — not wiped by the failed attempt's DELETEs.
+    const libs = await client.execute(`SELECT COUNT(*) as count FROM libraries`);
+    expect(Number(libs.rows[0]?.count)).toBe(2);
+    const items = await client.execute(`SELECT COUNT(*) as count FROM library_items`);
+    expect(Number(items.rows[0]?.count)).toBe(2);
   });
 });
