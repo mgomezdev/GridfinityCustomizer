@@ -24,3 +24,12 @@ export async function requestGenerationApi(
 export function generatedImageUrl(hash: string, filename: string): string {
   return `${API_BASE_URL}/generation/image/${hash}/${filename}`;
 }
+
+export interface GenerationStatusResponse {
+  hash: string;
+  status: 'pending' | 'complete' | 'failed' | 'not-found';
+}
+
+export async function getGenerationStatusApi(hash: string): Promise<GenerationStatusResponse> {
+  return apiFetch<GenerationStatusResponse>(`/generation/status/${hash}`);
+}

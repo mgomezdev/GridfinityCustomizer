@@ -52,4 +52,20 @@ describe('useGenerationEvents', () => {
     MockEventSource.instances[0].onmessage?.({ data: 'not-json' } as MessageEvent);
     expect(onEvent).not.toHaveBeenCalled();
   });
+
+  it('calls onOpen when the connection opens (including after an auto-reconnect)', () => {
+    const onOpen = vi.fn();
+    renderHook(() => useGenerationEvents('http://localhost:3001/api/v1', vi.fn(), onOpen));
+    MockEventSource.instances[0].onopen?.(new Event('open'));
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    // Simulate the browser reconnecting after a dropped connection.
+    MockEventSource.instances[0].onopen?.(new Event('open'));
+    expect(onOpen).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not require onOpen', () => {
+    expect(() =>
+      renderHook(() => useGenerationEvents('http://localhost:3001/api/v1', vi.fn()))
+    ).not.toThrow();
+  });
 });
