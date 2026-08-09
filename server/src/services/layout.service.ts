@@ -1,4 +1,4 @@
-import { eq, and, lt, desc, sql, or } from 'drizzle-orm';
+import { eq, and, lt, desc, sql, or, inArray } from 'drizzle-orm';
 import { AppError, ErrorCodes } from '@gridfinity/shared';
 import { logger } from '../logger.js';
 import type { ApiLayout, ApiLayoutDetail, ApiRefImagePlacement, BinCustomization } from '@gridfinity/shared';
@@ -340,97 +340,128 @@ export async function updateLayout(
 
   const now = new Date().toISOString();
 
-  const updatedRows = await db
-    .update(layouts)
-    .set({
-      customerId: data.customerId !== undefined ? data.customerId : existing[0].customerId,
-      name: data.name,
-      description: data.description ?? null,
-      gridX: data.gridX,
-      gridY: data.gridY,
-      widthMm: data.widthMm,
-      depthMm: data.depthMm,
-      spacerHorizontal: data.spacerHorizontal ?? 'none',
-      spacerVertical: data.spacerVertical ?? 'none',
-      updatedAt: now,
-    })
-    .where(eq(layouts.id, layoutId))
-    .returning();
-
-  // Delete old placed items and ref image placements
-  await db
-    .delete(placedItems)
-    .where(eq(placedItems.layoutId, layoutId));
-  await db
-    .delete(referenceImages)
-    .where(eq(referenceImages.layoutId, layoutId));
-
-  // Insert new placed items
-  const itemValues = data.placedItems.map((item, index) => {
-    const { libraryId, itemId } = unprefixItemId(item.itemId);
-    return {
-      layoutId,
-      libraryId,
-      itemId,
-      x: item.x,
-      y: item.y,
-      width: item.width,
-      height: item.height,
-      rotation: item.rotation,
-      sortOrder: index,
-      customization: item.customization ? JSON.stringify(item.customization) : null,
-    };
-  });
-
-  let insertedItems: Array<typeof placedItems.$inferSelect> = [];
-  if (itemValues.length > 0) {
-    insertedItems = await db
-      .insert(placedItems)
-      .values(itemValues)
-      .returning();
+  // Validate ref image ids up front — inserting a stale/unknown id trips the
+  // FK constraint after the old placements have already been deleted below,
+  // so catching it here avoids losing data to a doomed insert.
+  if (data.refImagePlacements && data.refImagePlacements.length > 0) {
+    const requestedIds = [...new Set(data.refImagePlacements.map(p => p.refImageId))];
+    const foundRows = await db
+      .select({ id: refImages.id })
+      .from(refImages)
+      .where(inArray(refImages.id, requestedIds));
+    const foundIds = new Set(foundRows.map(r => r.id));
+    const missingIds = requestedIds.filter(id => !foundIds.has(id));
+    if (missingIds.length > 0) {
+      throw new AppError(ErrorCodes.CONFLICT, `Reference image(s) not found: ${missingIds.join(', ')}`);
+    }
   }
 
-  // Insert ref image placements
+  // Delete-and-reinsert runs in one transaction so a failure partway through
+  // (e.g. an FK violation) rolls back instead of leaving the layout without
+  // its placed items and reference images. Note: db.transaction()/
+  // client.transaction() can't be used for this — for a `:memory:` DB (used
+  // in tests) it hands the connection to a separate Transaction object, and
+  // any later query on `db` lazily opens a brand-new, empty in-memory
+  // database. Plain BEGIN/COMMIT/ROLLBACK on the same connection avoids that.
+  let updatedRows: Array<typeof layouts.$inferSelect>;
+  let insertedItems: Array<typeof placedItems.$inferSelect> = [];
   const refPlacementPlacements: ApiRefImagePlacement[] = [];
-  if (data.refImagePlacements && data.refImagePlacements.length > 0) {
-    const refValues = data.refImagePlacements.map(p => ({
-      layoutId,
-      refImageId: p.refImageId,
-      name: p.name,
-      filePath: '',
-      x: p.x,
-      y: p.y,
-      width: p.width,
-      height: p.height,
-      opacity: p.opacity,
-      scale: p.scale,
-      isLocked: p.isLocked,
-      rotation: p.rotation,
-      createdAt: now,
-    }));
-
-    const insertedRefs = await db
-      .insert(referenceImages)
-      .values(refValues)
+  await db.run(sql`BEGIN`);
+  try {
+    updatedRows = await db
+      .update(layouts)
+      .set({
+        customerId: data.customerId !== undefined ? data.customerId : existing[0].customerId,
+        name: data.name,
+        description: data.description ?? null,
+        gridX: data.gridX,
+        gridY: data.gridY,
+        widthMm: data.widthMm,
+        depthMm: data.depthMm,
+        spacerHorizontal: data.spacerHorizontal ?? 'none',
+        spacerVertical: data.spacerVertical ?? 'none',
+        updatedAt: now,
+      })
+      .where(eq(layouts.id, layoutId))
       .returning();
 
-    for (const row of insertedRefs) {
-      refPlacementPlacements.push({
-        id: row.id,
-        layoutId: row.layoutId,
-        refImageId: row.refImageId,
-        name: row.name,
-        imageUrl: null,
-        x: row.x,
-        y: row.y,
-        width: row.width,
-        height: row.height,
-        opacity: row.opacity,
-        scale: row.scale,
-        isLocked: row.isLocked,
-        rotation: row.rotation,
-      });
+    // Delete old placed items and ref image placements
+    await db
+      .delete(placedItems)
+      .where(eq(placedItems.layoutId, layoutId));
+    await db
+      .delete(referenceImages)
+      .where(eq(referenceImages.layoutId, layoutId));
+
+    // Insert new placed items
+    const itemValues = data.placedItems.map((item, index) => {
+      const { libraryId, itemId } = unprefixItemId(item.itemId);
+      return {
+        layoutId,
+        libraryId,
+        itemId,
+        x: item.x,
+        y: item.y,
+        width: item.width,
+        height: item.height,
+        rotation: item.rotation,
+        sortOrder: index,
+        customization: item.customization ? JSON.stringify(item.customization) : null,
+      };
+    });
+
+    if (itemValues.length > 0) {
+      insertedItems = await db
+        .insert(placedItems)
+        .values(itemValues)
+        .returning();
     }
+
+    // Insert ref image placements
+    if (data.refImagePlacements && data.refImagePlacements.length > 0) {
+      const refValues = data.refImagePlacements.map(p => ({
+        layoutId,
+        refImageId: p.refImageId,
+        name: p.name,
+        filePath: '',
+        x: p.x,
+        y: p.y,
+        width: p.width,
+        height: p.height,
+        opacity: p.opacity,
+        scale: p.scale,
+        isLocked: p.isLocked,
+        rotation: p.rotation,
+        createdAt: now,
+      }));
+
+      const insertedRefs = await db
+        .insert(referenceImages)
+        .values(refValues)
+        .returning();
+
+      for (const row of insertedRefs) {
+        refPlacementPlacements.push({
+          id: row.id,
+          layoutId: row.layoutId,
+          refImageId: row.refImageId,
+          name: row.name,
+          imageUrl: null,
+          x: row.x,
+          y: row.y,
+          width: row.width,
+          height: row.height,
+          opacity: row.opacity,
+          scale: row.scale,
+          isLocked: row.isLocked,
+          rotation: row.rotation,
+        });
+      }
+    }
+    await db.run(sql`COMMIT`);
+  } catch (err) {
+    await db.run(sql`ROLLBACK`);
+    throw err;
   }
 
   let thumbnailFilename: string | undefined;
