@@ -1,5 +1,5 @@
 import { spawn } from 'child_process';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
 import { AppError, ErrorCodes, gridfinityExtendedDefaultParams } from '@gridfinity/shared';
@@ -199,16 +199,38 @@ function runPython(args: string[]): Promise<string> {
 export async function triggerGeneration(layoutId: number, bomItems: BOMItem[]): Promise<ApiBomGeneration> {
   const { staticConfigs, uniqueConfigs } = await resolveItemSources(bomItems);
 
+  // Guard + delete-and-reinsert run in one transaction so two concurrent
+  // requests for the same layout can't both pass the "not already
+  // generating" check — which would otherwise let a second run delete the
+  // output directory the first run is still writing to, and race the
+  // layout_id UNIQUE constraint into a raw 500. Plain BEGIN/COMMIT/ROLLBACK
+  // (not db.transaction()) matches the convention already used in
+  // layout.service.ts for the same :memory:-DB reason described there.
+  let genRows: Array<typeof bomGenerations.$inferSelect>;
+  await db.run(sql`BEGIN`);
+  try {
+    const existing = await db.select({ status: bomGenerations.status })
+      .from(bomGenerations).where(eq(bomGenerations.layoutId, layoutId)).limit(1);
+    if (existing.length > 0 && existing[0].status === 'generating') {
+      throw new AppError(ErrorCodes.CONFLICT, 'BOM generation is already in progress for this layout');
+    }
+
+    await db.delete(bomGenerations).where(eq(bomGenerations.layoutId, layoutId));
+    genRows = await db.insert(bomGenerations).values({
+      layoutId,
+      status: 'generating',
+      exportJson: JSON.stringify(bomItems),
+    }).returning();
+
+    await db.run(sql`COMMIT`);
+  } catch (err) {
+    await db.run(sql`ROLLBACK`);
+    throw err;
+  }
+
   const outDir = path.resolve(config.GENERATED_STL_DIR, `bom-layout-${layoutId}`);
   await fs.rm(outDir, { recursive: true, force: true });
   await fs.mkdir(outDir, { recursive: true });
-
-  await db.delete(bomGenerations).where(eq(bomGenerations.layoutId, layoutId));
-  const genRows = await db.insert(bomGenerations).values({
-    layoutId,
-    status: 'generating',
-    exportJson: JSON.stringify(bomItems),
-  }).returning();
 
   void runGenerationPipeline(layoutId, staticConfigs, uniqueConfigs, outDir);
 

@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { AppError } from '@gridfinity/shared';
 import type { BOMItem } from '@gridfinity/shared';
 
 // Use in-memory DB for resolveItemSources tests
@@ -22,10 +23,20 @@ import {
   resolveItemSources,
   formatBomGeneration,
   buildGenerateParams,
+  triggerGeneration,
 } from './bomGeneration.service.js';
 import type { UniqueConfig } from './bomGeneration.service.js';
 
 // ── Seed helper ──────────────────────────────────────────────────────────────
+
+async function seedLayout(id: number): Promise<number> {
+  const result = await testClient.execute({
+    sql: `INSERT INTO layouts (id, name, grid_x, grid_y, width_mm, depth_mm)
+          VALUES (?, ?, 4, 4, 100, 100)`,
+    args: [id, `Layout ${id}`],
+  });
+  return Number(result.lastInsertRowid);
+}
 
 async function seedLibrary(id: string, baseModelPath: string | null): Promise<void> {
   const now = new Date().toISOString();
@@ -126,6 +137,30 @@ describe('formatBomGeneration', () => {
     expect(result.layoutId).toBe(42);
     expect(result.status).toBe('ready');
     expect(result.fileManifest).toBeNull();
+  });
+});
+
+// ── triggerGeneration ────────────────────────────────────────────────────────
+
+describe('triggerGeneration', () => {
+  it('rejects with CONFLICT instead of racing a generation already in progress', async () => {
+    const layoutId = 9001;
+    await seedLayout(layoutId);
+    await testClient.execute({
+      sql: `INSERT INTO bom_generations (layout_id, status, export_json) VALUES (?, 'generating', '[]')`,
+      args: [layoutId],
+    });
+
+    const items: BOMItem[] = [{ ...BASE_BOM_ITEM, libraryId: 'static-lib', itemId: 'utensil-1x3' }];
+    await expect(triggerGeneration(layoutId, items)).rejects.toThrow(AppError);
+    await expect(triggerGeneration(layoutId, items)).rejects.toMatchObject({ code: 'CONFLICT' });
+
+    // The in-progress row must be untouched — no delete/insert race.
+    const rows = await testClient.execute({
+      sql: `SELECT status FROM bom_generations WHERE layout_id = ?`,
+      args: [layoutId],
+    });
+    expect(rows.rows[0]?.['status']).toBe('generating');
   });
 });
 
