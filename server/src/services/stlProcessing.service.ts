@@ -6,6 +6,8 @@ import { stlQueue } from './stlQueue.service.js';
 import { config } from '../config.js';
 import { logger } from '../logger.js';
 
+const PYTHON_CMD = process.platform === 'win32' ? 'python' : 'python3';
+
 export function processUpload(
   uploadId: string,
   filePath: string,
@@ -20,7 +22,7 @@ export function processUpload(
     let stderrData = '';
 
     const scriptPath = path.resolve(config.PYTHON_SCRIPT_DIR, 'process_stl.py');
-    const child = spawn('python3', [
+    const child = spawn(PYTHON_CMD, [
       scriptPath,
       '--input', filePath,
       '--output-dir', imageOutputDir,
@@ -30,14 +32,18 @@ export function processUpload(
     child.stdout.on('data', (chunk: Buffer) => { stdoutData += chunk.toString(); });
     child.stderr.on('data', (chunk: Buffer) => { stderrData += chunk.toString(); });
 
-    const childClosed = new Promise<number | null>((resolve) => {
-      child.on('close', resolve);
+    // 'error' (e.g. ENOENT when the interpreter is missing) is emitted instead of
+    // 'close'. With no listener it throws as an uncaught exception and kills the
+    // process — and since startup re-enqueues pending uploads, that is a boot loop.
+    const childClosed = new Promise<{ code: number | null; spawnError: Error | null }>((resolve) => {
+      child.on('close', (code) => resolve({ code, spawnError: null }));
+      child.on('error', (spawnError: Error) => resolve({ code: null, spawnError }));
     });
 
     logger.info({ uploadId }, 'STL processing: started');
     await updateUploadStatus(client, uploadId, 'processing');
 
-    const code = await childClosed;
+    const { code, spawnError } = await childClosed;
 
     if (code === 0) {
       try {
@@ -60,6 +66,10 @@ export function processUpload(
           errorMessage: 'Failed to parse processing output',
         });
       }
+    } else if (spawnError) {
+      const errorMessage = `Could not run ${PYTHON_CMD}: ${spawnError.message}`;
+      logger.error({ uploadId, err: spawnError }, 'process_stl.py failed to spawn');
+      await updateUploadStatus(client, uploadId, 'error', { errorMessage });
     } else {
       const errorMessage = stderrData.trim() || 'Processing failed with unknown error';
       logger.error({ uploadId, code, stderr: stderrData }, 'process_stl.py exited non-zero');
