@@ -16,7 +16,12 @@ function binCustomizationsEqual(a: BinCustomization, b: BinCustomization): boole
     a.wallPattern === b.wallPattern &&
     a.lipStyle === b.lipStyle &&
     a.fingerSlide === b.fingerSlide &&
-    a.wallCutout === b.wallCutout &&
+    // wallCutout is an object: server-loaded favorites are JSON-parsed, so it can
+    // never share a reference with the in-memory value. Compare field by field.
+    a.wallCutout.front === b.wallCutout.front &&
+    a.wallCutout.back === b.wallCutout.back &&
+    a.wallCutout.left === b.wallCutout.left &&
+    a.wallCutout.right === b.wallCutout.right &&
     a.height === b.height
   );
 }
