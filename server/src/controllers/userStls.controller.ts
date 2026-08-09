@@ -175,12 +175,22 @@ export async function replaceFileHandler(req: Request, res: Response, next: Next
     if (!row) return res.status(404).json({ error: 'Not found' });
     if (!req.file) return res.status(400).json({ error: 'File required' });
 
-    await fs.unlink(row.filePath).catch(() => {});
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    if (ext !== '.stl') {
+      await fs.unlink(req.file.path).catch(() => {});
+      return res.status(400).json({ error: 'Only .stl files are supported for custom part uploads.' });
+    }
 
     const uploadDir = path.join(config.USER_STL_DIR, 'global');
-    const ext = path.extname(req.file.originalname).toLowerCase();
     const destPath = path.join(uploadDir, `${row.id}${ext}`);
+
+    // Write the replacement to its final path before removing the old file,
+    // so a failed rename leaves the original part intact instead of losing
+    // it with nothing to replace it.
     await fs.rename(req.file.path, destPath);
+    if (destPath !== row.filePath) {
+      await fs.unlink(row.filePath).catch(() => {});
+    }
 
     await client.execute({
       sql: `UPDATE user_stl_uploads SET file_path = ?, original_filename = ?, updated_at = ? WHERE id = ?`,
