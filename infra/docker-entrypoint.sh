@@ -2,7 +2,7 @@
 set -e
 
 # Ensure volume-backed directories exist (volumes may be newly mounted and empty)
-mkdir -p /config /data/libraries /data/images /data/user-stls /data/user-stl-images /data/generated
+mkdir -p /config /data/libraries /data/images /data/user-stls /data/user-stl-images /data/generated /data/thumbnails
 
 # Start the Node.js backend in the background
 node server/dist/index.js &

@@ -83,7 +83,7 @@ COPY infra/docker-entrypoint.sh /docker-entrypoint.sh
 RUN sed -i 's/\r$//' /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
 
 # Persistent volume mount points
-RUN mkdir -p /config /data/libraries /data/images /data/user-stls /data/user-stl-images /data/generated /tmp/nginx-image-cache
+RUN mkdir -p /config /data/libraries /data/images /data/user-stls /data/user-stl-images /data/generated /data/thumbnails /tmp/nginx-image-cache
 VOLUME ["/config", "/data"]
 
 ENV NODE_ENV=production \
@@ -92,6 +92,7 @@ ENV NODE_ENV=production \
     IMAGE_DIR=/data/images \
     USER_STL_DIR=/data/user-stls \
     USER_STL_IMAGE_DIR=/data/user-stl-images \
+    THUMBNAIL_DIR=/data/thumbnails \
     CORS_ORIGIN=http://localhost:8080 \
     GRIDFINITY_GENERATOR_DIR=/app/generator \
     LIBRARY_BUILDER_DIR=/app/tools/library-builder \
