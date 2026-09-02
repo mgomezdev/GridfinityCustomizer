@@ -170,7 +170,7 @@ npm run lint             # ESLint
 npm run build            # Production build (all packages)
 ```
 
-See [CLAUDE.md](CLAUDE.md) for full coding standards, architecture notes, and git workflow.
+See [CLAUDE.md](CLAUDE.md) for full coding standards, architecture notes, and git workflow, and [docs/agent/](docs/agent/README.md) for deeper backend/frontend/data-model/integration notes.
 
 ---
 
@@ -209,6 +209,10 @@ shared/         Types and schemas shared between app and server
 ```
 
 ---
+
+## About This Project
+
+Ordinus is built as an exercise in full agent coding with human oversight — a real, useful tool developed while demonstrating practical applications of emerging techniques in prompt design, multi-agent workflows, and harnessing.
 
 ## License
 
